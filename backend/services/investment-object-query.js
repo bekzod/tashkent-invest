@@ -127,6 +127,17 @@ function buildWhere(filters) {
   return where;
 }
 
+function buildPublicWhere(filters) {
+  const where = buildWhere(filters);
+
+  // `statuses` is already validated against the public status enum. Keep a
+  // caller's explicit status selection instead of replacing it with all
+  // public statuses at the route level.
+  where.status = { [Op.in]: filters.statuses.length ? filters.statuses : [...statuses] };
+
+  return where;
+}
+
 function filterObjects(objects, filters) {
   if (!filters.polygon && !filters.q) return objects;
   const search = filters.q.toLocaleLowerCase();
@@ -145,6 +156,7 @@ function filterObjects(objects, filters) {
 module.exports = {
   parseFilters,
   buildWhere,
+  buildPublicWhere,
   filterObjects,
   objectTypes,
   statuses,

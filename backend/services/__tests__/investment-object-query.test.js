@@ -1,7 +1,12 @@
 'use strict';
 
 const { test, expect } = require('bun:test');
-const { buildWhere, filterObjects, parseFilters } = require('../investment-object-query');
+const {
+  buildPublicWhere,
+  buildWhere,
+  filterObjects,
+  parseFilters,
+} = require('../investment-object-query');
 
 test('parses object filters and builds the database where clause', () => {
   const filters = parseFilters({
@@ -16,6 +21,12 @@ test('parses object filters and builds the database where clause', () => {
   expect(where.type[Object.getOwnPropertySymbols(where.type)[0]]).toEqual(['land']);
   expect(where.status[Object.getOwnPropertySymbols(where.status)[0]]).toEqual(['auction']);
   expect(filters.bbox).toEqual([69.1, 41.2, 69.4, 41.5]);
+});
+
+test('keeps an explicitly requested public status in the database where clause', () => {
+  const where = buildPublicWhere(parseFilters({ statuses: 'auction' }));
+
+  expect(where.status[Object.getOwnPropertySymbols(where.status)[0]]).toEqual(['auction']);
 });
 
 test('applies polygon and text filtering after database filtering', () => {

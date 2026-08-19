@@ -4,7 +4,7 @@ const route = require('../../utils/async-handler');
 const { Op } = require('sequelize');
 const {
   parseFilters,
-  buildWhere,
+  buildPublicWhere,
   filterObjects,
 } = require('../../services/investment-object-query');
 const { feature, preview, detail } = require('../../services/investment-object-presenter');
@@ -37,7 +37,7 @@ module.exports = async (app) => {
       const limit = Math.min(48, Math.max(1, Number(request.query.limit || 12)));
       const objects = filterObjects(
         await app.db.InvestmentObject.findAll({
-          where: { ...buildWhere(filters), status: publicStatusWhere },
+          where: buildPublicWhere(filters),
           include,
           order: [['createdAt', 'DESC']],
         }),
@@ -59,7 +59,7 @@ module.exports = async (app) => {
       await resolveAreaPolygon(app, filters, request.query.areaSlug);
       const objects = filterObjects(
         await app.db.InvestmentObject.findAll({
-          where: { ...buildWhere(filters), status: publicStatusWhere },
+          where: buildPublicWhere(filters),
           include,
         }),
         filters,
