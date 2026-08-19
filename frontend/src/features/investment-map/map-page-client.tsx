@@ -36,6 +36,7 @@ const sectors = [
 type Props = {
   compact?: boolean;
   showToolbar?: boolean;
+  showMapControls?: boolean;
   initialFilters?: Partial<MapFilters>;
 };
 
@@ -123,6 +124,7 @@ function SelectedObjectPanel({
 export function MapPageClient({
   compact = false,
   showToolbar = true,
+  showMapControls = true,
   initialFilters,
 }: Props) {
   const { t } = useLanguage();
@@ -286,6 +288,7 @@ export function MapPageClient({
         onPolygonChange={setPolygon}
         cluster={false}
         maxVisible={compact ? 20 : undefined}
+        showControls={showMapControls}
       />
       {!compact &&
         (selected ? (

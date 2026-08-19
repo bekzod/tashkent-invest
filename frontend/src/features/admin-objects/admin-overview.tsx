@@ -32,11 +32,7 @@ export function AdminOverview() {
   return (
     <section className="admin-page">
       <header className="admin-page-header">
-        <div>
-          <p>HOKIMLIK ADMIN PANELI</p>
-          <h1>Obyektlar nazorati</h1>
-        </div>
-        <Link className="admin-primary" href="/admin/objects/new">
+        <Link className="admin-primary" href="/dashboard/projects/new">
           <Plus size={17} /> Yangi obyekt qo‘shish
         </Link>
       </header>
@@ -52,14 +48,8 @@ export function AdminOverview() {
         ))}
       </div>
       <section className="admin-start-card">
-        <div>
-          <h2>Yangi obyektni uch qadamda joylang</h2>
-          <p>
-            Asosiy ma’lumotni kiriting, xaritada nuqtani belgilang, media va
-            hujjatlarni qo‘shib nashr qiling.
-          </p>
-        </div>
-        <Link className="admin-primary" href="/admin/objects/new">
+        <p>Asosiy ma’lumotni kiriting, xaritada nuqtani belgilang, media va hujjatlarni qo‘shib nashr qiling.</p>
+        <Link className="admin-primary" href="/dashboard/projects/new">
           Obyekt qo‘shish
         </Link>
       </section>

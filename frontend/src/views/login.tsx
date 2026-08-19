@@ -34,7 +34,7 @@ export function LoginView() {
       );
       writeSession(session);
       router.replace(
-        session.user.role === "admin" ? "/admin" : "/dashboard/profile",
+        session.user.role === "admin" ? "/dashboard" : "/dashboard/profile",
       );
     } catch {
       setError(true);

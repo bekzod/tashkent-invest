@@ -115,7 +115,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
       const saved = object
         ? await adminObjectsApi.update(object.id, payload)
         : await adminObjectsApi.create(payload);
-      router.replace(`/admin/objects/${saved.id}/edit`);
+      router.replace(`/dashboard/projects/${saved.id}/edit`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Saqlashda xatolik");
     } finally {
@@ -129,12 +129,9 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
   return (
     <form className="admin-editor" onSubmit={onSubmit}>
       <header className="admin-page-header">
-        <div>
-          <Link className="admin-back" href="/admin/objects">
-            <ChevronLeft size={16} /> Obyektlar
-          </Link>
-          <h1>{object ? "Obyektni tahrirlash" : "Yangi obyekt"}</h1>
-        </div>
+        <Link className="admin-back" href="/dashboard/projects">
+          <ChevronLeft size={16} /> Obyektlar
+        </Link>
         <button className="admin-outline" type="submit" disabled={saving}>
           <Save size={16} /> Qoralama saqlash
         </button>

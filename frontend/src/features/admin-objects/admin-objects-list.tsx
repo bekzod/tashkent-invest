@@ -45,11 +45,7 @@ export function AdminObjectsList() {
   return (
     <section className="admin-page">
       <header className="admin-page-header">
-        <div>
-          <p>OBYEKTLAR BOSHQARUVI</p>
-          <h1>Investitsiya obyektlari</h1>
-        </div>
-        <Link className="admin-primary" href="/admin/objects/new">
+        <Link className="admin-primary" href="/dashboard/projects/new">
           <Plus size={17} /> Yangi obyekt
         </Link>
       </header>
@@ -115,7 +111,7 @@ export function AdminObjectsList() {
                   <td>
                     <Link
                       aria-label="Tahrirlash"
-                      href={`/admin/objects/${item.id}/edit`}
+                      href={`/dashboard/projects/${item.id}/edit`}
                     >
                       <PencilLine size={17} />
                     </Link>

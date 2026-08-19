@@ -6,8 +6,7 @@ import { PublicHeader } from "@/widgets/public-header";
 
 export function AppFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isDashboard =
-    pathname?.startsWith("/dashboard") || pathname?.startsWith("/admin");
+  const isDashboard = pathname?.startsWith("/dashboard");
 
   if (isDashboard) return <>{children}</>;
 

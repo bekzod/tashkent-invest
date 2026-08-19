@@ -95,7 +95,7 @@ export default function HomePage() {
         </div>
 
         <div className="reference-map" aria-label="Toshkent investitsiya xaritasi">
-          <MapPageClient compact showToolbar={false} />
+          <MapPageClient compact showToolbar={false} showMapControls={false} />
         </div>
 
         <aside className="reference-filter" aria-label={t('filters')}>

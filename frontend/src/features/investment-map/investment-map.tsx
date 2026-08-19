@@ -94,6 +94,7 @@ export function InvestmentMap({
   onPolygonChange,
   cluster = true,
   maxVisible,
+  showControls = true,
 }: {
   filters: MapFilters;
   selected?: InvestmentObject | null;
@@ -102,6 +103,7 @@ export function InvestmentMap({
   onPolygonChange: (polygon?: GeoJSON.Polygon) => void;
   cluster?: boolean;
   maxVisible?: number;
+  showControls?: boolean;
 }) {
   const holder = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -184,14 +186,16 @@ export function InvestmentMap({
         className: "map-marker-tooltip",
         offset: 14,
       });
-      map.addControl(new maplibre.NavigationControl(), "bottom-right");
-      map.addControl(
-        new maplibre.GeolocateControl({
-          positionOptions: { enableHighAccuracy: true },
-          trackUserLocation: true,
-        }),
-        "bottom-right",
-      );
+      if (showControls) {
+        map.addControl(new maplibre.NavigationControl(), "bottom-right");
+        map.addControl(
+          new maplibre.GeolocateControl({
+            positionOptions: { enableHighAccuracy: true },
+            trackUserLocation: true,
+          }),
+          "bottom-right",
+        );
+      }
 
       map.on("load", () => {
         map.addSource("objects", {
@@ -407,7 +411,7 @@ export function InvestmentMap({
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [cluster, load, onFeatures, onSelect]);
+  }, [cluster, load, onFeatures, onSelect, showControls]);
 
   useEffect(() => {
     void load();
@@ -524,30 +528,32 @@ export function InvestmentMap({
         aria-label="Toshkent investitsiya xaritasi"
         data-selected-object-id={selected?.id || ""}
       />
-      <div className="map-actions">
-        {!drawing && !hasManualPolygon && (
-          <button
-            type="button"
-            className="map-draw-button"
-            onClick={beginDrawing}
-          >
-            <PencilRuler size={15} aria-hidden="true" />
-            {t("drawArea")}
-          </button>
-        )}
-        {hasManualPolygon && (
-          <button
-            type="button"
-            className="map-clear-button"
-            onClick={() => {
-              polygonRef.current = undefined;
-              onPolygonChange(undefined);
-            }}
-          >
-            {t("clearArea")}
-          </button>
-        )}
-      </div>
+      {showControls && (
+        <div className="map-actions">
+          {!drawing && !hasManualPolygon && (
+            <button
+              type="button"
+              className="map-draw-button"
+              onClick={beginDrawing}
+            >
+              <PencilRuler size={15} aria-hidden="true" />
+              {t("drawArea")}
+            </button>
+          )}
+          {hasManualPolygon && (
+            <button
+              type="button"
+              className="map-clear-button"
+              onClick={() => {
+                polygonRef.current = undefined;
+                onPolygonChange(undefined);
+              }}
+            >
+              {t("clearArea")}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

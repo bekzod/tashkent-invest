@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {
   Bell, Bookmark, Building2, ChevronRight, CircleHelp, ClipboardList,
   FileClock, Plus, Search,
-  ShieldCheck, Sparkles, TrendingUp, UserRound, X,
+  ShieldCheck, Sparkles, TrendingUp, UserRound,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { InvestmentObject } from '@/entities/investment-object/types';
@@ -38,7 +38,7 @@ export function DashboardView({ activeSection = 'overview' }: { activeSection?: 
       return;
     }
     if (current.user.role === 'admin') {
-      setLoading(false);
+      queueMicrotask(() => setLoading(false));
       return;
     }
     Promise.all([
