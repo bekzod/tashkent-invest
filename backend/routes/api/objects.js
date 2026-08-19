@@ -1,6 +1,7 @@
 'use strict';
 
 const route = require('../../utils/async-handler');
+const { Op } = require('sequelize');
 const {
   parseFilters,
   buildWhere,
@@ -14,6 +15,7 @@ function locale(request) {
     : 'uz';
 }
 const include = [{ association: 'translations' }, { association: 'media' }];
+const publicStatusWhere = { [Op.in]: ['available', 'auction', 'upcoming'] };
 
 async function resolveAreaPolygon(app, filters, areaSlug) {
   if (!areaSlug) return;
@@ -35,7 +37,7 @@ module.exports = async (app) => {
       const limit = Math.min(48, Math.max(1, Number(request.query.limit || 12)));
       const objects = filterObjects(
         await app.db.InvestmentObject.findAll({
-          where: buildWhere(filters),
+          where: { ...buildWhere(filters), status: publicStatusWhere },
           include,
           order: [['createdAt', 'DESC']],
         }),
@@ -56,7 +58,10 @@ module.exports = async (app) => {
       const filters = parseFilters(request.query);
       await resolveAreaPolygon(app, filters, request.query.areaSlug);
       const objects = filterObjects(
-        await app.db.InvestmentObject.findAll({ where: buildWhere(filters), include }),
+        await app.db.InvestmentObject.findAll({
+          where: { ...buildWhere(filters), status: publicStatusWhere },
+          include,
+        }),
         filters,
       );
       return {
@@ -70,7 +75,7 @@ module.exports = async (app) => {
     '/:slug',
     route(async (request, reply) => {
       const object = await app.db.InvestmentObject.findOne({
-        where: { slug: request.params.slug },
+        where: { slug: request.params.slug, status: publicStatusWhere },
         include,
       });
       if (!object) return reply.code(404).send({ error: 'Object not found' });

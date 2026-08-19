@@ -5,18 +5,22 @@ module.exports = (sequelize, DataTypes) => {
     'InvestmentObject',
     {
       id: { type: DataTypes.UUID, primaryKey: true, defaultValue: DataTypes.UUIDV4 },
-      slug: { type: DataTypes.STRING, allowNull: false, unique: true },
-      type: { type: DataTypes.ENUM('land', 'building', 'proposal'), allowNull: false },
-      status: { type: DataTypes.ENUM('available', 'auction', 'upcoming'), allowNull: false },
-      district: { type: DataTypes.STRING, allowNull: false },
+      slug: { type: DataTypes.STRING, allowNull: true, unique: true },
+      type: { type: DataTypes.ENUM('land', 'building', 'proposal'), allowNull: true },
+      status: {
+        type: DataTypes.ENUM('available', 'auction', 'upcoming', 'draft', 'archived'),
+        allowNull: false,
+        defaultValue: 'draft',
+      },
+      district: { type: DataTypes.STRING, allowNull: true },
       cadastralNumber: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         unique: true,
         field: 'cadastral_number',
       },
-      latitude: { type: DataTypes.DECIMAL(10, 7), allowNull: false },
-      longitude: { type: DataTypes.DECIMAL(10, 7), allowNull: false },
+      latitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
+      longitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
       siteGeometry: { type: DataTypes.JSONB, allowNull: true, field: 'site_geometry' },
       landAreaHa: { type: DataTypes.DECIMAL(10, 2), allowNull: true, field: 'land_area_ha' },
       buildingAreaSqm: {
@@ -27,7 +31,7 @@ module.exports = (sequelize, DataTypes) => {
       usableAreaSqm: { type: DataTypes.DECIMAL(12, 2), allowNull: true, field: 'usable_area_sqm' },
       investmentAmountUsd: {
         type: DataTypes.DECIMAL(16, 2),
-        allowNull: false,
+        allowNull: true,
         field: 'investment_amount_usd',
       },
       jobsPlanned: { type: DataTypes.INTEGER, allowNull: true, field: 'jobs_planned' },

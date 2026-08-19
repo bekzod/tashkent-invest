@@ -58,6 +58,10 @@ async function seed() {
     where: { email: 'investor@demo.uz' },
     defaults: { name: 'Demo Investor', passwordHash },
   });
+  await db.User.findOrCreate({
+    where: { email: 'admin@demo.uz' },
+    defaults: { name: 'Portal Admin', passwordHash, role: 'admin' },
+  });
 
   await Promise.all(
     geographicAreas.map((area) =>

@@ -13,7 +13,11 @@ module.exports = (sequelize, DataTypes) => {
         validate: { isEmail: true },
       },
       passwordHash: { type: DataTypes.STRING, allowNull: false, field: 'password_hash' },
-      role: { type: DataTypes.ENUM('investor'), allowNull: false, defaultValue: 'investor' },
+      role: {
+        type: DataTypes.ENUM('investor', 'admin'),
+        allowNull: false,
+        defaultValue: 'investor',
+      },
     },
     { tableName: 'users', underscored: true },
   );
