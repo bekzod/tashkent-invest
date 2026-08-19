@@ -272,7 +272,7 @@ export function MapPageClient({
         onFeatures={setFeatures}
         onSelect={setSelected}
         onPolygonChange={setPolygon}
-        cluster={!compact}
+        cluster={false}
         maxVisible={compact ? 20 : undefined}
       />
       {!compact &&
