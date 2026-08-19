@@ -1,17 +1,30 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('investor can log in, inspect a map object, and submit an application', async ({ page }) => {
-  test.skip(!process.env.E2E_API_READY, 'Requires the Docker-backed API and seeded PostgreSQL.');
-  await page.goto('/login');
-  await page.getByLabel(/email/i).fill('investor@demo.uz');
-  await page.getByLabel(/password|parol/i).fill('invest2026');
-  await page.getByRole('button', { name: /kirish|войти/i }).click();
-  await page.goto('/map');
-  await page.getByTestId('map-result-card').first().getByRole('link', { name: /batafsil|подробнее/i }).click();
-  await page.getByRole('button', { name: /qiziqish|интерес/i }).click();
-  await page.getByLabel(/ism|имя/i).fill('Demo Investor');
-  await page.getByLabel(/telefon|телефон/i).fill('+998901234567');
-  await page.getByLabel(/email/i).fill('investor@demo.uz');
-  await page.getByRole('button', { name: /yuborish|отправить/i }).click();
+test("investor can log in, inspect a map object, and submit an application", async ({
+  page,
+}) => {
+  test.skip(
+    !process.env.E2E_API_READY,
+    "Requires the Docker-backed API and seeded PostgreSQL.",
+  );
+  await page.goto("/login");
+  await expect(page.getByTestId("login-form")).toHaveAttribute(
+    "data-hydrated",
+    "true",
+  );
+  await page.getByLabel(/email/i).fill("investor@demo.uz");
+  await page.getByLabel(/password|parol/i).fill("invest2026");
+  await page.getByRole("button", { name: /kirish|войти/i }).click();
+  await page.goto("/map");
+  await page
+    .locator('[data-testid="map-result-card"][data-object-status="available"]')
+    .first()
+    .getByRole("link", { name: /batafsil|подробнее/i })
+    .click();
+  await page.getByRole("button", { name: /qiziqish|интерес/i }).click();
+  await page.getByLabel(/ism|имя/i).fill("Demo Investor");
+  await page.getByLabel(/telefon|телефон/i).fill("+998901234567");
+  await page.getByLabel(/email/i).fill("investor@demo.uz");
+  await page.getByRole("button", { name: /yuborish|отправить/i }).click();
   await expect(page.getByText(/qabul qilindi|принята/i)).toBeVisible();
 });
