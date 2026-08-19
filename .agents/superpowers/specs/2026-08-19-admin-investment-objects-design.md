@@ -5,7 +5,6 @@
 Give hokimlik administrators a clear, desktop-first workspace to create, edit,
 publish, archive, and map investment objects without exposing incomplete drafts
 to investors.
-
 ## Confirmed decisions
 
 - The first media version stores HTTPS media URLs, not uploaded files.
