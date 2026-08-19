@@ -51,3 +51,21 @@ test('hero search and statistic cards use one aligned discovery grid', async ({ 
   expect(new Set(measurements.cards.map(({ width }) => width)).size).toBe(1);
   expect(new Set(measurements.cards.map(({ height }) => height)).size).toBe(1);
 });
+
+test('landing renders unique popular cards without React duplicate-key warnings', async ({ page }) => {
+  const duplicateKeyWarnings: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' && message.text().includes('same key'))
+      duplicateKeyWarnings.push(message.text());
+  });
+
+  await page.goto('/');
+  await expect.poll(() => page.locator('.reference-card-grid .object-card').count()).toBeGreaterThan(0);
+
+  const objectIds = await page
+    .locator('.reference-card-grid .object-card')
+    .evaluateAll((cards) => cards.map((card) => card.getAttribute('data-object-id')));
+
+  expect(new Set(objectIds).size).toBe(objectIds.length);
+  expect(duplicateKeyWarnings).toEqual([]);
+});

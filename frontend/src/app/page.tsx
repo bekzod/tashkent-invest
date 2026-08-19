@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import { ObjectCard } from '@/entities/investment-object/object-card';
 import type { InvestmentObject } from '@/entities/investment-object/types';
 import { MapPageClient } from '@/features/investment-map/map-page-client';
+import { uniqueObjects } from '@/features/landing/unique-objects';
 import { api } from '@/shared/api/client';
 import { useLanguage } from '@/shared/i18n/language-provider';
 
@@ -44,7 +45,7 @@ export default function HomePage() {
       api<ObjectResponse>('/objects?limit=1&types=proposal&statuses=available', {}, locale),
     ]).then(([nextStats, auction, upcoming, building, proposal]) => {
       setStats(nextStats);
-      setObjects([auction, upcoming, building, proposal].flatMap((response) => response.items));
+      setObjects(uniqueObjects([auction, upcoming, building, proposal].flatMap((response) => response.items)));
     }).catch(() => undefined);
   }, [locale]);
 

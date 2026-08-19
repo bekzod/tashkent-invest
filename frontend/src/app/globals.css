@@ -1937,6 +1937,43 @@ body {
   padding-inline: 1.5rem !important;
 }
 
+/* Public header: keep the desktop navigation on a single deliberate row.
+   The central nav may use the available space, while brand and actions retain
+   their natural width so labels and CTAs never wrap independently. */
+.site-header {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  justify-content: initial;
+  column-gap: clamp(1rem, 2vw, 2.5rem);
+}
+.site-header .public-navigation {
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(0.875rem, 1.45vw, 1.75rem);
+  white-space: nowrap;
+}
+.site-header .public-navigation a,
+.header-actions,
+.header-actions .button {
+  white-space: nowrap;
+}
+.header-actions {
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 1160px) {
+  .site-header {
+    grid-template-columns: max-content 1fr max-content max-content;
+  }
+  .site-header .public-navigation {
+    display: none;
+  }
+  .site-header .mobile-menu {
+    display: block;
+  }
+}
+
 .reference-landing {
   padding-bottom: 3rem;
 }

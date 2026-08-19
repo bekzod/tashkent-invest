@@ -50,7 +50,11 @@ export function ObjectCard({
             ${Number(object.investmentAmountUsd).toLocaleString()}
           </strong>
         </div>
-        <Link className="text-link" href={`/objects/${object.slug}`}>
+        <Link
+          className="text-link"
+          href={`/objects/${object.slug}`}
+          onClick={(event) => event.stopPropagation()}
+        >
           {t("details")} →
         </Link>
       </div>
