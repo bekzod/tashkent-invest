@@ -114,6 +114,7 @@ export function InvestmentMap({
   const filtersRef = useRef(filters);
   const selectedRef = useRef(selected);
   const drawingRef = useRef(false);
+  const showControlsRef = useRef(showControls);
 
   useEffect(() => {
     filtersRef.current = filters;
@@ -186,7 +187,7 @@ export function InvestmentMap({
         className: "map-marker-tooltip",
         offset: 14,
       });
-      if (showControls) {
+      if (showControlsRef.current) {
         map.addControl(new maplibre.NavigationControl(), "bottom-right");
         map.addControl(
           new maplibre.GeolocateControl({
@@ -411,7 +412,7 @@ export function InvestmentMap({
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [cluster, load, onFeatures, onSelect, showControls]);
+  }, [cluster, load, onFeatures, onSelect]);
 
   useEffect(() => {
     void load();

@@ -11,7 +11,10 @@ test('landing keeps its hero controls inside a responsive viewport', async ({ pa
 
     await expect(page.locator('.site-header')).toBeVisible();
     await expect(page.locator('.reference-filter')).toBeVisible();
-    await expect(page.locator('.reference-map .maplibregl-ctrl')).toHaveCount(0);
+    await expect(page.locator('.reference-map .maplibregl-ctrl-zoom-in')).toHaveCount(0);
+    await expect(page.locator('.reference-map .maplibregl-ctrl-zoom-out')).toHaveCount(0);
+    await expect(page.locator('.reference-map .maplibregl-ctrl-geolocate')).toHaveCount(0);
+    await expect(page.locator('.reference-map .maplibregl-ctrl-compass')).toHaveCount(0);
     await expect(page.locator('.reference-map .map-actions button')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
