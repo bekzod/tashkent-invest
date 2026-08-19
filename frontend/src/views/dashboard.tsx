@@ -2,18 +2,20 @@
 
 import Link from 'next/link';
 import {
-  Bell, Bookmark, Building2, ChevronDown, ChevronRight, CircleHelp, ClipboardList,
-  FileClock, LogOut, Map, Menu, Plus, Search,
+  Bell, Bookmark, Building2, ChevronRight, CircleHelp, ClipboardList,
+  FileClock, Plus, Search,
   ShieldCheck, Sparkles, TrendingUp, UserRound, X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { InvestmentObject } from '@/entities/investment-object/types';
 import { api } from '@/shared/api/client';
-import { clearSession, readSession, type Session } from '@/shared/auth/session';
+import { readSession, type Session } from '@/shared/auth/session';
 import { useLanguage } from '@/shared/i18n/language-provider';
 import { MapPageClient } from '@/features/investment-map/map-page-client';
-import { dashboardNavigation, dashboardSettingsEntry } from '@/widgets/dashboard-nav';
-import { applicationStatusLabel, dashboardSectionLabel, formatInvestmentAmount, projectAreaLabel, type DashboardSection } from '@/shared/lib/dashboard';
+import { applicationStatusLabel, formatInvestmentAmount, projectAreaLabel, type DashboardSection } from '@/shared/lib/dashboard';
+import { DashboardShell } from '@/widgets/dashboard-shell';
+import { AdminObjectsList } from '@/features/admin-objects/admin-objects-list';
+import { AdminOverview } from '@/features/admin-objects/admin-overview';
 
 type Statistics = { objects: number; auctions: number; upcoming: number; investmentAmountUsd: number };
 type ObjectResponse = { items: InvestmentObject[]; meta: { total: number } };
@@ -22,8 +24,6 @@ type Application = { id: string; status: string; createdAt: string; object: Inve
 export function DashboardView({ activeSection = 'overview' }: { activeSection?: DashboardSection }) {
   const { locale } = useLanguage();
   const [session, setSession] = useState<Session | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [stats, setStats] = useState<Statistics | null>(null);
   const [projects, setProjects] = useState<InvestmentObject[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -35,6 +35,10 @@ export function DashboardView({ activeSection = 'overview' }: { activeSection?: 
     queueMicrotask(() => setSession(current));
     if (!current) {
       window.location.replace('/login');
+      return;
+    }
+    if (current.user.role === 'admin') {
+      setLoading(false);
       return;
     }
     Promise.all([
@@ -50,9 +54,6 @@ export function DashboardView({ activeSection = 'overview' }: { activeSection?: 
     }).catch(() => undefined).finally(() => setLoading(false));
   }, [locale]);
 
-  const userName = session?.user.name || (locale === 'ru' ? 'Инвестор' : 'Investor');
-  const initials = userName.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
-  const SettingsIcon = dashboardSettingsEntry.icon;
   const metricCards = useMemo(() => [
     { icon: Building2, label: locale === 'ru' ? 'Доступные объекты' : 'Mavjud obyektlar', value: stats?.objects ?? '—', tone: 'blue' },
     { icon: FileClock, label: locale === 'ru' ? 'Мои заявки' : 'Mening arizalarim', value: applications.length, tone: 'violet' },
@@ -60,35 +61,18 @@ export function DashboardView({ activeSection = 'overview' }: { activeSection?: 
     { icon: TrendingUp, label: locale === 'ru' ? 'Объём инвестиций' : 'Investitsiya hajmi', value: stats ? formatInvestmentAmount(stats.investmentAmountUsd) : '—', tone: 'green' },
   ], [applications.length, locale, stats]);
 
-  function logout() { clearSession(); window.location.assign('/'); }
+  if (!session) return <main className="dashboard-route-page">Kabinet yuklanmoqda…</main>;
 
-  return <div className={`invest-dashboard ${collapsed ? 'is-collapsed' : ''}`}>
-    <aside className="dashboard-sidebar" aria-label="Dashboard navigation">
-      <div className="dashboard-brand-row">
-        <Link href="/" className="dashboard-brand"><span className="dashboard-brand-mark"><Map size={21} /></span><span className="dashboard-brand-copy"><strong>Invest Tuman</strong><small>INVESTMENT PORTAL</small></span></Link>
-        <button className="dashboard-collapse" type="button" aria-label="Menyuni yig‘ish" onClick={() => setCollapsed((value) => !value)}><Menu size={19} /></button>
-      </div>
-      <Link className="dashboard-create" href="/dashboard/map"><Plus size={19} /><span>Yangi loyihani topish</span></Link>
-      <nav className="dashboard-nav">
-        <p>ASOSIY</p>
-        {dashboardNavigation.map(({ icon: Icon, href, label, section }) => <Link className={`dashboard-nav-link ${section === activeSection ? 'active' : ''}`} href={href} key={label}><Icon size={18} /><span>{label}</span></Link>)}
-        <p>SOZLAMALAR</p>
-        <Link className={`dashboard-nav-link ${activeSection === 'settings' ? 'active' : ''}`} href={dashboardSettingsEntry.href}><SettingsIcon size={18} /><span>{dashboardSettingsEntry.label}</span></Link>
-      </nav>
-      <div className="dashboard-sidebar-bottom">
-        <button type="button" className="dashboard-help"><CircleHelp size={18} /><span>Yordam markazi</span></button>
-        <button type="button" className="dashboard-profile-side" onClick={() => setProfileOpen((value) => !value)}><span className="dashboard-avatar">{initials}</span><span className="dashboard-profile-copy"><b>{userName}</b><small>{session?.user.email}</small></span><ChevronDown size={16} /></button>
-      </div>
-    </aside>
+  if (session.user.role === 'admin') {
+    return <DashboardShell activeSection={activeSection} role="admin" session={session}>
+      {activeSection === 'projects' ? <AdminObjectsList /> : null}
+      {activeSection === 'map' ? <DashboardMapContent /> : null}
+      {activeSection !== 'projects' && activeSection !== 'map' ? <AdminOverview /> : null}
+    </DashboardShell>;
+  }
 
-    <section className="dashboard-stage">
-      <header className="dashboard-topbar">
-        <div><p className="dashboard-breadcrumb">Kabinet / <b>{dashboardSectionLabel(activeSection)}</b></p></div>
-        <div className="dashboard-top-actions"><button type="button" aria-label="Qidiruv"><Search size={18} /></button><button type="button" className="dashboard-notification" aria-label="Xabarnomalar"><Bell size={18} /><i /></button><div className="dashboard-divider" /><button type="button" className="dashboard-profile-button" onClick={() => setProfileOpen((value) => !value)}><span className="dashboard-avatar">{initials}</span><ChevronDown size={16} /></button></div>
-        {profileOpen ? <div className="dashboard-profile-menu"><div><span className="dashboard-avatar">{initials}</span><p><b>{userName}</b><small>{session?.user.email}</small></p></div><Link href="/dashboard/profile"><UserRound size={16} />Profil sozlamalari</Link><button onClick={logout}><LogOut size={16} />Chiqish</button></div> : null}
-      </header>
-
-      <main className={`dashboard-content dashboard-content--${activeSection}`}>
+  const userName = session.user.name || (locale === 'ru' ? 'Инвестор' : 'Investor');
+  return <DashboardShell activeSection={activeSection} role="investor" session={session}>
         {activeSection === 'map' ? <DashboardMapContent /> : null}
         {activeSection === 'projects' ? <DashboardProjectsContent projects={projects} loading={loading} /> : null}
         {activeSection === 'applications' ? <DashboardApplicationsContent applications={applications} locale={locale} /> : null}
@@ -111,9 +95,7 @@ export function DashboardView({ activeSection = 'overview' }: { activeSection?: 
 
         <section className="dashboard-panel dashboard-projects" id="favorites"><div className="dashboard-panel-header"><div><p>LOYIHALAR</p><h2>Tavsiya etilgan obyektlar</h2></div><Link href="/dashboard/projects">Barchasini ko‘rish <ChevronRight size={16} /></Link></div><div className="dashboard-project-grid">{(projects.length ? projects : favorites).slice(0, 4).map((project) => <Link href={`/objects/${project.slug}`} className="dashboard-project-card" key={project.id}><div className={`dashboard-project-image ${project.type}`}><span>{project.status === 'auction' ? 'Auksionda' : project.status === 'upcoming' ? 'Tez orada' : 'Mavjud'}</span></div><div><h3>{project.title}</h3><p>{project.district} · {projectAreaLabel(project)}</p><strong>{formatInvestmentAmount(project.investmentAmountUsd)}</strong></div></Link>)}{!loading && !projects.length && !favorites.length ? <div className="dashboard-empty dashboard-empty-wide"><Building2 size={24} /><p>Loyihalar yuklanmadi. Xarita orqali ko‘rib chiqing.</p><Link href="/dashboard/map">Xaritani ochish</Link></div> : null}</div></section>
         </> : null}
-      </main>
-    </section>
-  </div>;
+  </DashboardShell>;
 }
 
 function ArrowIcon() { return <ChevronRight size={17} aria-hidden="true" />; }
