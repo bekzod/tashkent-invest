@@ -38,17 +38,27 @@ function siteGeometry(longitude, latitude, landAreaHa, index) {
   const halfHeightMeters = Math.sqrt(areaSqm / aspectRatio) / 2;
   const longitudeScale = 111320 * Math.cos((latitude * Math.PI) / 180);
   const angle = ((index % 5) - 2) * 0.12;
-  const corners = [
-    [-halfWidthMeters, -halfHeightMeters],
-    [halfWidthMeters, -halfHeightMeters],
-    [halfWidthMeters, halfHeightMeters],
-    [-halfWidthMeters, halfHeightMeters],
+  // This is only the offline fallback. db:seed subsequently replaces every
+  // geometry with a real OSM building footprint. Keep it irregular so a failed
+  // sync cannot silently render four-corner "parcels" as if they were cadastral
+  // boundaries.
+  const outline = [
+    [-1, -0.28],
+    [-0.48, -0.82],
+    [0.25, -0.72],
+    [0.94, -0.2],
+    [0.72, 0.5],
+    [0.08, 0.78],
+    [-0.7, 0.52],
+    [-0.9, 0.05],
   ].map(([x, y]) => {
-    const rotatedX = x * Math.cos(angle) - y * Math.sin(angle);
-    const rotatedY = x * Math.sin(angle) + y * Math.cos(angle);
+    const scaledX = x * halfWidthMeters;
+    const scaledY = y * halfHeightMeters;
+    const rotatedX = scaledX * Math.cos(angle) - scaledY * Math.sin(angle);
+    const rotatedY = scaledX * Math.sin(angle) + scaledY * Math.cos(angle);
     return [longitude + rotatedX / longitudeScale, latitude + rotatedY / 111320];
   });
-  return { type: 'Polygon', coordinates: [[...corners, corners[0]]] };
+  return { type: 'Polygon', coordinates: [[...outline, outline[0]]] };
 }
 
 async function seed() {
