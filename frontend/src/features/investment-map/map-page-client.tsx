@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, MapPin, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import type {
   FeatureCollection,
@@ -65,6 +66,17 @@ function SelectedObjectPanel({
         <button type="button" onClick={onBack} aria-label={back}>
           <X size={19} />
         </button>
+      </div>
+      <div className={`selected-object-media ${object.type}`}>
+        {object.imageUrl ? (
+          <Image
+            src={object.imageUrl}
+            alt={object.title}
+            fill
+            sizes="360px"
+            priority
+          />
+        ) : null}
       </div>
       <span className={`selected-object-status ${object.status}`}>
         {status}

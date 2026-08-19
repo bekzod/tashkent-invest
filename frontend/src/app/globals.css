@@ -381,6 +381,22 @@ nav a:hover,
   border-radius: 8px;
   background: #fff;
 }
+.selected-object-media {
+  position: relative;
+  height: 172px;
+  margin: 0 -16px 18px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #527d68, #b7d0ab);
+}
+.selected-object-media.building {
+  background: linear-gradient(135deg, #405d75, #a7b6be);
+}
+.selected-object-media.proposal {
+  background: linear-gradient(135deg, #8a622d, #e1c281);
+}
+.selected-object-media img {
+  object-fit: cover;
+}
 .selected-object-status {
   align-self: flex-start;
   display: inline-flex;
