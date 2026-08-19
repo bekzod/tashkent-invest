@@ -1,0 +1,13 @@
+#!/usr/bin/env bun
+'use strict';
+
+const buildApp = require('../app');
+
+(async () => {
+  const app = await buildApp();
+  const port = Number(process.env.PORT || 8080);
+  await app.listen({ port, host: '0.0.0.0' });
+})().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
