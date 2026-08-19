@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: tashkent_invest
+      POSTGRES_USER: tashkent_invest
+      POSTGRES_PASSWORD: tashkent_invest
+    ports:
+      - "5432:5432"
+    volumes:
+      - tashkent-invest-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tashkent_invest -d tashkent_invest"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: ./backend
+    environment:
+      PORT: 8080
+      DATABASE_URL: postgres://tashkent_invest:tashkent_invest@postgres:5432/tashkent_invest
+      JWT_SECRET: local-development-secret-change-me
+      FRONT_HOST_NAME: http://localhost:3000
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+      NEXT_PUBLIC_MAP_TILE_URL: https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  tashkent-invest-postgres:
+
