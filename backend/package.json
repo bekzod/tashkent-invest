@@ -4,18 +4,20 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "start": "bun bin/www",
-    "dev": "bun --watch bin/www",
+    "start": "node bin/www",
+    "dev": "node --watch bin/www",
     "test": "NODE_ENV=test bun test --isolate",
     "test:coverage": "NODE_ENV=test bun test --isolate --coverage",
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "db:migrate": "sequelize-cli db:migrate --config db/config.js --migrations-path db/migrations",
-    "db:seed": "bun db/seed.js && bun db/sync-geographic-areas.js && bun db/sync-osm-footprints.js",
-    "db:sync-areas": "bun db/sync-geographic-areas.js",
-    "db:sync-osm-footprints": "bun db/sync-osm-footprints.js"
+    "db:seed": "node db/seed.js",
+    "db:sync-areas": "node db/sync-geographic-areas.js",
+    "db:sync-osm-footprints": "node db/sync-osm-footprints.js",
+    "db:seed:geodata": "npm run db:sync-areas && npm run db:sync-osm-footprints"
   },
   "engines": {
+    "node": ">=22.0.0",
     "bun": ">=1.3.14"
   },
   "dependencies": {

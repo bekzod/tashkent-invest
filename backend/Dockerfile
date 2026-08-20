@@ -1,8 +1,7 @@
-FROM oven/bun:1.3.14
+FROM node:22-bookworm-slim
 WORKDIR /app
-COPY package.json bun.lock* ./
-RUN bun install --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci --include=dev --ignore-scripts
 COPY . .
 EXPOSE 8080
-CMD ["sh", "-c", "bun run db:migrate && bun run db:seed && bun run start"]
-
+CMD ["sh", "-c", "npm run db:migrate && npm run db:seed && npm run start"]

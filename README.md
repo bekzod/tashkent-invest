@@ -23,6 +23,16 @@ cd frontend && bun install && bun run dev
 
 Mock investor: `investor@demo.uz` / `invest2026`.
 
+## Render (backend)
+
+Backendni `Docker` runtime bilan deploy qiling: repository root `backend`, Dockerfile path esa `Dockerfile` bo‘lishi kerak. Kerakli environment variables:
+
+- `DATABASE_URL` — Render PostgreSQL Internal Database URL.
+- `JWT_SECRET` — uzun, tasodifiy maxfiy kalit.
+- `FRONT_HOST_NAME` — frontend manzili, masalan `https://tashkent-invest.vercel.app`.
+
+Docker image migratsiyalarni va mock ma’lumotlarni ishga tushirishdan oldin Node LTS orqali bajaradi. OSM hamda ArcGIS dan geoma’lumotlarni yangilash deployga kirmaydi; zarur bo‘lsa alohida `npm run db:seed:geodata` buyrug‘i bilan ishga tushiring.
+
 `NEXT_PUBLIC_MAP_TILE_URL` production uchun belgilangan OSM-compatible tile provider URL’iga almashtirilishi kerak. Ommaviy OpenStreetMap tile endpointi faqat lokal/demo yuklama uchun ishlatiladi.
 
 ## Sifat tekshiruvlari
