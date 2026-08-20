@@ -3,14 +3,12 @@
 require('dotenv').config();
 
 const { Sequelize, DataTypes } = require('sequelize');
+const { databaseConnectionOptions } = require('../connection-options');
 
 const sequelize = new Sequelize(
   process.env.DATABASE_URL ||
     'postgres://tashkent_invest:tashkent_invest@localhost:5432/tashkent_invest',
-  {
-    dialect: 'postgres',
-    logging: false,
-  },
+  databaseConnectionOptions(),
 );
 
 const db = {

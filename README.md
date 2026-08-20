@@ -28,6 +28,7 @@ Mock investor: `investor@demo.uz` / `invest2026`.
 Backendni `Docker` runtime bilan deploy qiling: repository root `backend`, Dockerfile path esa `Dockerfile` bo‘lishi kerak. Kerakli environment variables:
 
 - `DATABASE_URL` — Render PostgreSQL Internal Database URL.
+- `DATABASE_SSL=true` — Render Postgres uchun TLS ulanishini yoqadi.
 - `JWT_SECRET` — uzun, tasodifiy maxfiy kalit.
 - `FRONT_HOST_NAME` — frontend manzili, masalan `https://tashkent-invest.vercel.app`.
 

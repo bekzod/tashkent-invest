@@ -3,9 +3,10 @@
 require('dotenv').config();
 
 const databaseUrl = process.env.DATABASE_URL;
+const { databaseConnectionOptions } = require('./connection-options');
 
 module.exports = {
-  development: { url: databaseUrl, dialect: 'postgres', logging: false },
-  test: { url: databaseUrl, dialect: 'postgres', logging: false },
-  production: { url: databaseUrl, dialect: 'postgres', logging: false },
+  development: { url: databaseUrl, ...databaseConnectionOptions() },
+  test: { url: databaseUrl, ...databaseConnectionOptions() },
+  production: { url: databaseUrl, ...databaseConnectionOptions() },
 };
