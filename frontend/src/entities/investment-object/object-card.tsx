@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
 import type { InvestmentObject } from "./types";
 import { useLanguage } from "@/shared/i18n/language-provider";
+import { LazyImage } from "@/shared/ui/lazy-image";
 
 export function ObjectCard({
   object,
@@ -29,7 +29,7 @@ export function ObjectCard({
     >
       <div className={`object-card-image ${object.type}`}>
         {object.imageUrl && (
-          <Image
+          <LazyImage
             src={object.imageUrl}
             alt=""
             fill

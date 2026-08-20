@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, MapPin, X } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import type {
   FeatureCollection,
@@ -18,6 +17,7 @@ import {
   type GeographicArea,
 } from "./geographic-areas";
 import { api } from "@/shared/api/client";
+import { LazyImage } from "@/shared/ui/lazy-image";
 
 const initial: MapFilters = { q: "", types: [], statuses: [], sectors: [] };
 const types = ["land", "building", "proposal"];
@@ -70,12 +70,11 @@ function SelectedObjectPanel({
       </div>
       <div className={`selected-object-media ${object.type}`}>
         {object.imageUrl ? (
-          <Image
+          <LazyImage
             src={object.imageUrl}
             alt={object.title}
             fill
             sizes="360px"
-            priority
           />
         ) : null}
       </div>

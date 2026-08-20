@@ -52,6 +52,20 @@ button {
   outline: none;
   box-shadow: var(--focus-ring);
 }
+.lazy-image {
+  filter: blur(16px);
+  opacity: 0.58;
+  transform: scale(1.045);
+  transition:
+    filter 480ms ease,
+    opacity 480ms ease,
+    transform 560ms ease;
+}
+.lazy-image.is-loaded {
+  filter: blur(0);
+  opacity: 1;
+  transform: scale(1);
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
