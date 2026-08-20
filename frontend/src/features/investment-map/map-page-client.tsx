@@ -126,7 +126,7 @@ export function MapPageClient({
   showMapControls = true,
   initialFilters,
 }: Props) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const initialQuery = useRef(initialFilters?.q || "");
   const [filters, setFilters] = useState<MapFilters>(() => ({
     ...initial,
@@ -140,6 +140,43 @@ export function MapPageClient({
     [features],
   );
   const district = useMemo(() => getTashkentDistrict(areas), [areas]);
+  const activeFilterCount =
+    (filters.q.trim() ? 1 : 0) +
+    filters.types.length +
+    filters.statuses.length +
+    filters.sectors.length;
+  const typeLabels = {
+    land: t("land"),
+    building: t("building"),
+    proposal: t("proposal"),
+  };
+  const statusLabels = {
+    available: t("available"),
+    auction: t("auction"),
+    upcoming: t("upcoming"),
+  };
+  const sectorLabels =
+    locale === "ru"
+      ? {
+          manufacturing: "Промышленность",
+          logistics: "Логистика",
+          tourism: "Туризм",
+          trade: "Торговля",
+          it: "IT",
+          agriculture: "Сельское хозяйство",
+          construction: "Строительство",
+          energy: "Энергетика",
+        }
+      : {
+          manufacturing: "Sanoat",
+          logistics: "Logistika",
+          tourism: "Turizm",
+          trade: "Savdo",
+          it: "IT",
+          agriculture: "Qishloq xo‘jaligi",
+          construction: "Qurilish",
+          energy: "Energetika",
+        };
 
   const selectArea = (
     area: GeographicArea,
@@ -229,52 +266,88 @@ export function MapPageClient({
     <section className={compact ? "map-preview" : "map-page"}>
       {showToolbar && (
         <div className="map-toolbar">
-          <input
-            value={filters.q}
-            onChange={(event) => updateQuery(event.target.value)}
-            placeholder={t("search")}
-          />
-          <div className="filter-row">
+          <div className="map-toolbar-header">
+            <div>
+              <span className="map-toolbar-kicker">
+                {locale === "ru" ? "Интерактивная карта" : "Interaktiv xarita"}
+              </span>
+              <h2>{t("filters")}</h2>
+              <p>
+                {activeFilterCount
+                  ? `${activeFilterCount} ${locale === "ru" ? "активных фильтра" : "ta faol filtr"}`
+                  : locale === "ru"
+                    ? "Все объекты на карте"
+                    : "Xaritadagi barcha obyektlar"}
+              </p>
+            </div>
+            {!compact && (
+              <button
+                type="button"
+                className="map-clear-button"
+                onClick={reset}
+              >
+                {t("clear")}
+              </button>
+            )}
+          </div>
+          <label className="map-search-field">
+            <span>{locale === "ru" ? "Поиск" : "Qidiruv"}</span>
+            <input
+              value={filters.q}
+              onChange={(event) => updateQuery(event.target.value)}
+              placeholder={t("search")}
+            />
+          </label>
+          <div className="map-filter-section">
+            <h3>{locale === "ru" ? "Тип объекта" : "Obyekt turi"}</h3>
+            <div className="filter-row">
             {types.map((type) => (
               <button
                 type="button"
                 className={filters.types.includes(type) ? "active" : ""}
+                aria-pressed={filters.types.includes(type)}
                 key={type}
                 onClick={() => toggle("types", type)}
               >
-                {t(type as "land" | "building" | "proposal")}
+                {typeLabels[type as keyof typeof typeLabels]}
               </button>
             ))}
+            </div>
+          </div>
+          <div className="map-filter-section">
+            <h3>{locale === "ru" ? "Статус" : "Holati"}</h3>
+            <div className="filter-row">
             {statuses.map((status) => (
               <button
                 type="button"
                 className={filters.statuses.includes(status) ? "active" : ""}
+                aria-pressed={filters.statuses.includes(status)}
                 key={status}
                 onClick={() => toggle("statuses", status)}
               >
-                {status === "auction"
-                  ? t("auction")
-                  : status === "upcoming"
-                    ? t("upcoming")
-                    : t("available")}
+                {statusLabels[status as keyof typeof statusLabels]}
               </button>
             ))}
+            </div>
           </div>
           {!compact && (
-            <div className="filter-row">
-              {sectors.map((sector) => (
-                <button
-                  type="button"
-                  className={filters.sectors.includes(sector) ? "active" : ""}
-                  key={sector}
-                  onClick={() => toggle("sectors", sector)}
-                >
-                  {sector}
-                </button>
-              ))}
-              <button type="button" onClick={reset}>
-                {t("clear")}
-              </button>
+            <div className="map-filter-section">
+              <h3>{locale === "ru" ? "Направление" : "Yo‘nalish"}</h3>
+              <div className="filter-row">
+                {sectors.map((sector) => (
+                  <button
+                    type="button"
+                    className={
+                      filters.sectors.includes(sector) ? "active" : ""
+                    }
+                    aria-pressed={filters.sectors.includes(sector)}
+                    key={sector}
+                    onClick={() => toggle("sectors", sector)}
+                  >
+                    {sectorLabels[sector as keyof typeof sectorLabels]}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
