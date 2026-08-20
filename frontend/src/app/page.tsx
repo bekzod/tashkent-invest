@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ArrowRight,
   BellRing,
@@ -14,7 +15,7 @@ import {
   Truck,
   Users,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { ObjectCard } from '@/entities/investment-object/object-card';
 import type { InvestmentObject } from '@/entities/investment-object/types';
 import { MapPageClient } from '@/features/investment-map/map-page-client';
@@ -31,9 +32,11 @@ function ProcessStep({ number, title, children }: { number: number; title: strin
 
 export default function HomePage() {
   const { locale, t } = useLanguage();
+  const router = useRouter();
   const [stats, setStats] = useState<Statistics | null>(null);
   const [objects, setObjects] = useState<InvestmentObject[]>([]);
   const [selectedTypes, setSelectedTypes] = useState(['land', 'auction']);
+  const [searchQuery, setSearchQuery] = useState('');
   const [area, setArea] = useState(58);
 
   useEffect(() => {
@@ -56,12 +59,12 @@ export default function HomePage() {
     { key: 'investors', value: '320+', icon: Users },
   ] as const;
   const categories = [
-    { icon: Factory, label: locale === 'ru' ? 'Промышленность' : 'Sanoat', count: 45 },
-    { icon: Tractor, label: locale === 'ru' ? 'Сельское хозяйство' : 'Qishloq xo‘jaligi', count: 23 },
-    { icon: Map, label: locale === 'ru' ? 'Туризм' : 'Turizm', count: 15 },
-    { icon: Truck, label: locale === 'ru' ? 'Логистика' : 'Logistika', count: 18 },
-    { icon: Store, label: locale === 'ru' ? 'Торговля' : 'Savdo', count: 12 },
-    { icon: Building2, label: locale === 'ru' ? 'IT и технологии' : 'IT va texnologiyalar', count: 9 },
+    { icon: Factory, label: locale === 'ru' ? 'Промышленность' : 'Sanoat', count: 45, sector: 'manufacturing' },
+    { icon: Tractor, label: locale === 'ru' ? 'Сельское хозяйство' : 'Qishloq xo‘jaligi', count: 23, sector: 'agriculture' },
+    { icon: Map, label: locale === 'ru' ? 'Туризм' : 'Turizm', count: 15, sector: 'tourism' },
+    { icon: Truck, label: locale === 'ru' ? 'Логистика' : 'Logistika', count: 18, sector: 'logistics' },
+    { icon: Store, label: locale === 'ru' ? 'Торговля' : 'Savdo', count: 12, sector: 'trade' },
+    { icon: Building2, label: locale === 'ru' ? 'IT и технологии' : 'IT va texnologiyalar', count: 9, sector: 'it' },
   ];
   const typeOptions = [
     { value: 'land', label: t('land') },
@@ -71,6 +74,20 @@ export default function HomePage() {
     { value: 'upcoming', label: t('upcoming') },
   ];
   const toggleType = (type: string) => setSelectedTypes((current) => current.includes(type) ? current.filter((item) => item !== type) : [...current, type]);
+  const mapSearchHref = () => {
+    const params = new URLSearchParams();
+    const typeFilters = selectedTypes.filter((type) => ['land', 'building', 'proposal'].includes(type));
+    const statusFilters = selectedTypes.filter((type) => ['auction', 'upcoming'].includes(type));
+    if (searchQuery.trim()) params.set('q', searchQuery.trim());
+    if (typeFilters.length) params.set('types', typeFilters.join(','));
+    if (statusFilters.length) params.set('statuses', statusFilters.join(','));
+    const query = params.toString();
+    return query ? `/map?${query}` : '/map';
+  };
+  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    router.push(mapSearchHref());
+  };
 
   return <main className="reference-landing">
     <section className="reference-hero">
@@ -78,19 +95,15 @@ export default function HomePage() {
         <div className="reference-copy">
           <h1>{locale === 'ru' ? 'Инвестируйте в будущее района' : 'Tuman kelajagiga investitsiya kiriting'}</h1>
           <p>{locale === 'ru' ? 'Интерактивная карта инвестиционных площадок и объектов' : 'Investitsiya maydonlari va obyektlarining interaktiv xaritasi'}</p>
-          <div className="reference-search">
-            <input placeholder={t('search')} aria-label={t('search')} />
-            <Link href="/map" aria-label={t('search')}><Search size={19} /></Link>
-          </div>
+          <form className="reference-search" onSubmit={submitSearch}>
+            <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder={t('search')} aria-label={t('search')} />
+            <button type="submit" aria-label={t('search')}><Search size={19} /></button>
+          </form>
           <div className="reference-stats">
             {statCards.map(({ key, value, icon: Icon }) => <div className="reference-stat" key={key}>
               <Icon size={18} />
               <div><strong>{value}</strong><span>{key === 'investors' ? (locale === 'ru' ? 'Инвесторов' : 'Investorlar') : t(key)}</span></div>
             </div>)}
-          </div>
-          <div className="reference-actions">
-            <Link className="button primary" href="/map">{t('exploreMap')} <Map size={16} /></Link>
-            <Link className="button reference-outline" href="/map">{t('allProjects')}</Link>
           </div>
         </div>
 
@@ -106,7 +119,7 @@ export default function HomePage() {
           </fieldset>
           <label className="reference-select"><span>{locale === 'ru' ? 'Направление' : 'Yo‘nalish'}</span><select defaultValue="manufacturing"><option value="manufacturing">{locale === 'ru' ? 'Промышленность' : 'Sanoat'}</option><option value="logistics">{locale === 'ru' ? 'Логистика' : 'Logistika'}</option><option value="tourism">{locale === 'ru' ? 'Туризм' : 'Turizm'}</option></select></label>
           <label className="reference-range"><span>{t('area')}, га</span><input type="range" min="0" max="100" value={area} onChange={(event) => setArea(Number(event.target.value))} /><small>0 <b>{area}+</b> 100+</small></label>
-          <Link className="button primary filter-submit" href="/map">{locale === 'ru' ? 'Показать объекты' : 'Obyektlarni ko‘rsatish'}</Link>
+          <Link className="button primary filter-submit" href={mapSearchHref()}>{locale === 'ru' ? 'Показать объекты' : 'Obyektlarni ko‘rsatish'}</Link>
         </aside>
       </div>
     </section>
@@ -115,7 +128,7 @@ export default function HomePage() {
       <div className="reference-popular" id="news">
         <div className="reference-section-heading"><h2>{t('popular')}</h2><Link href="/map">{t('seeAll')} <ArrowRight size={15} /></Link></div>
         <div className="reference-card-grid">{objects.map((object) => <ObjectCard object={object} key={object.id} />)}</div>
-        <section className="reference-categories"><h2>{t('categories')}</h2><div>{categories.map(({ icon: Icon, label, count }) => <Link href="/map" className="category-card" key={label}><Icon size={21} /><span><strong>{label}</strong><small>{count} {t('objects')}</small></span></Link>)}</div></section>
+        <section className="reference-categories"><h2>{t('categories')}</h2><div>{categories.map(({ icon: Icon, label, count, sector }) => <Link href={`/map?sectors=${sector}`} className="category-card" key={label}><Icon size={21} /><span><strong>{label}</strong><small>{count} {t('objects')}</small></span></Link>)}</div></section>
       </div>
       <aside className="reference-process" id="about">
         <h2>{t('howItWorks')}</h2>
