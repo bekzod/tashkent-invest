@@ -89,15 +89,35 @@ async function replaceMedia(app, objectId, media, transaction) {
   );
 }
 
-function listWhere(query) {
+function pageOptions(query) {
+  const page = Math.max(1, Number(query.page || 1));
+  const limit = Math.min(100, Math.max(1, Number(query.limit || 10)));
+  return { page, limit, offset: (page - 1) * limit };
+}
+
+async function listWhere(app, query) {
   const where = {};
   if (query.status) where.status = query.status;
   if (query.type) where.type = query.type;
   if (query.q) {
+    const q = String(query.q).trim();
+    if (!q) return where;
+    const translations = await app.db.InvestmentObjectTranslation.findAll({
+      attributes: ['investmentObjectId'],
+      where: {
+        [Op.or]: [
+          { title: { [Op.iLike]: `%${q}%` } },
+          { address: { [Op.iLike]: `%${q}%` } },
+        ],
+      },
+      raw: true,
+    });
+    const translationIds = translations.map((item) => item.investmentObjectId);
     where[Op.or] = [
-      { slug: { [Op.iLike]: `%${query.q}%` } },
-      { district: { [Op.iLike]: `%${query.q}%` } },
-      { cadastralNumber: { [Op.iLike]: `%${query.q}%` } },
+      { slug: { [Op.iLike]: `%${q}%` } },
+      { district: { [Op.iLike]: `%${q}%` } },
+      { cadastralNumber: { [Op.iLike]: `%${q}%` } },
+      ...(translationIds.length ? [{ id: { [Op.in]: translationIds } }] : []),
     ];
   }
   return where;
@@ -108,12 +128,24 @@ module.exports = async (app) => {
     '/objects',
     { preHandler: ensureAuth('admin') },
     route(async (request) => {
-      const items = await app.db.InvestmentObject.findAll({
-        where: listWhere(request.query),
+      const { page, limit, offset } = pageOptions(request.query);
+      const { count, rows } = await app.db.InvestmentObject.findAndCountAll({
+        where: await listWhere(app, request.query),
         include,
+        distinct: true,
         order: [['updatedAt', 'DESC']],
+        limit,
+        offset,
       });
-      return { items };
+      return {
+        items: rows,
+        meta: {
+          page,
+          limit,
+          total: count,
+          totalPages: Math.max(1, Math.ceil(count / limit)),
+        },
+      };
     }),
   );
 

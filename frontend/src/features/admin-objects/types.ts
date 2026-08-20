@@ -39,3 +39,15 @@ export type AdminObjectPayload = Omit<Partial<AdminObject>, "translations"> & {
   translations?: Partial<Record<"uz" | "ru", AdminTranslation>>;
   media?: AdminMedia[];
 };
+
+export type AdminObjectsMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type AdminObjectsListResponse = {
+  items: AdminObject[];
+  meta: AdminObjectsMeta;
+};

@@ -60,7 +60,7 @@ export function DashboardShell({ activeSection, children, role, session }: Props
           <Link href="/" className="dashboard-brand"><span className="dashboard-brand-mark"><Map size={21} /></span><span className="dashboard-brand-copy"><strong>Invest Tuman</strong><small>INVESTMENT PORTAL</small></span></Link>
           <button className="dashboard-collapse" type="button" aria-label="Menyuni yig‘ish" onClick={() => setCollapsed((value) => !value)}><Menu size={19} /></button>
         </div>
-        <Link className="dashboard-create" href={primaryAction.href}><PrimaryIcon size={19} /><span>{primaryAction.label}</span></Link>
+        {role === 'admin' ? null : <Link className="dashboard-create" href={primaryAction.href}><PrimaryIcon size={19} /><span>{primaryAction.label}</span></Link>}
         <nav className="dashboard-nav">
           <p>ASOSIY</p>
           {navigation.map(({ icon: Icon, href, label, section }) => <Link className={`dashboard-nav-link ${section === activeSection ? 'active' : ''}`} href={href} key={href}><Icon size={18} /><span>{label}</span></Link>)}
@@ -75,7 +75,8 @@ export function DashboardShell({ activeSection, children, role, session }: Props
       <section className="dashboard-stage">
         <header className="dashboard-topbar">
           <div><p className="dashboard-breadcrumb">Kabinet / <b>{breadcrumb}</b></p></div>
-          <div className="dashboard-top-actions"><button type="button" aria-label="Qidiruv"><Search size={18} /></button><button type="button" className="dashboard-notification" aria-label="Xabarnomalar"><Bell size={18} /><i /></button><div className="dashboard-divider" /><button type="button" className="dashboard-profile-button" onClick={() => setProfileOpen((value) => !value)}><span className="dashboard-avatar">{initials}</span><ChevronDown size={16} /></button></div>
+          <div className="dashboard-page-actions" id="dashboard-page-actions" />
+          <div className="dashboard-top-actions">{role === 'admin' && activeSection === 'projects' ? null : <button type="button" aria-label="Qidiruv"><Search size={18} /></button>}<button type="button" className="dashboard-notification" aria-label="Xabarnomalar"><Bell size={18} /><i /></button><div className="dashboard-divider" /><button type="button" className="dashboard-profile-button" onClick={() => setProfileOpen((value) => !value)}><span className="dashboard-avatar">{initials}</span><ChevronDown size={16} /></button></div>
           {profileOpen ? <div className="dashboard-profile-menu"><div><span className="dashboard-avatar">{initials}</span><p><b>{userName}</b><small>{session.user.email}</small></p></div><Link href="/dashboard/profile"><UserRound size={16} />Profil sozlamalari</Link><button onClick={logout}><LogOut size={16} />Chiqish</button></div> : null}
         </header>
         <main className={`dashboard-content dashboard-content--${activeSection}`}>{children}</main>
