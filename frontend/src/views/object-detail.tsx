@@ -35,16 +35,34 @@ function Facts({
   );
 }
 
-export function ObjectDetail({ slug }: { slug: string }) {
+export function ObjectDetail({
+  initialLocale,
+  initialObject,
+  slug,
+}: {
+  initialLocale?: "uz" | "ru";
+  initialObject?: InvestmentObject;
+  slug: string;
+}) {
   const { locale, t } = useLanguage();
-  const [object, setObject] = useState<InvestmentObject | null>(null);
+  const [object, setObject] = useState<InvestmentObject | null>(
+    initialObject ?? null,
+  );
+  const [loadedLocale, setLoadedLocale] = useState<string | null>(
+    initialObject ? (initialLocale ?? locale) : null,
+  );
   const [error, setError] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   useEffect(() => {
+    if (object?.slug === slug && loadedLocale === locale) return;
     let cancelled = false;
     api<InvestmentObject>(`/objects/${slug}`, {}, locale)
       .then((value) => {
-        if (!cancelled) setObject(value);
+        if (!cancelled) {
+          setError(false);
+          setObject(value);
+          setLoadedLocale(locale);
+        }
       })
       .catch(() => {
         if (!cancelled) setError(true);
@@ -52,7 +70,7 @@ export function ObjectDetail({ slug }: { slug: string }) {
     return () => {
       cancelled = true;
     };
-  }, [locale, slug]);
+  }, [loadedLocale, locale, object?.slug, slug]);
   if (error)
     return (
       <main className="center-state">
