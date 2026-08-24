@@ -3,7 +3,6 @@
 require('dotenv').config();
 
 const db = require('./models');
-
 const TASHKENT_DISTRICT_ARCGIS_URL =
   'https://services5.arcgis.com/Kri0Q7xwN5k6MG7L/ArcGIS/rest/services/tashkent_districts/FeatureServer/0/query?where=OBJECTID%3D17&outFields=*&returnGeometry=true&outSR=4326&f=geojson';
 
