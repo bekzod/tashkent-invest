@@ -6,7 +6,12 @@ const Fastify = require('fastify');
 const cors = require('@fastify/cors');
 const db = require('./db/models');
 
-const defaultAllowedOrigins = ['http://localhost:3000', 'https://tashkent-invest.vercel.app'];
+const defaultAllowedOrigins = [
+  'http://localhost:3000',
+  'https://tashkent-invest.vercel.app',
+  'https://toshkent-tuman-invest.uz',
+  'https://www.toshkent-tuman-invest.uz',
+];
 
 function allowedOrigins() {
   const configuredOrigins = (process.env.FRONT_HOST_NAME || '')

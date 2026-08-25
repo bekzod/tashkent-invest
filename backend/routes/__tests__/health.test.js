@@ -11,20 +11,24 @@ test('GET /health returns a ready payload', async () => {
   await app.close();
 });
 
-test('allows the production Vercel frontend through CORS', async () => {
-  const app = await buildApp({ logger: false });
-  const response = await app.inject({
-    method: 'OPTIONS',
-    url: '/health',
-    headers: {
-      origin: 'https://tashkent-invest.vercel.app',
-      'access-control-request-method': 'GET',
-    },
-  });
+for (const origin of [
+  'https://tashkent-invest.vercel.app',
+  'https://toshkent-tuman-invest.uz',
+  'https://www.toshkent-tuman-invest.uz',
+]) {
+  test(`allows ${origin} through CORS`, async () => {
+    const app = await buildApp({ logger: false });
+    const response = await app.inject({
+      method: 'OPTIONS',
+      url: '/health',
+      headers: {
+        origin,
+        'access-control-request-method': 'GET',
+      },
+    });
 
-  expect(response.statusCode).toBe(204);
-  expect(response.headers['access-control-allow-origin']).toBe(
-    'https://tashkent-invest.vercel.app',
-  );
-  await app.close();
-});
+    expect(response.statusCode).toBe(204);
+    expect(response.headers['access-control-allow-origin']).toBe(origin);
+    await app.close();
+  });
+}
