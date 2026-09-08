@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import type { InvestmentObject } from "@/entities/investment-object/types";
+import { apiBaseUrl } from "@/shared/api/base-url";
 
 const fallbackSiteUrl = "https://invest-tuman.uz";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || fallbackSiteUrl;
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 export const site = {
   name: "Invest Tuman",
@@ -110,7 +110,7 @@ export function structuredData(data: unknown) {
 }
 
 export async function fetchPublicObject(slug: string, locale = "uz") {
-  const response = await fetch(`${apiUrl}/objects/${encodeURIComponent(slug)}`, {
+  const response = await fetch(`${apiBaseUrl}/objects/${encodeURIComponent(slug)}`, {
     headers: { "Accept-Language": locale },
     next: { revalidate: 300 },
   });
@@ -120,7 +120,7 @@ export async function fetchPublicObject(slug: string, locale = "uz") {
 }
 
 export async function fetchPublicObjects(limit = 48, locale = "uz") {
-  const response = await fetch(`${apiUrl}/objects?limit=${limit}`, {
+  const response = await fetch(`${apiBaseUrl}/objects?limit=${limit}`, {
     headers: { "Accept-Language": locale },
     next: { revalidate: 300 },
   });
@@ -130,7 +130,7 @@ export async function fetchPublicObjects(limit = 48, locale = "uz") {
 }
 
 export async function fetchPublicStatistics(locale = "uz") {
-  const response = await fetch(`${apiUrl}/statistics`, {
+  const response = await fetch(`${apiBaseUrl}/statistics`, {
     headers: { "Accept-Language": locale },
     next: { revalidate: 300 },
   });
