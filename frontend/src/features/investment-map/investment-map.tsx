@@ -14,6 +14,7 @@ import {
   objectSelectionGeometry,
   type MapFilters,
 } from "./map-utils";
+import { MapRequestCoordinator } from "./map-request";
 import { PencilRuler } from "lucide-react";
 
 const TASHKENT_DISTRICT: [number, number] = [69.220651, 41.391335];
@@ -110,11 +111,19 @@ export function InvestmentMap({
   const popupRef = useRef<Popup | null>(null);
   const polygonRef = useRef<GeoJSON.Polygon | undefined>(undefined);
   const [drawing, setDrawing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const { locale, t } = useLanguage();
   const filtersRef = useRef(filters);
   const selectedRef = useRef(selected);
   const drawingRef = useRef(false);
   const showControlsRef = useRef(showControls);
+  const onFeaturesRef = useRef(onFeatures);
+  const onSelectRef = useRef(onSelect);
+  const [coordinator] = useState(() => new MapRequestCoordinator());
+  const mapIsReadyRef = useRef(false);
+  const loadRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
     filtersRef.current = filters;
@@ -125,16 +134,26 @@ export function InvestmentMap({
   useEffect(() => {
     drawingRef.current = drawing;
   }, [drawing]);
+  useEffect(() => {
+    onFeaturesRef.current = onFeatures;
+  }, [onFeatures]);
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
 
   const load = useCallback(async () => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !mapIsReadyRef.current) return;
+    const request = coordinator.begin();
+    setIsLoading(true);
+    setLoadError(null);
     try {
       const collection = await api<FeatureCollection>(
         `/objects/map?${buildMapQuery(bounds(map), filtersRef.current)}`,
-        {},
+        { signal: request.signal },
         locale,
       );
+      if (!coordinator.isCurrent(request.id)) return;
       const visible =
         maxVisible && collection.features.length > maxVisible
           ? {
@@ -152,11 +171,26 @@ export function InvestmentMap({
       (
         map.getSource("objects") as unknown as GeoJsonSource | undefined
       )?.setData(visible);
-      onFeatures(collection.features);
-    } catch {
-      onFeatures([]);
+      onFeaturesRef.current(collection.features);
+      setHasLoaded(true);
+    } catch (error) {
+      if (!coordinator.isCurrent(request.id)) return;
+      if (error instanceof Error && error.name === "AbortError") return;
+      setLoadError(
+        locale === "ru"
+          ? "Не удалось загрузить объекты карты."
+          : "Xarita obyektlarini yuklab bo‘lmadi.",
+      );
+    } finally {
+      if (coordinator.isCurrent(request.id)) setIsLoading(false);
     }
-  }, [locale, maxVisible, onFeatures]);
+  }, [coordinator, locale, maxVisible]);
+
+  useEffect(() => {
+    loadRef.current = () => {
+      void load();
+    };
+  }, [load]);
 
   useEffect(() => {
     let disposed = false;
@@ -181,6 +215,7 @@ export function InvestmentMap({
         zoom: 10,
       });
       mapRef.current = map;
+      mapIsReadyRef.current = false;
       popupRef.current = new maplibre.Popup({
         closeButton: false,
         closeOnClick: false,
@@ -349,10 +384,12 @@ export function InvestmentMap({
             maxZoom: 13,
           });
         setSelectedObject(map, selectedRef.current, false);
-        void load();
+        mapIsReadyRef.current = true;
+        loadRef.current();
       });
       map.on("moveend", () => {
-        if (!drawingRef.current) void load();
+        if (!drawingRef.current)
+          coordinator.debounce(() => loadRef.current());
       });
       map.on("click", "clusters", (event) => {
         const feature = event.features?.[0];
@@ -376,7 +413,7 @@ export function InvestmentMap({
         const feature = event.features?.[0];
         if (!feature) return;
         popupRef.current?.remove();
-        onSelect({
+        onSelectRef.current({
           ...(feature.properties as InvestmentObject),
           coordinates: (feature.geometry as GeoJSON.Point).coordinates as [
             number,
@@ -408,15 +445,20 @@ export function InvestmentMap({
     })();
     return () => {
       disposed = true;
+      mapIsReadyRef.current = false;
+      coordinator.dispose();
       popupRef.current?.remove();
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [cluster, load, onFeatures, onSelect]);
+  }, [cluster, coordinator]);
 
   useEffect(() => {
-    void load();
-  }, [filters, load]);
+    const refresh = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(refresh);
+  }, [filters, locale, load]);
   useEffect(() => {
     const source = mapRef.current?.getSource("district-boundary") as unknown as
       GeoJsonSource | undefined;
@@ -522,13 +564,30 @@ export function InvestmentMap({
     filters.areaKind === "manual" && Boolean(filters.polygon);
 
   return (
-    <div className="map-shell">
+    <div className="map-shell" aria-busy={isLoading}>
       <div
         ref={holder}
         className="map-canvas"
         aria-label="Toshkent investitsiya xaritasi"
         data-selected-object-id={selected?.id || ""}
       />
+      {isLoading && (
+        <div className="map-loading-overlay" role="status" aria-live="polite">
+          {locale === "ru" ? "Обновление карты…" : "Xarita yangilanmoqda…"}
+        </div>
+      )}
+      {loadError && (
+        <div
+          className="map-load-error"
+          role="alert"
+          data-initial-error={!hasLoaded || undefined}
+        >
+          <span>{loadError}</span>
+          <button type="button" onClick={() => void load()}>
+            {t("retry")}
+          </button>
+        </div>
+      )}
       {showControls && (
         <div className="map-actions">
           {!drawing && !hasManualPolygon && (
