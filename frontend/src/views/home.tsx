@@ -30,6 +30,15 @@ function ProcessStep({ number, title, children }: { number: number; title: strin
   return <div className="process-step"><span>{number}</span><div><strong>{title}</strong><p>{children}</p></div></div>;
 }
 
+function ContentPlaceholder() {
+  return <article className="reference-content-placeholder" data-testid="content-placeholder" aria-hidden="true">
+    <div className="reference-placeholder-image" />
+    <div className="reference-placeholder-body">
+      <span /><strong /><span className="reference-placeholder-short" /><small /><b />
+    </div>
+  </article>;
+}
+
 export default function HomePage({
   initialLocale = 'uz',
   initialObjects = [],
@@ -43,25 +52,42 @@ export default function HomePage({
   const router = useRouter();
   const [stats, setStats] = useState<Statistics | null>(initialStats);
   const [objects, setObjects] = useState<InvestmentObject[]>(initialObjects);
-  const [loadedLocale, setLoadedLocale] = useState(initialObjects.length || initialStats ? initialLocale : '');
+  const hasInitialData = initialObjects.length > 0 || initialStats !== null;
+  const [loadedLocale, setLoadedLocale] = useState(hasInitialData ? initialLocale : '');
+  const [isLoading, setIsLoading] = useState(!hasInitialData);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [selectedTypes, setSelectedTypes] = useState(['land', 'auction']);
   const [searchQuery, setSearchQuery] = useState('');
   const [area, setArea] = useState(58);
 
   useEffect(() => {
-    if (loadedLocale === locale) return;
-    Promise.all([
-      api<Statistics>('/statistics', {}, locale),
-      api<ObjectResponse>('/objects?limit=1&types=land&statuses=auction', {}, locale),
-      api<ObjectResponse>('/objects?limit=1&types=proposal&statuses=upcoming', {}, locale),
-      api<ObjectResponse>('/objects?limit=1&types=building&statuses=available', {}, locale),
-      api<ObjectResponse>('/objects?limit=1&types=proposal&statuses=available', {}, locale),
-    ]).then(([nextStats, auction, upcoming, building, proposal]) => {
-      setStats(nextStats);
-      setObjects(uniqueObjects([auction, upcoming, building, proposal].flatMap((response) => response.items)));
-      setLoadedLocale(locale);
-    }).catch(() => undefined);
-  }, [loadedLocale, locale]);
+    if (loadedLocale === locale && retryCount === 0) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setIsLoading(true);
+      setLoadError(null);
+      Promise.all([
+        api<Statistics>('/statistics', {}, locale),
+        api<ObjectResponse>('/objects?limit=1&types=land&statuses=auction', {}, locale),
+        api<ObjectResponse>('/objects?limit=1&types=proposal&statuses=upcoming', {}, locale),
+        api<ObjectResponse>('/objects?limit=1&types=building&statuses=available', {}, locale),
+        api<ObjectResponse>('/objects?limit=1&types=proposal&statuses=available', {}, locale),
+      ]).then(([nextStats, auction, upcoming, building, proposal]) => {
+        if (cancelled) return;
+        setStats(nextStats);
+        setObjects(uniqueObjects([auction, upcoming, building, proposal].flatMap((response) => response.items)));
+        setLoadedLocale(locale);
+        setRetryCount(0);
+      }).catch(() => {
+        if (!cancelled) setLoadError(locale === 'ru' ? 'Данные не удалось загрузить. Повторите попытку.' : 'Ma’lumotlarni yuklab bo‘lmadi. Qayta urinib ko‘ring.');
+      }).finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    });
+    return () => { cancelled = true; };
+  }, [loadedLocale, locale, retryCount]);
 
   const statCards = [
     { key: 'objects', value: stats?.objects ?? '—', icon: Building2 },
@@ -138,7 +164,14 @@ export default function HomePage({
     <section id="projects" className="landing-container reference-content-grid">
       <div className="reference-popular" id="news">
         <div className="reference-section-heading"><h2>{t('popular')}</h2><Link href="/map">{t('seeAll')} <ArrowRight size={15} /></Link></div>
-        <div className="reference-card-grid">{objects.map((object) => <ObjectCard object={object} key={object.id} />)}</div>
+        <div className="reference-card-grid" aria-busy={isLoading}>
+          {objects.map((object) => <ObjectCard object={object} key={object.id} />)}
+          {isLoading && objects.length === 0 && Array.from({ length: 4 }, (_, index) => <ContentPlaceholder key={index} />)}
+        </div>
+        {loadError && <div className="reference-load-error" role="alert">
+          <p>{loadError}</p>
+          <button type="button" onClick={() => setRetryCount((count) => count + 1)} disabled={isLoading}>{t('retry')}</button>
+        </div>}
         <section className="reference-categories"><h2>{t('categories')}</h2><div>{categories.map(({ icon: Icon, label, count, sector }) => <Link href={`/map?sectors=${sector}`} className="category-card" key={label}><Icon size={21} /><span><strong>{label}</strong><small>{count} {t('objects')}</small></span></Link>)}</div></section>
       </div>
       <aside className="reference-process" id="about">
