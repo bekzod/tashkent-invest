@@ -22,6 +22,10 @@ import type {
 import { useLanguage } from "@/shared/i18n/language-provider";
 import type { MessageKey } from "@/shared/i18n/messages";
 import { statusMessageKey } from "@/shared/lib/dashboard";
+import {
+  parseOptionalCoordinate,
+  validateLocation,
+} from "./location-validation";
 
 const stepKeys: MessageKey[] = ["stepMain", "stepLocation", "stepTerms", "stepMedia", "stepReview"];
 const sectors = [
@@ -82,6 +86,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
     cadastralNumber: object?.cadastralNumber || "",
     latitude: object?.latitude?.toString() || "",
     longitude: object?.longitude?.toString() || "",
+    siteGeometry: object?.siteGeometry ?? null,
     landAreaHa: object?.landAreaHa?.toString() || "",
     buildingAreaSqm: object?.buildingAreaSqm?.toString() || "",
     usableAreaSqm: object?.usableAreaSqm?.toString() || "",
@@ -93,6 +98,20 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
     ru: translation(object, "ru"),
     media: object?.media || ([] as AdminMedia[]),
   }));
+  const locationValidation = useMemo(
+    () => validateLocation(form.latitude, form.longitude),
+    [form.latitude, form.longitude],
+  );
+  const locationError = locationValidation.code
+    ? t(
+        {
+          bothRequired: "mapPickerBothCoordinates",
+          latitudeRange: "mapPickerLatitudeRange",
+          longitudeRange: "mapPickerLongitudeRange",
+          outsideDistrict: "mapPickerOutsideDistrict",
+        }[locationValidation.code] as MessageKey,
+      )
+    : "";
   const publishIssues = useMemo(
     () => {
       const russianStarted = hasTranslationContent(form.ru);
@@ -107,13 +126,13 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
         russianStarted && !form.ru.description && t("russianDetailedDescription"),
         !form.district && t("requiredDistrict"),
         !form.cadastralNumber && t("requiredCadastral"),
-        !form.latitude && t("latitude"),
-        !form.longitude && t("longitude"),
+        !locationValidation.point && !locationValidation.code && t("latitude"),
+        locationValidation.code && locationError,
         !form.investmentAmountUsd && t("requiredInvestment"),
         !form.sectors.length && t("requiredSector"),
       ].filter(Boolean);
     },
-    [form, t],
+    [form, locationError, locationValidation.code, locationValidation.point, t],
   );
   const set = (key: string, value: string | string[]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -126,7 +145,27 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
       ...current,
       [locale]: { ...current[locale], [key]: value },
     }));
+  const setLocation = (latitude: string, longitude: string) =>
+    setForm((current) => ({
+      ...current,
+      latitude,
+      longitude,
+      siteGeometry:
+        current.latitude === latitude && current.longitude === longitude
+          ? current.siteGeometry
+          : null,
+    }));
+  const setLocationCoordinate = (key: "latitude" | "longitude", value: string) =>
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+      siteGeometry: current[key] === value ? current.siteGeometry : null,
+    }));
   const submit = async (publish = false) => {
+    if (locationValidation.code) {
+      setError(locationError);
+      return;
+    }
     setSaving(true);
     setError("");
     const payload: AdminObjectPayload = {
@@ -136,8 +175,9 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
           ? "available"
           : form.status
         : "draft",
-      latitude: Number(form.latitude) || undefined,
-      longitude: Number(form.longitude) || undefined,
+      latitude: parseOptionalCoordinate(form.latitude) ?? null,
+      longitude: parseOptionalCoordinate(form.longitude) ?? null,
+      siteGeometry: form.siteGeometry,
       landAreaHa: Number(form.landAreaHa) || undefined,
       buildingAreaSqm: Number(form.buildingAreaSqm) || undefined,
       usableAreaSqm: Number(form.usableAreaSqm) || undefined,
@@ -296,7 +336,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
               latitude={form.latitude}
               longitude={form.longitude}
               onChange={({ latitude, longitude }) =>
-                setForm((current) => ({ ...current, latitude, longitude }))
+                setLocation(latitude, longitude)
               }
             />
             <div className="admin-form-grid">
@@ -304,18 +344,33 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                 <input
                   type="number"
                   step="any"
+                  min="-90"
+                  max="90"
                   value={form.latitude}
-                  onChange={(event) => set("latitude", event.target.value)}
+                  aria-invalid={Boolean(locationError)}
+                  onChange={(event) =>
+                    setLocationCoordinate("latitude", event.target.value)
+                  }
                 />
               </Field>
               <Field label={t("longitude")}>
                 <input
                   type="number"
                   step="any"
+                  min="-180"
+                  max="180"
                   value={form.longitude}
-                  onChange={(event) => set("longitude", event.target.value)}
+                  aria-invalid={Boolean(locationError)}
+                  onChange={(event) =>
+                    setLocationCoordinate("longitude", event.target.value)
+                  }
                 />
               </Field>
+              {locationError ? (
+                <p className="admin-location-coordinate-error" role="alert">
+                  {locationError}
+                </p>
+              ) : null}
               <Field wide label={t("cadastralNumber")}>
                 <input
                   value={form.cadastralNumber}

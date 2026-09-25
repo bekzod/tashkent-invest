@@ -4735,20 +4735,82 @@ body {
   line-height: 1.5;
 }
 .admin-location-picker {
+  min-width: 0;
   overflow: hidden;
   margin: 16px 0;
   border: 1px solid #dce1ea;
   border-radius: 9px;
+  background: #fff;
 }
-.admin-location-picker > div {
+.admin-location-picker-canvas {
+  width: 100%;
   height: 310px;
+  background: #eef1f5;
+}
+.admin-location-picker-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid #e5e8ef;
+  background: #fff;
+}
+.admin-location-picker-toolbar button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  color: #4d2dd3;
+  border: 1px solid #d9d2f8;
+  border-radius: 8px;
+  background: #f8f6ff;
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+.admin-location-picker-toolbar button:hover:not(:disabled) {
+  border-color: #623bff;
+  background: #f0edff;
+}
+.admin-location-picker-toolbar button:focus-visible {
+  outline: 3px solid rgb(98 59 255 / 0.2);
+  outline-offset: 2px;
+}
+.admin-location-picker-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 .admin-location-picker p {
   margin: 0;
   padding: 9px 12px;
   color: #697386;
-  background: #fbfcfe;
   font-size: 0.75rem;
+  line-height: 1.45;
+}
+.admin-location-picker-help,
+.admin-location-picker-status {
+  background: #fbfcfe;
+}
+.admin-location-picker-status {
+  border-top: 1px solid #edf0f4;
+}
+.admin-location-picker .admin-location-picker-error,
+.admin-location-coordinate-error {
+  color: #9f2727;
+  background: #fff3f3;
+}
+.admin-location-picker .admin-location-picker-warning {
+  color: #76550b;
+  background: #fff8df;
+}
+.admin-location-coordinate-error {
+  grid-column: 1/-1;
+  margin: -8px 0 0;
+  padding: 9px 12px;
+  border: 1px solid #f2d7a0;
+  border-radius: 8px;
+  font-size: 0.78rem;
 }
 .panorama-viewer {
   margin: 28px 0;
@@ -4910,6 +4972,33 @@ body {
 }
 
 @media (max-width: 760px) {
+  .invest-dashboard,
+  .invest-dashboard.is-collapsed {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: 72px minmax(0, 1fr);
+    overflow-x: hidden;
+  }
+  .dashboard-sidebar {
+    display: flex;
+    width: 72px;
+  }
+  .dashboard-stage,
+  .dashboard-content {
+    width: 100%;
+    min-width: 0;
+  }
+  .dashboard-topbar {
+    height: 64px;
+    padding-inline: 12px;
+  }
+  .dashboard-breadcrumb,
+  .dashboard-divider {
+    display: none;
+  }
+  .dashboard-content {
+    padding: 0;
+  }
   .site-header {
     grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 8px;
@@ -4925,5 +5014,47 @@ body {
   }
   .auth-card {
     padding: 22px 18px;
+  }
+  .admin-editor {
+    width: 100%;
+    padding: 20px 14px;
+    overflow-x: hidden;
+  }
+  .admin-form-card {
+    padding: 18px 14px;
+  }
+  .admin-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .admin-steps {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+  }
+  .admin-steps button {
+    min-height: 44px;
+    justify-content: center;
+    padding-inline: 2px;
+    font-size: 0;
+  }
+  .admin-steps span {
+    flex: 0 0 26px;
+    width: 26px;
+    height: 26px;
+    font-size: 0.7rem;
+  }
+  .admin-editor-actions {
+    margin-right: -14px;
+    margin-left: -14px;
+    padding: 14px;
+  }
+  .admin-location-picker-canvas {
+    height: 280px;
+  }
+  .admin-location-picker-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .admin-location-picker-toolbar button {
+    width: 100%;
   }
 }

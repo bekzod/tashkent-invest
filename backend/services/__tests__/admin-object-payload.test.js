@@ -1,7 +1,7 @@
 'use strict';
 
 const { test, expect } = require('bun:test');
-const { normalizeObjectPayload } = require('../admin-object-payload');
+const { applyLocationGeometryPolicy, normalizeObjectPayload } = require('../admin-object-payload');
 
 const publishPayload = {
   slug: 'logistics-hub-2026',
@@ -9,8 +9,8 @@ const publishPayload = {
   status: 'available',
   district: 'Yunusobod',
   cadastralNumber: '10:01:01:0001',
-  latitude: 41.37,
-  longitude: 69.29,
+  latitude: 41.391335,
+  longitude: 69.220651,
   landAreaHa: 5,
   investmentAmountUsd: 500000,
   sectors: ['logistics'],
@@ -106,4 +106,69 @@ test('validates point and polygon coordinates', () => {
       },
     }),
   ).toThrow('closed');
+});
+
+test('keeps coordinate clearing explicit and requires the pair together', () => {
+  expect(normalizeObjectPayload({ status: 'draft', latitude: '', longitude: '' })).toMatchObject({
+    latitude: null,
+    longitude: null,
+  });
+  expect(() =>
+    normalizeObjectPayload({ status: 'draft', latitude: '41.39', longitude: '' }),
+  ).toThrow('together');
+  expect(() =>
+    normalizeObjectPayload({ status: 'draft', latitude: 'not-a-number', longitude: '69.2' }),
+  ).toThrow('Latitude');
+});
+
+test('rejects a published point outside Toshkent district', () => {
+  expect(() =>
+    normalizeObjectPayload({ ...publishPayload, latitude: 41.3111, longitude: 69.2797 }),
+  ).toThrow('outside Toshkent district');
+  expect(normalizeObjectPayload(publishPayload)).toMatchObject({
+    latitude: 41.391335,
+    longitude: 69.220651,
+  });
+});
+
+test('clears stale geometry when an existing point moves', () => {
+  const geometry = {
+    type: 'Polygon',
+    coordinates: [
+      [
+        [69.21, 41.38],
+        [69.22, 41.38],
+        [69.22, 41.39],
+        [69.21, 41.38],
+      ],
+    ],
+  };
+  const existing = { latitude: '41.38', longitude: '69.21', siteGeometry: geometry };
+  const moved = applyLocationGeometryPolicy(
+    existing,
+    { latitude: 41.39, longitude: 69.22 },
+    { latitude: 41.39, longitude: 69.22 },
+  );
+  expect(moved.siteGeometry).toBeNull();
+  expect(
+    applyLocationGeometryPolicy(
+      existing,
+      { latitude: 41.5, longitude: 69.3, siteGeometry: geometry },
+      { latitude: 41.5, longitude: 69.3, siteGeometry: geometry },
+    ).siteGeometry,
+  ).toBeNull();
+  expect(
+    applyLocationGeometryPolicy(
+      existing,
+      { latitude: 41.384, longitude: 69.218, siteGeometry: geometry },
+      { latitude: 41.384, longitude: 69.218, siteGeometry: geometry },
+    ).siteGeometry,
+  ).toEqual(geometry);
+  expect(
+    applyLocationGeometryPolicy(
+      existing,
+      { latitude: 41.38, longitude: 69.21 },
+      { latitude: 41.38, longitude: 69.21 },
+    ).siteGeometry,
+  ).toBeUndefined();
 });

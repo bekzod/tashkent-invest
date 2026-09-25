@@ -19,6 +19,7 @@ vi.mock('./api', () => ({
 }));
 
 beforeEach(() => {
+  vi.clearAllMocks();
   replaceMock.mockReset();
   vi.mocked(adminObjectsApi.create).mockResolvedValue({
     id: 'draft-1',
@@ -59,4 +60,47 @@ test('submits every Russian admin translation field in the draft payload', async
     }),
   });
   expect(replaceMock).toHaveBeenCalledWith('/dashboard/projects/draft-1/edit');
+});
+
+test('keeps blank coordinates null instead of submitting the Gulf of Guinea', async () => {
+  render(<LanguageProvider><ObjectEditor /></LanguageProvider>);
+  fireEvent.click(screen.getByRole('button', { name: /Qoralama saqlash/ }));
+
+  await waitFor(() => expect(adminObjectsApi.create).toHaveBeenCalledTimes(1));
+  expect(vi.mocked(adminObjectsApi.create).mock.calls[0][0]).toMatchObject({
+    latitude: null,
+    longitude: null,
+  });
+});
+
+test('requires the coordinate pair and invalidates stale geometry when a point moves', async () => {
+  const geometry: GeoJSON.Polygon = {
+    type: 'Polygon',
+    coordinates: [[[69.21, 41.38], [69.22, 41.38], [69.22, 41.39], [69.21, 41.38]]],
+  };
+  const object = {
+    id: 'object-1',
+    status: 'draft' as const,
+    latitude: 41.38,
+    longitude: 69.21,
+    siteGeometry: geometry,
+    translations: [],
+    media: [],
+  };
+  vi.mocked(adminObjectsApi.update).mockResolvedValue(object);
+  render(<LanguageProvider><ObjectEditor object={object} /></LanguageProvider>);
+  fireEvent.click(screen.getByRole('button', { name: /Joylashuv/ }));
+  fireEvent.change(screen.getByLabelText('Kenglik'), { target: { value: '' } });
+  fireEvent.click(screen.getByRole('button', { name: /Qoralama saqlash/ }));
+  expect(await screen.findByRole('alert')).toHaveTextContent(/birga kiriting/i);
+  expect(adminObjectsApi.update).not.toHaveBeenCalled();
+
+  fireEvent.change(screen.getByLabelText('Kenglik'), { target: { value: '41.39' } });
+  fireEvent.click(screen.getByRole('button', { name: /Qoralama saqlash/ }));
+  await waitFor(() => expect(adminObjectsApi.update).toHaveBeenCalledTimes(1));
+  expect(vi.mocked(adminObjectsApi.update).mock.calls[0][1]).toMatchObject({
+    latitude: 41.39,
+    longitude: 69.21,
+    siteGeometry: null,
+  });
 });

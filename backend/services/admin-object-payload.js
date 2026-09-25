@@ -1,6 +1,8 @@
 'use strict';
 
 const { URL } = require('node:url');
+const { districtBoundary } = require('../db/data/tashkent-district-geodata');
+const { pointInPolygon } = require('../utils/geo');
 
 const objectTypes = new Set(['land', 'building', 'proposal']);
 const objectStatuses = new Set(['draft', 'available', 'auction', 'upcoming', 'archived']);
@@ -23,14 +25,22 @@ function optionalNumber(value, label) {
 }
 
 function coordinate(value, min, max, label) {
-  const number = optionalNumber(value, label);
-  if (number !== undefined && (number < min || number > max))
+  if (value === undefined || value === null || value === '') validation(`${label} is out of range`);
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < min || number > max)
     validation(`${label} is out of range`);
   return number;
 }
 
+function coordinateField(body, field, min, max, label) {
+  if (!Object.hasOwn(body, field)) return undefined;
+  if (body[field] === null || (typeof body[field] === 'string' && !body[field].trim())) return null;
+  return coordinate(body[field], min, max, label);
+}
+
 function normalizeGeometry(value) {
-  if (value === undefined || value === null) return undefined;
+  if (value === undefined) return undefined;
+  if (value === null) return null;
   if (
     value.type !== 'Polygon' ||
     !Array.isArray(value.coordinates) ||
@@ -109,14 +119,21 @@ function normalizeObjectPayload(body = {}) {
     body.translations,
     status === 'draft' || status === 'archived',
   );
+  const hasLatitude = Object.hasOwn(body, 'latitude');
+  const hasLongitude = Object.hasOwn(body, 'longitude');
+  if (hasLatitude !== hasLongitude) validation('Latitude and longitude must be provided together');
+  const latitude = coordinateField(body, 'latitude', -90, 90, 'Latitude');
+  const longitude = coordinateField(body, 'longitude', -180, 180, 'Longitude');
+  if ((latitude == null) !== (longitude == null))
+    validation('Latitude and longitude must be provided together');
   const normalized = {
     slug: text(body.slug),
     type,
     status,
     district: text(body.district),
     cadastralNumber: text(body.cadastralNumber),
-    latitude: coordinate(body.latitude, -90, 90, 'Latitude'),
-    longitude: coordinate(body.longitude, -180, 180, 'Longitude'),
+    latitude,
+    longitude,
     siteGeometry: normalizeGeometry(body.siteGeometry),
     landAreaHa: optionalNumber(body.landAreaHa, 'Land area'),
     buildingAreaSqm: optionalNumber(body.buildingAreaSqm, 'Building area'),
@@ -149,8 +166,10 @@ function normalizeObjectPayload(body = {}) {
     longitude: normalized.longitude,
     investmentAmountUsd: normalized.investmentAmountUsd,
   })) {
-    if (value === undefined) validation(`${field} is required before publishing`);
+    if (value === undefined || value === null) validation(`${field} is required before publishing`);
   }
+  if (!pointInPolygon([normalized.longitude, normalized.latitude], districtBoundary.coordinates[0]))
+    validation('Location is outside Toshkent district');
   if (normalized.landAreaHa === undefined && normalized.buildingAreaSqm === undefined)
     validation('Land area or building area is required before publishing');
   if (!normalized.sectors.length) validation('At least one sector is required before publishing');
@@ -160,4 +179,31 @@ function normalizeObjectPayload(body = {}) {
   return normalized;
 }
 
-module.exports = { normalizeObjectPayload, objectStatuses, publicStatuses, objectTypes };
+function applyLocationGeometryPolicy(existing, requestBody = {}, payload = {}) {
+  if (!Object.hasOwn(requestBody, 'latitude') && !Object.hasOwn(requestBody, 'longitude'))
+    return payload;
+  const latitudeChanged =
+    payload.latitude !== undefined &&
+    (payload.latitude === null || Number(existing.latitude) !== Number(payload.latitude));
+  const longitudeChanged =
+    payload.longitude !== undefined &&
+    (payload.longitude === null || Number(existing.longitude) !== Number(payload.longitude));
+  if (latitudeChanged || longitudeChanged) {
+    const ring = payload.siteGeometry?.coordinates?.[0];
+    const point =
+      typeof payload.latitude === 'number' && typeof payload.longitude === 'number'
+        ? [payload.longitude, payload.latitude]
+        : null;
+    if (ring && point && pointInPolygon(point, ring)) return payload;
+    return { ...payload, siteGeometry: null };
+  }
+  return payload;
+}
+
+module.exports = {
+  applyLocationGeometryPolicy,
+  normalizeObjectPayload,
+  objectStatuses,
+  publicStatuses,
+  objectTypes,
+};

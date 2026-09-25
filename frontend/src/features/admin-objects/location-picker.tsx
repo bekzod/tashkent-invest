@@ -1,8 +1,49 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import maplibregl, { type Map as MapLibreMap, type Marker } from "maplibre-gl";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Crosshair, LocateFixed, MapPinOff } from "lucide-react";
+import maplibregl, {
+  type GeoJSONSource,
+  type Map as MapLibreMap,
+  type MapMouseEvent,
+  type Marker,
+} from "maplibre-gl";
+import { api } from "@/shared/api/client";
 import { useLanguage } from "@/shared/i18n/language-provider";
+import type { MessageKey } from "@/shared/i18n/messages";
+import {
+  getTashkentDistrict,
+  type GeographicArea,
+} from "@/features/investment-map/geographic-areas";
+import {
+  TASHKENT_DISTRICT_CENTER,
+  type LocationValidationCode,
+  validateLocation,
+} from "./location-validation";
+
+type LocationPoint = { latitude: string; longitude: string };
+type MapStatus = "loading" | "ready" | "error";
+
+const validationMessageKeys: Record<LocationValidationCode, MessageKey> = {
+  bothRequired: "mapPickerBothCoordinates",
+  latitudeRange: "mapPickerLatitudeRange",
+  longitudeRange: "mapPickerLongitudeRange",
+  outsideDistrict: "mapPickerOutsideDistrict",
+};
+
+const tileUrl =
+  process.env.NEXT_PUBLIC_MAP_TILE_URL ||
+  "https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png";
+const tileAttribution =
+  process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION ||
+  "© OpenStreetMap contributors";
+
+function formattedPoint(longitude: number, latitude: number): LocationPoint {
+  return {
+    latitude: latitude.toFixed(6),
+    longitude: longitude.toFixed(6),
+  };
+}
 
 export function LocationPicker({
   latitude,
@@ -11,64 +52,235 @@ export function LocationPicker({
 }: {
   latitude: string;
   longitude: string;
-  onChange: (point: { latitude: string; longitude: string }) => void;
+  onChange: (point: LocationPoint) => void;
 }) {
   const { t } = useLanguage();
-  const node = useRef<HTMLDivElement>(null);
-  const map = useRef<MapLibreMap | null>(null);
-  const marker = useRef<Marker | null>(null);
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+  const [mapInstance, setMapInstance] = useState<MapLibreMap | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [mapStatus, setMapStatus] = useState<MapStatus>("loading");
+  const [district, setDistrict] = useState<GeoJSON.Polygon>();
+  const [districtLoadFailed, setDistrictLoadFailed] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [geolocationError, setGeolocationError] = useState(false);
+  const onChangeRef = useRef(onChange);
+  const mapRef = useRef<MapLibreMap | null>(null);
+  const markerRef = useRef<Marker | null>(null);
+  const markerVisibleRef = useRef(false);
+
   useEffect(() => {
-    if (!node.current || map.current) return;
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  const attachContainer = useCallback((node: HTMLDivElement | null) => {
+    setContainer(node);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void api<GeographicArea[]>("/areas")
+      .then((areas) => {
+        if (!active) return;
+        const boundary = getTashkentDistrict(areas)?.geometry;
+        setDistrict(boundary);
+        setDistrictLoadFailed(!boundary);
+      })
+      .catch(() => {
+        if (active) setDistrictLoadFailed(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!container || mapRef.current) return;
     const instance = new maplibregl.Map({
-      container: node.current,
+      container,
       style: {
         version: 8,
         sources: {
-          osm: {
+          base: {
             type: "raster",
-            tiles: ["https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"],
+            tiles: [tileUrl],
             tileSize: 256,
-            attribution: "© OpenStreetMap contributors",
+            attribution: tileAttribution,
           },
         },
-        layers: [{ id: "osm", type: "raster", source: "osm" }],
+        layers: [{ id: "base", type: "raster", source: "base" }],
       },
-      center: [69.2797, 41.3111],
+      center: TASHKENT_DISTRICT_CENTER,
       zoom: 10,
     });
     instance.addControl(new maplibregl.NavigationControl(), "bottom-right");
-    instance.on("click", (event) =>
-      onChange({
-        latitude: event.lngLat.lat.toFixed(6),
-        longitude: event.lngLat.lng.toFixed(6),
-      }),
-    );
-    map.current = instance;
-    return () => {
-      instance.remove();
-      map.current = null;
-    };
-  }, [onChange]);
-  useEffect(() => {
-    const lat = Number(latitude);
-    const lng = Number(longitude);
-    if (!map.current || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
-    marker.current?.remove();
-    marker.current = new maplibregl.Marker({ color: "#623bff" })
-      .setLngLat([lng, lat])
-      .addTo(map.current);
-    map.current.flyTo({
-      center: [lng, lat],
-      zoom: Math.max(map.current.getZoom(), 14),
-      essential: true,
+    let loaded = false;
+    instance.on("load", () => {
+      loaded = true;
+      setMapReady(true);
+      setMapStatus("ready");
     });
-  }, [latitude, longitude]);
+    instance.on("error", () => {
+      if (!loaded) setMapStatus("error");
+    });
+    instance.on("click", (event: MapMouseEvent) => {
+      onChangeRef.current(formattedPoint(event.lngLat.lng, event.lngLat.lat));
+    });
+    mapRef.current = instance;
+    setMapInstance(instance);
+    return () => {
+      markerRef.current?.remove();
+      markerRef.current = null;
+      markerVisibleRef.current = false;
+      instance.remove();
+      mapRef.current = null;
+    };
+  }, [container]);
+
+  useEffect(() => {
+    if (!mapInstance || !mapReady || !district) return;
+    const feature: GeoJSON.Feature<GeoJSON.Polygon> = {
+      type: "Feature",
+      properties: {},
+      geometry: district,
+    };
+    const source = mapInstance.getSource("admin-district-boundary") as
+      | GeoJSONSource
+      | undefined;
+    if (source) {
+      source.setData(feature);
+      return;
+    }
+    mapInstance.addSource("admin-district-boundary", {
+      type: "geojson",
+      data: feature,
+    });
+    mapInstance.addLayer({
+      id: "admin-district-fill",
+      type: "fill",
+      source: "admin-district-boundary",
+      paint: { "fill-color": "#623bff", "fill-opacity": 0.08 },
+    });
+    mapInstance.addLayer({
+      id: "admin-district-line",
+      type: "line",
+      source: "admin-district-boundary",
+      paint: { "line-color": "#623bff", "line-width": 2 },
+    });
+  }, [district, mapInstance, mapReady]);
+
+  const validation = useMemo(
+    () => validateLocation(latitude, longitude, district),
+    [district, latitude, longitude],
+  );
+
+  useEffect(() => {
+    if (!mapInstance || !validation.point) {
+      if (markerVisibleRef.current) markerRef.current?.remove();
+      markerVisibleRef.current = false;
+      return;
+    }
+
+    if (!markerRef.current) {
+      const nextMarker = new maplibregl.Marker({ color: "#623bff", draggable: true });
+      nextMarker.on("dragend", () => {
+        const point = nextMarker.getLngLat();
+        onChangeRef.current(formattedPoint(point.lng, point.lat));
+      });
+      markerRef.current = nextMarker;
+    }
+    markerRef.current.setLngLat(validation.point);
+    if (!markerVisibleRef.current) {
+      markerRef.current.addTo(mapInstance);
+      markerVisibleRef.current = true;
+    }
+    const nextView = {
+      center: validation.point,
+      zoom: Math.max(mapInstance.getZoom(), 14),
+    };
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      mapInstance.jumpTo(nextView);
+    } else {
+      mapInstance.easeTo({ ...nextView, essential: false });
+    }
+  }, [mapInstance, validation]);
+
+  const resetView = () => {
+    mapInstance?.jumpTo({ center: TASHKENT_DISTRICT_CENTER, zoom: 10 });
+  };
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setGeolocationError(true);
+      return;
+    }
+    setGeolocationError(false);
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setLocating(false);
+        onChangeRef.current(formattedPoint(coords.longitude, coords.latitude));
+      },
+      () => {
+        setLocating(false);
+        setGeolocationError(true);
+      },
+      { enableHighAccuracy: true, maximumAge: 30_000, timeout: 10_000 },
+    );
+  };
+
+  const validationError = validation.code
+    ? t(validationMessageKeys[validation.code])
+    : "";
+  const statusText = locating
+    ? t("mapPickerLocating")
+    : geolocationError
+      ? t("mapPickerError")
+    : mapStatus === "loading"
+      ? t("mapPickerLoading")
+      : mapStatus === "error"
+        ? t("mapPickerError")
+        : validation.point
+          ? t("mapPickerSelected")
+          : t("mapPickerReady");
+
   return (
     <div className="admin-location-picker">
-      <div ref={node} />
-      <p>
-        {t("mapPickerHelp")}
+      <div
+        className="admin-location-picker-canvas"
+        ref={attachContainer}
+        aria-label={t("mapPickerInteractiveLabel")}
+      />
+      <div className="admin-location-picker-toolbar">
+        <button type="button" onClick={useCurrentLocation} disabled={locating}>
+          <LocateFixed size={17} aria-hidden="true" />
+          {t("mapPickerCurrentLocation")}
+        </button>
+        <button type="button" onClick={resetView}>
+          <Crosshair size={17} aria-hidden="true" />
+          {t("mapPickerReset")}
+        </button>
+        <button
+          type="button"
+          onClick={() => onChangeRef.current({ latitude: "", longitude: "" })}
+          disabled={!latitude && !longitude}
+        >
+          <MapPinOff size={17} aria-hidden="true" />
+          {t("mapPickerClear")}
+        </button>
+      </div>
+      <p className="admin-location-picker-help">{t("mapPickerHelp")}</p>
+      <p className="admin-location-picker-status" aria-live="polite" role="status">
+        {statusText}
       </p>
+      {validationError ? (
+        <p className="admin-location-picker-error" role="alert">
+          {validationError}
+        </p>
+      ) : districtLoadFailed ? (
+        <p className="admin-location-picker-warning" role="status">
+          {t("mapPickerBoundaryUnavailable")}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -4,7 +4,10 @@ const { randomUUID } = require('node:crypto');
 const { Op } = require('sequelize');
 const route = require('../../utils/async-handler');
 const ensureAuth = require('../../middleware/ensure-auth');
-const { normalizeObjectPayload } = require('../../services/admin-object-payload');
+const {
+  applyLocationGeometryPolicy,
+  normalizeObjectPayload,
+} = require('../../services/admin-object-payload');
 
 const include = [{ association: 'translations' }, { association: 'media' }];
 const coreFields = [
@@ -105,10 +108,7 @@ async function listWhere(app, query) {
     const translations = await app.db.InvestmentObjectTranslation.findAll({
       attributes: ['investmentObjectId'],
       where: {
-        [Op.or]: [
-          { title: { [Op.iLike]: `%${q}%` } },
-          { address: { [Op.iLike]: `%${q}%` } },
-        ],
+        [Op.or]: [{ title: { [Op.iLike]: `%${q}%` } }, { address: { [Op.iLike]: `%${q}%` } }],
       },
       raw: true,
     });
@@ -189,9 +189,10 @@ module.exports = async (app) => {
     '/objects/:id',
     { preHandler: ensureAuth('admin') },
     route(async (request, reply) => {
-      const payload = normalizeObjectPayload(request.body);
+      let payload = normalizeObjectPayload(request.body);
       const object = await app.db.InvestmentObject.findByPk(request.params.id);
       if (!object) return reply.code(404).send({ error: 'Object not found' });
+      payload = applyLocationGeometryPolicy(object, request.body, payload);
       await app.db.sequelize.transaction(async (transaction) => {
         const values = objectValues(payload);
         if (payload.slug || (!object.slug && payload.translations.uz?.title))

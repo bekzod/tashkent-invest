@@ -41,3 +41,21 @@ for (const origin of [
     await app.close();
   });
 }
+
+test('allows browser preflight for admin updates and deletes', async () => {
+  const app = await buildApp({ logger: false });
+  const response = await app.inject({
+    method: 'OPTIONS',
+    url: '/api/admin/objects/test-id',
+    headers: {
+      origin: 'http://localhost:3000',
+      'access-control-request-method': 'PUT',
+      'access-control-request-headers': 'authorization,content-type',
+    },
+  });
+
+  expect(response.statusCode).toBe(204);
+  expect(response.headers['access-control-allow-methods']).toContain('PUT');
+  expect(response.headers['access-control-allow-methods']).toContain('DELETE');
+  await app.close();
+});

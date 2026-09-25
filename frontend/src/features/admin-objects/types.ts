@@ -19,6 +19,7 @@ export type AdminObject = {
   cadastralNumber?: string;
   latitude?: number;
   longitude?: number;
+  siteGeometry?: GeoJSON.Polygon | null;
   landAreaHa?: number;
   buildingAreaSqm?: number;
   usableAreaSqm?: number;
@@ -35,7 +36,13 @@ export type AdminObject = {
   media: AdminMedia[];
 };
 
-export type AdminObjectPayload = Omit<Partial<AdminObject>, "translations"> & {
+export type AdminObjectPayload = Omit<
+  Partial<AdminObject>,
+  "translations" | "latitude" | "longitude" | "siteGeometry"
+> & {
+  latitude?: number | null;
+  longitude?: number | null;
+  siteGeometry?: GeoJSON.Polygon | null;
   translations?: Partial<Record<"uz" | "ru", AdminTranslation>>;
   media?: AdminMedia[];
 };

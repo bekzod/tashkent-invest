@@ -23,7 +23,10 @@ function allowedOrigins() {
 
 module.exports = async function buildApp(options = {}) {
   const app = Fastify({ logger: options.logger ?? true });
-  await app.register(cors, { origin: allowedOrigins() });
+  await app.register(cors, {
+    origin: allowedOrigins(),
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  });
   app.decorateRequest('apiRequestStart', null);
   app.addHook('onRequest', async (request) => {
     if (request.raw.url?.startsWith('/api/')) {
