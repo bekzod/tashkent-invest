@@ -27,6 +27,13 @@ test('keeps an explicitly requested public status in the database where clause',
   const where = buildPublicWhere(parseFilters({ statuses: 'auction' }));
 
   expect(where.status[Object.getOwnPropertySymbols(where.status)[0]]).toEqual(['auction']);
+  expect(where.isDemo).toBe(false);
+});
+
+test('only includes demo inventory when an explicit non-production caller requests it', () => {
+  const where = buildPublicWhere(parseFilters({}), { includeDemo: true });
+
+  expect(where.isDemo).toBeUndefined();
 });
 
 test('applies polygon and text filtering after database filtering', () => {

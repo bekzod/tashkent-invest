@@ -4,7 +4,7 @@ test("clicking a registry item selects and focuses its map object", async ({
   page,
 }) => {
   test.skip(!process.env.E2E_API_READY, "Requires the seeded local API.");
-  await page.goto("/map");
+  await page.goto("/uz/map");
 
   const card = page.getByTestId("map-result-card").first();
   await expect(card).toBeVisible();

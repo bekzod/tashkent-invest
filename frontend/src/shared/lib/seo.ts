@@ -46,6 +46,11 @@ export const seoCatalog = {
       description: "Invest Tuman investor kabinetiga xavfsiz kirish sahifasi.",
       imageAlt: "Invest Tuman investor kabineti",
     },
+    register: {
+      title: "Investor sifatida ro‘yxatdan o‘tish",
+      description: "Invest Tuman portalida xavfsiz investor hisobini yarating.",
+      imageAlt: "Invest Tuman investor ro‘yxatdan o‘tish sahifasi",
+    },
   },
   ru: {
     siteTitle: "Invest Tuman — инвестиционный портал Ташкентского района",
@@ -72,8 +77,15 @@ export const seoCatalog = {
     },
     login: {
       title: "Вход в кабинет инвестора",
-      description: "Безопасная страница входа в кабинет инвестора Invest Tuman.",
+      description:
+        "Безопасная страница входа в кабинет инвестора Invest Tuman.",
       imageAlt: "Кабинет инвестора Invest Tuman",
+    },
+    register: {
+      title: "Регистрация инвестора",
+      description:
+        "Создайте защищённый аккаунт инвестора на портале Invest Tuman.",
+      imageAlt: "Регистрация инвестора Invest Tuman",
     },
   },
 } as const;
@@ -120,7 +132,9 @@ export function publicPageMetadata({
     ru: absoluteUrl(localizedPath("ru", path)),
     "x-default": absoluteUrl(localizedPath("uz", path)),
   };
-  const pageTitle = title.includes(site.name) ? title : `${title} | ${site.name}`;
+  const pageTitle = title.includes(site.name)
+    ? title
+    : `${title} | ${site.name}`;
   const compactDescription = compactText(description);
   const socialImage = {
     url: absoluteUrl(`${localizedCanonicalPath}/opengraph-image`),
@@ -171,7 +185,18 @@ export function loginMetadata(locale: Locale): Metadata {
   };
 }
 
-export function objectMetadata(object: InvestmentObject, locale: Locale): Metadata {
+export function registerMetadata(locale: Locale): Metadata {
+  const copy = seoCatalog[locale].register;
+  return {
+    ...publicPageMetadata({ locale, path: "/register", ...copy }),
+    robots: { index: false, follow: false },
+  };
+}
+
+export function objectMetadata(
+  object: InvestmentObject,
+  locale: Locale,
+): Metadata {
   const area = object.landAreaHa
     ? locale === "uz"
       ? `${object.landAreaHa} ga`
@@ -192,7 +217,11 @@ export function objectMetadata(object: InvestmentObject, locale: Locale): Metada
           ? `${object.district} tumani`
           : `район ${object.district}`
         : undefined,
-      area ? (locale === "uz" ? `maydoni ${area}` : `площадь ${area}`) : undefined,
+      area
+        ? locale === "uz"
+          ? `maydoni ${area}`
+          : `площадь ${area}`
+        : undefined,
       amount
         ? locale === "uz"
           ? `investitsiya hajmi ${amount}`
@@ -230,23 +259,66 @@ export function structuredData(data: unknown) {
 }
 
 export async function fetchPublicObject(slug: string, locale = "uz") {
-  const response = await fetch(`${apiBaseUrl}/objects/${encodeURIComponent(slug)}`, {
-    headers: { "Accept-Language": locale },
-    next: { revalidate: 300 },
-  });
+  const response = await fetch(
+    `${apiBaseUrl}/objects/${encodeURIComponent(slug)}`,
+    {
+      headers: { "Accept-Language": locale },
+      next: { revalidate: 300 },
+    },
+  );
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Unable to load object ${slug}`);
   return response.json() as Promise<InvestmentObject>;
 }
 
 export async function fetchPublicObjects(limit = 48, locale = "uz") {
-  const response = await fetch(`${apiBaseUrl}/objects?limit=${limit}`, {
-    headers: { "Accept-Language": locale },
-    next: { revalidate: 300 },
-  });
-  if (!response.ok) return [];
-  const payload = (await response.json()) as { items?: InvestmentObject[] };
-  return payload.items || [];
+  const payload = await fetchPublicObjectsPage(1, limit, locale);
+  return payload.items;
+}
+
+type PublicObjectsPage = {
+  items: InvestmentObject[];
+  meta: { page: number; limit: number; total: number };
+};
+
+async function fetchPublicObjectsPage(
+  page: number,
+  limit: number,
+  locale: Locale | string,
+  indexable = false,
+): Promise<PublicObjectsPage> {
+  const query = new URLSearchParams({ limit: String(limit), page: String(page) });
+  if (indexable) query.set('indexable', 'true');
+  const response = await fetch(
+    `${apiBaseUrl}/objects?${query}`,
+    {
+      headers: { "Accept-Language": locale },
+      next: { revalidate: 300 },
+    },
+  );
+  if (!response.ok) return { items: [], meta: { page, limit, total: 0 } };
+  const payload = (await response.json()) as Partial<PublicObjectsPage>;
+  return {
+    items: payload.items || [],
+    meta: {
+      page: payload.meta?.page || page,
+      limit: payload.meta?.limit || limit,
+      total: payload.meta?.total ?? payload.items?.length ?? 0,
+    },
+  };
+}
+
+export async function fetchAllPublicObjects(locale: Locale, limit = 48) {
+  const bySlug = new Map<string, InvestmentObject>();
+  for (let page = 1; page <= 1000; page += 1) {
+    const payload = await fetchPublicObjectsPage(page, limit, locale, true);
+    for (const object of payload.items) {
+      if (object.slug && !bySlug.has(object.slug))
+        bySlug.set(object.slug, object);
+    }
+    if (!payload.items.length || bySlug.size >= payload.meta.total) break;
+  }
+  return [...bySlug.values()];
 }
 
 export async function fetchPublicStatistics(locale = "uz") {

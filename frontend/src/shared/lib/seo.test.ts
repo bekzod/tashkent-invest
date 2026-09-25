@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import type { InvestmentObject } from '@/entities/investment-object/types';
 import {
   compactText,
+  fetchAllPublicObjects,
   loginMetadata,
   objectMetadata,
   publicPageMetadata,
@@ -102,5 +103,40 @@ describe('localized SEO metadata', () => {
     expect(compact).toHaveLength(80);
     expect(compact.endsWith('…')).toBe(true);
     expect(compact).not.toMatch(/\s{2,}/);
+  });
+
+  test('fetches every public object page, uses the locale, and deduplicates slugs', async () => {
+    const requests: RequestInfo[] = [];
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      requests.push(input as RequestInfo);
+      const page = new URL(String(input)).searchParams.get('page');
+      const item = (slug: string, updatedAt: string) => ({
+        ...object,
+        id: slug,
+        slug,
+        updatedAt,
+      });
+      const payload =
+        page === '1'
+          ? { items: [item('bir', '2026-09-20T00:00:00.000Z'), item('ikki', '2026-09-21T00:00:00.000Z')], meta: { page: 1, limit: 2, total: 3 } }
+          : { items: [item('ikki', '2026-09-21T00:00:00.000Z'), item('uch', '2026-09-22T00:00:00.000Z')], meta: { page: 2, limit: 2, total: 3 } };
+      expect(new Headers(init?.headers).get('Accept-Language')).toBe('ru');
+      return new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as typeof fetch;
+
+    try {
+      const items = await fetchAllPublicObjects('ru', 2);
+      expect(items.map((item) => item.slug)).toEqual(['bir', 'ikki', 'uch']);
+      expect(requests.map(String)).toEqual([
+        'http://localhost:8080/api/objects?limit=2&page=1&indexable=true',
+        'http://localhost:8080/api/objects?limit=2&page=2&indexable=true',
+      ]);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

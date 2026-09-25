@@ -12,6 +12,12 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: 'draft',
       },
+      isDemo: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_demo',
+      },
       district: { type: DataTypes.STRING, allowNull: true },
       cadastralNumber: {
         type: DataTypes.STRING,

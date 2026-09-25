@@ -7,7 +7,7 @@ test("investor can log in, inspect a map object, and submit an application", asy
     !process.env.E2E_API_READY,
     "Requires the Docker-backed API and seeded PostgreSQL.",
   );
-  await page.goto("/login");
+  await page.goto("/uz/login");
   await expect(page.getByTestId("login-form")).toHaveAttribute(
     "data-hydrated",
     "true",
@@ -16,13 +16,13 @@ test("investor can log in, inspect a map object, and submit an application", asy
   await page.getByLabel(/password|parol/i).fill("invest2026");
   await page.getByRole("button", { name: /kirish|войти/i }).click();
   await page.waitForURL(/\/dashboard\/profile$/);
-  await page.goto("/map");
+  await page.goto("/uz/map");
   await page
     .locator('[data-testid="map-result-card"][data-object-status="available"]')
     .first()
     .getByRole("link", { name: /batafsil|подробнее/i })
     .click();
-  await page.waitForURL(/\/objects\//);
+  await page.waitForURL(/\/uz\/objects\//);
   await expect(
     page.getByRole("heading", { name: /qiziqish bildirish|интерес/i }),
   ).toBeVisible();

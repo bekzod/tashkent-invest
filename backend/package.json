@@ -12,6 +12,7 @@
     "format:check": "prettier --check .",
     "db:migrate": "sequelize-cli db:migrate --config db/config.js --migrations-path db/migrations",
     "db:seed": "node db/seed.js",
+    "db:seed:e2e": "node db/seed-e2e.js",
     "db:sync-areas": "node db/sync-geographic-areas.js",
     "db:sync-osm-footprints": "node db/sync-osm-footprints.js",
     "db:seed:geodata": "npm run db:sync-areas && npm run db:sync-osm-footprints"

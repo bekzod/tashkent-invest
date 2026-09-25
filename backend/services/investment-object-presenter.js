@@ -23,6 +23,7 @@ function preview(object, locale) {
     siteGeometry: object.siteGeometry,
     landAreaHa: object.landAreaHa,
     investmentAmountUsd: object.investmentAmountUsd,
+    updatedAt: object.updatedAt instanceof Date ? object.updatedAt.toISOString() : object.updatedAt,
     imageUrl: object.media?.find((media) => media.kind === 'image')?.url || null,
   };
 }

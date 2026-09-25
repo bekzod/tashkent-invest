@@ -7,7 +7,7 @@ test('landing keeps its hero controls inside a responsive viewport', async ({ pa
     { width: 390, height: 844 },
   ]) {
     await page.setViewportSize(viewport);
-    await page.goto('/');
+    await page.goto('/uz');
 
     await expect(page.locator('.site-header')).toBeVisible();
     await expect(page.locator('.reference-filter')).toBeVisible();
@@ -22,7 +22,7 @@ test('landing keeps its hero controls inside a responsive viewport', async ({ pa
 
 test('desktop filter remains inside the landing hero and on its right side', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1050 });
-  await page.goto('/');
+  await page.goto('/uz');
 
   const geometry = await page.locator('.reference-filter').evaluate((filter) => {
     const filterBox = filter.getBoundingClientRect();
@@ -39,7 +39,7 @@ test('desktop filter remains inside the landing hero and on its right side', asy
 
 test('hero search and statistic cards use one aligned discovery grid', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1050 });
-  await page.goto('/');
+  await page.goto('/uz');
 
   const measurements = await page.evaluate(() => {
     const search = document.querySelector<HTMLElement>('.reference-search')!.getBoundingClientRect();
@@ -64,7 +64,7 @@ test('landing renders unique popular cards without React duplicate-key warnings'
       duplicateKeyWarnings.push(message.text());
   });
 
-  await page.goto('/');
+  await page.goto('/uz');
   await expect.poll(() => page.locator('.reference-card-grid .object-card').count()).toBeGreaterThan(0);
 
   const objectIds = await page

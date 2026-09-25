@@ -17,6 +17,12 @@ function locale(request) {
 const include = [{ association: 'translations' }, { association: 'media' }];
 const publicStatusWhere = { [Op.in]: ['available', 'auction', 'upcoming'] };
 
+function publicWhere(filters, { indexable = false } = {}) {
+  return buildPublicWhere(filters, {
+    includeDemo: !indexable && process.env.INCLUDE_DEMO_DATA === 'true',
+  });
+}
+
 async function resolveAreaPolygon(app, filters, areaSlug) {
   if (!areaSlug) return;
   if (!/^[a-z0-9-]+$/.test(areaSlug))
@@ -38,7 +44,7 @@ module.exports = async (app) => {
       const limit = Math.min(48, Math.max(1, Number(request.query.limit || 12)));
       const objects = filterObjects(
         await app.db.InvestmentObject.findAll({
-          where: buildPublicWhere(filters),
+          where: publicWhere(filters, { indexable: request.query.indexable === 'true' }),
           include,
           order: [['createdAt', 'DESC']],
         }),
@@ -62,7 +68,7 @@ module.exports = async (app) => {
       await resolveAreaPolygon(app, filters, request.query.areaSlug);
       const objects = filterObjects(
         await app.db.InvestmentObject.findAll({
-          where: buildPublicWhere(filters),
+          where: publicWhere(filters),
           include,
         }),
         filters,
@@ -79,7 +85,11 @@ module.exports = async (app) => {
     '/:slug',
     route(async (request, reply) => {
       const object = await app.db.InvestmentObject.findOne({
-        where: { slug: request.params.slug, status: publicStatusWhere },
+        where: {
+          slug: request.params.slug,
+          status: publicStatusWhere,
+          ...(process.env.INCLUDE_DEMO_DATA === 'true' ? {} : { isDemo: false }),
+        },
         include,
       });
       if (!object) return reply.code(404).send({ error: 'Object not found' });

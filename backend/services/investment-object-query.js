@@ -127,13 +127,14 @@ function buildWhere(filters) {
   return where;
 }
 
-function buildPublicWhere(filters) {
+function buildPublicWhere(filters, { includeDemo = false } = {}) {
   const where = buildWhere(filters);
 
   // `statuses` is already validated against the public status enum. Keep a
   // caller's explicit status selection instead of replacing it with all
   // public statuses at the route level.
   where.status = { [Op.in]: filters.statuses.length ? filters.statuses : [...statuses] };
+  if (!includeDemo) where.isDemo = false;
 
   return where;
 }
