@@ -43,9 +43,28 @@ cd backend && bun run lint && bun run format:check && bun run test:coverage
 cd frontend && bun run lint && bun run test:coverage && bun run build
 ```
 
-Playwright test API/Postgres stackini talab qiladi:
+Playwright desktop (`1440x900`) va mobile (`390x844`, touch) Chromium
+loyihalarini ishlatadi. Birinchi ishga tushirishdan oldin brauzerni o‘rnating va
+testlar ro‘yxatini tekshiring:
 
 ```bash
 cd frontend
+bunx playwright install chromium
+bunx playwright test --list
+```
+
+API/Postgres talab qiladigan to‘liq E2E testlar uchun avval Docker stackining
+`healthy` holatga kelishini kuting, keyin testlarni ishga tushiring:
+
+```bash
+docker compose up --build --wait
+cd frontend
 E2E_API_READY=1 bun run test:e2e
 ```
+
+Alohida loyiha tekshiruvi uchun `--project=desktop-chromium` yoki
+`--project=mobile-chromium` ishlatiladi. Visual test helperi xarita tile'larini
+`frontend/e2e/fixtures/map-tile.svg` bilan almashtiradi, animatsiyalarni o‘chiradi
+va failure holatida screenshot, video hamda trace artefaktlarini saqlaydi. Fixture
+cleanup faqat `e2e-*` prefiksli aniq email va slug qiymatlari bilan bajarilishi
+kerak.
