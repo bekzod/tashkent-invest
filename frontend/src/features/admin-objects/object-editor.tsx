@@ -58,6 +58,16 @@ function translation(object: AdminObject | undefined, locale: "uz" | "ru") {
   );
 }
 
+function hasTranslationContent(value: AdminTranslation) {
+  return Boolean(
+    value.title.trim() ||
+      value.address.trim() ||
+      value.shortDescription.trim() ||
+      value.description.trim() ||
+      value.permittedBusinesses.length,
+  );
+}
+
 export function ObjectEditor({ object }: { object?: AdminObject }) {
   const router = useRouter();
   const { t } = useLanguage();
@@ -84,16 +94,25 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
     media: object?.media || ([] as AdminMedia[]),
   }));
   const publishIssues = useMemo(
-    () =>
-      [
+    () => {
+      const russianStarted = hasTranslationContent(form.ru);
+      return [
         !form.uz.title && t("uzbekName"),
+        !form.uz.address && t("uzbekAddress"),
+        !form.uz.shortDescription && t("shortDescription"),
+        !form.uz.description && t("detailedDescription"),
+        russianStarted && !form.ru.title && t("russianNameOptional"),
+        russianStarted && !form.ru.address && t("russianAddress"),
+        russianStarted && !form.ru.shortDescription && t("russianShortDescription"),
+        russianStarted && !form.ru.description && t("russianDetailedDescription"),
         !form.district && t("requiredDistrict"),
         !form.cadastralNumber && t("requiredCadastral"),
         !form.latitude && t("latitude"),
         !form.longitude && t("longitude"),
         !form.investmentAmountUsd && t("requiredInvestment"),
         !form.sectors.length && t("requiredSector"),
-      ].filter(Boolean),
+      ].filter(Boolean);
+    },
     [form, t],
   );
   const set = (key: string, value: string | string[]) =>
@@ -124,7 +143,10 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
       usableAreaSqm: Number(form.usableAreaSqm) || undefined,
       investmentAmountUsd: Number(form.investmentAmountUsd) || undefined,
       jobsPlanned: Number(form.jobsPlanned) || undefined,
-      translations: { uz: form.uz, ...(form.ru.title ? { ru: form.ru } : {}) },
+      translations: {
+        uz: form.uz,
+        ...(hasTranslationContent(form.ru) ? { ru: form.ru } : {}),
+      },
     };
     try {
       const saved = object
@@ -212,6 +234,14 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                 }
               />
             </Field>
+            <Field label={t("russianAddress")}>
+              <input
+                value={form.ru.address}
+                onChange={(event) =>
+                  setTranslation("ru", "address", event.target.value)
+                }
+              />
+            </Field>
             <Field label={t("district")}>
               <input
                 value={form.district}
@@ -226,11 +256,27 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                 }
               />
             </Field>
+            <Field wide label={t("russianShortDescription")}>
+              <textarea
+                value={form.ru.shortDescription}
+                onChange={(event) =>
+                  setTranslation("ru", "shortDescription", event.target.value)
+                }
+              />
+            </Field>
             <Field wide label={t("detailedDescription")}>
               <textarea
                 value={form.uz.description}
                 onChange={(event) =>
                   setTranslation("uz", "description", event.target.value)
+                }
+              />
+            </Field>
+            <Field wide label={t("russianDetailedDescription")}>
+              <textarea
+                value={form.ru.description}
+                onChange={(event) =>
+                  setTranslation("ru", "description", event.target.value)
                 }
               />
             </Field>

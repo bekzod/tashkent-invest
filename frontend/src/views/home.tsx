@@ -23,6 +23,7 @@ import { uniqueObjects } from '@/features/landing/unique-objects';
 import { api } from '@/shared/api/client';
 import { useLanguage } from '@/shared/i18n/language-provider';
 import { localizedPath } from '@/shared/i18n/routing';
+import { pluralMessageKey } from '@/shared/lib/dashboard';
 
 type Statistics = { objects: number; auctions: number; upcoming: number; investmentAmountUsd: number };
 type ObjectResponse = { items: InvestmentObject[] };
@@ -173,7 +174,7 @@ export default function HomePage({
           <p>{loadError}</p>
           <button type="button" onClick={() => setRetryCount((count) => count + 1)} disabled={isLoading}>{t('retry')}</button>
         </div>}
-        <section className="reference-categories"><h2>{t('categories')}</h2><div>{categories.map(({ icon: Icon, label, count, sector }) => <Link href={localizedPath(locale, `/map?sectors=${sector}`)} className="category-card" key={label}><Icon size={21} /><span><strong>{label}</strong><small>{count} {t('objects')}</small></span></Link>)}</div></section>
+        <section className="reference-categories"><h2>{t('categories')}</h2><div>{categories.map(({ icon: Icon, label, count, sector }) => <Link href={localizedPath(locale, `/map?sectors=${sector}`)} className="category-card" key={label}><Icon size={21} /><span><strong>{label}</strong><small>{count} {t(pluralMessageKey(count, locale, 'object'))}</small></span></Link>)}</div></section>
       </div>
       <aside className="reference-process" id="about">
         <h2>{t('howItWorks')}</h2>

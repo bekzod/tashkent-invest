@@ -9,6 +9,7 @@ afterEach(() => {
   window.localStorage.clear();
   window.history.replaceState({}, '', '/');
   document.documentElement.lang = '';
+  document.cookie = 'tashkent-invest.locale=; Path=/; Max-Age=0';
 });
 
 test('renders an explicit locale on the first render and ignores saved locale on public routes', async () => {
@@ -20,6 +21,8 @@ test('renders an explicit locale on the first render and ignores saved locale on
   expect(screen.getByTestId('locale')).toHaveTextContent('ru');
   expect(screen.getByText('Карта')).toBeInTheDocument();
   expect(document.documentElement).toHaveAttribute('lang', 'ru');
+  expect(window.localStorage.getItem('tashkent-invest.locale')).toBe('ru');
+  expect(document.cookie).toContain('tashkent-invest.locale=ru');
 
   await act(async () => Promise.resolve());
   expect(screen.getByTestId('locale')).toHaveTextContent('ru');
@@ -41,5 +44,6 @@ test('persists selected language in local storage', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Russian' }));
   expect(screen.getByTestId('locale')).toHaveTextContent('ru');
   expect(window.localStorage.getItem('tashkent-invest.locale')).toBe('ru');
+  expect(document.cookie).toContain('tashkent-invest.locale=ru');
   expect(document.documentElement).toHaveAttribute('lang', 'ru');
 });

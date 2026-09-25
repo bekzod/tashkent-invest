@@ -64,6 +64,31 @@ test('applies polygon and text filtering after database filtering', () => {
   expect(filterObjects(objects, filters)).toHaveLength(1);
 });
 
+test('searches the requested translation regardless of association order', () => {
+  const objects = [
+    {
+      longitude: 69.2,
+      latitude: 41.3,
+      district: 'Chinobod',
+      cadastralNumber: '10:01',
+      translations: [
+        { locale: 'uz', title: 'Sanoat maydoni', address: 'Chinobod' },
+        { locale: 'ru', title: 'Промышленная площадка', address: 'Чинабад' },
+      ],
+    },
+  ];
+
+  expect(filterObjects(objects, parseFilters({ q: 'Промышленная' }), 'ru')).toHaveLength(1);
+  expect(filterObjects(objects, parseFilters({ q: 'Sanoat' }), 'ru')).toHaveLength(0);
+  expect(
+    filterObjects(
+      [{ ...objects[0], translations: [...objects[0].translations].reverse() }],
+      parseFilters({ q: 'Промышленная' }),
+      'ru',
+    ),
+  ).toHaveLength(1);
+});
+
 test('rejects unknown filter enums', () => {
   expect(() => parseFilters({ types: 'unknown' })).toThrow('Invalid types');
 });

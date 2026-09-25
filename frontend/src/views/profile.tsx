@@ -10,4 +10,38 @@ import type { InvestmentObject } from '@/entities/investment-object/types';
 import { localizedPath } from '@/shared/i18n/routing';
 
 type Application = { id: string; status: string; createdAt: string; object: InvestmentObject };
-export function ProfileView() { const { locale, t } = useLanguage(); const [applications, setApplications] = useState<Application[]>([]); const [favorites, setFavorites] = useState<InvestmentObject[]>([]); const [ready, setReady] = useState(false); useEffect(() => { if (!readSession()) { window.location.assign(localizedPath(locale, '/login')); return; } Promise.all([api<{ items: Application[] }>('/me/applications', {}, locale), api<{ items: InvestmentObject[] }>('/me/favorites', {}, locale)]).then(([apps, favs]) => { setApplications(apps.items); setFavorites(favs.items); }).finally(() => setReady(true)); }, [locale]); if (!ready) return <main className="center-state">{t('loading')}</main>; return <main className="profile-page"><h1>{t('profile')}</h1><section><h2>{t('applications')}</h2>{applications.length ? <div className="card-grid">{applications.map((item) => <ObjectCard key={item.id} object={item.object}/>)}</div> : <p>{t('noResults')} <Link href={localizedPath(locale, '/map')}>{t('exploreMap')}</Link></p>}</section><section><h2>{t('favorites')}</h2>{favorites.length ? <div className="card-grid">{favorites.map((object) => <ObjectCard key={object.id} object={object}/>)}</div> : <p>{t('noResults')}</p>}</section></main>; }
+export function ProfileView() {
+  const { locale, t } = useLanguage();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [favorites, setFavorites] = useState<InvestmentObject[]>([]);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (!readSession()) {
+      window.location.assign(localizedPath(locale, '/login'));
+      return;
+    }
+    let active = true;
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (active) setReady(false);
+    });
+    Promise.all([
+      api<{ items: Application[] }>('/me/applications', { signal: controller.signal }, locale),
+      api<{ items: InvestmentObject[] }>('/me/favorites', { signal: controller.signal }, locale),
+    ]).then(([apps, favs]) => {
+      if (!active) return;
+      setApplications(apps.items);
+      setFavorites(favs.items);
+    }).catch(() => undefined).finally(() => {
+      if (active) setReady(true);
+    });
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [locale]);
+
+  if (!ready) return <main className="center-state">{t('loading')}</main>;
+  return <main className="profile-page"><h1>{t('profile')}</h1><section><h2>{t('applications')}</h2>{applications.length ? <div className="card-grid">{applications.map((item) => <ObjectCard key={item.id} object={item.object}/>)}</div> : <p>{t('noResults')} <Link href={localizedPath(locale, '/map')}>{t('exploreMap')}</Link></p>}</section><section><h2>{t('favorites')}</h2>{favorites.length ? <div className="card-grid">{favorites.map((object) => <ObjectCard key={object.id} object={object}/>)}</div> : <p>{t('noResults')}</p>}</section></main>;
+}

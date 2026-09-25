@@ -40,6 +40,27 @@ test('accepts an incomplete draft but requires publishing fields', () => {
   ).toThrow('sector');
 });
 
+test('preserves complete Russian admin fields and rejects a partial published translation', () => {
+  const normalized = normalizeObjectPayload(publishPayload);
+
+  expect(normalized.translations.ru).toEqual({
+    title: 'Логистический центр',
+    shortDescription: 'Краткое описание',
+    description: 'Подробное описание',
+    address: 'Юнусабад',
+    permittedBusinesses: [],
+  });
+  expect(() =>
+    normalizeObjectPayload({
+      ...publishPayload,
+      translations: {
+        ...publishPayload.translations,
+        ru: { title: 'Неполный перевод' },
+      },
+    }),
+  ).toThrow('ru translation is incomplete');
+});
+
 test('normalizes safe media and rejects unsafe or duplicate virtual tours', () => {
   const normalized = normalizeObjectPayload({
     ...publishPayload,

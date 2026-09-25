@@ -31,6 +31,7 @@ module.exports = async (app) => {
   app.get(
     '/',
     route(async (request) => {
+      const requestLocale = locale(request);
       const filters = parseFilters(request.query);
       await resolveAreaPolygon(app, filters, request.query.areaSlug);
       const page = Math.max(1, Number(request.query.page || 1));
@@ -42,11 +43,12 @@ module.exports = async (app) => {
           order: [['createdAt', 'DESC']],
         }),
         filters,
+        requestLocale,
       );
       return {
         items: objects
           .slice((page - 1) * limit, page * limit)
-          .map((object) => preview(object, locale(request))),
+          .map((object) => preview(object, requestLocale)),
         meta: { page, limit, total: objects.length },
       };
     }),
@@ -55,6 +57,7 @@ module.exports = async (app) => {
   app.get(
     '/map',
     route(async (request) => {
+      const requestLocale = locale(request);
       const filters = parseFilters(request.query);
       await resolveAreaPolygon(app, filters, request.query.areaSlug);
       const objects = filterObjects(
@@ -63,10 +66,11 @@ module.exports = async (app) => {
           include,
         }),
         filters,
+        requestLocale,
       );
       return {
         type: 'FeatureCollection',
-        features: objects.map((object) => feature(object, locale(request))),
+        features: objects.map((object) => feature(object, requestLocale)),
       };
     }),
   );

@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { defaultLocale, localeFromPath } from '@/shared/i18n/routing';
+import {
+  defaultLocale,
+  isLocale,
+  localeCookieName,
+  localeFromPath,
+} from '@/shared/i18n/routing';
 
 const bypassedPaths = [
   /^\/api(?:\/|$)/,
@@ -41,6 +46,13 @@ export function proxy(request: NextRequest) {
     const destination = request.nextUrl.clone();
     destination.pathname = pathname === '/' ? `/${defaultLocale}` : `/${defaultLocale}${pathname}`;
     return NextResponse.redirect(destination, 308);
+  }
+
+  const savedLocale = request.cookies.get(localeCookieName)?.value;
+  if (savedLocale && isLocale(savedLocale)) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-invest-locale', savedLocale);
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   return NextResponse.next();

@@ -19,6 +19,7 @@ import {
 } from "./geographic-areas";
 import { api } from "@/shared/api/client";
 import { LazyImage } from "@/shared/ui/lazy-image";
+import { pluralMessageKey } from "@/shared/lib/dashboard";
 
 const initial: MapFilters = { q: "", types: [], statuses: [], sectors: [] };
 const types = ["land", "building", "proposal"];
@@ -263,7 +264,7 @@ export function MapPageClient({
               <h2>{t("filters")}</h2>
               <p>
                 {activeFilterCount
-                  ? `${activeFilterCount} ${t("activeFilters")}`
+                  ? `${activeFilterCount} ${t(pluralMessageKey(activeFilterCount, locale, "activeFilter"))}`
                   : t("allMapObjects")}
               </p>
             </div>
@@ -359,7 +360,7 @@ export function MapPageClient({
           <aside className="map-results">
             <div className="results-title">
               <strong>
-                {objects.length} {t("objects")}
+                {objects.length} {t(pluralMessageKey(objects.length, locale, "object"))}
               </strong>
             </div>
             {objects.length ? (

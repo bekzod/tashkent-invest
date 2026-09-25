@@ -17,10 +17,26 @@ export function formatInvestmentAmount(value: number, locale: 'uz' | 'ru' = 'uz'
   return `$${value.toLocaleString('en-US')}`;
 }
 
-export function projectAreaLabel(project: InvestmentObject) {
+export function projectAreaLabel(project: InvestmentObject, locale: 'uz' | 'ru' = 'uz') {
   const area = project.landAreaHa ?? project.buildingAreaSqm;
   if (area == null) return '—';
-  return `${area} ${project.landAreaHa != null ? 'ga' : 'm²'}`;
+  const formatted = area.toLocaleString(locale === 'ru' ? 'ru-RU' : 'uz-UZ');
+  return `${formatted} ${project.landAreaHa != null ? (locale === 'ru' ? 'га' : 'ga') : 'm²'}`;
+}
+
+export function pluralMessageKey(
+  count: number,
+  locale: 'uz' | 'ru',
+  kind: 'object' | 'activeFilter',
+): MessageKey {
+  const form = locale === 'uz'
+    ? 'Many'
+    : count % 10 === 1 && count % 100 !== 11
+      ? 'One'
+      : [2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)
+        ? 'Few'
+        : 'Many';
+  return `${kind}${form}` as MessageKey;
 }
 
 export function statusMessageKey(status: string): MessageKey | undefined {

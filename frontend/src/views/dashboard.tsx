@@ -38,27 +38,47 @@ export function DashboardView({ activeSection = 'overview' }: { activeSection?: 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
     const current = readSession();
-    queueMicrotask(() => setSession(current));
+    queueMicrotask(() => {
+      if (active) setSession(current);
+    });
     if (!current) {
       window.location.replace(localizedPath(locale, '/login'));
-      return;
+      return () => {
+        active = false;
+        controller.abort();
+      };
     }
     if (current.user.role === 'admin') {
       queueMicrotask(() => setLoading(false));
-      return;
+      return () => {
+        active = false;
+        controller.abort();
+      };
     }
+    queueMicrotask(() => {
+      if (active) setLoading(true);
+    });
     Promise.all([
-      api<Statistics>('/statistics', {}, locale),
-      api<ObjectResponse>('/objects?limit=4', {}, locale),
-      api<{ items: Application[] }>('/me/applications', {}, locale),
-      api<{ items: InvestmentObject[] }>('/me/favorites', {}, locale),
+      api<Statistics>('/statistics', { signal: controller.signal }, locale),
+      api<ObjectResponse>('/objects?limit=4', { signal: controller.signal }, locale),
+      api<{ items: Application[] }>('/me/applications', { signal: controller.signal }, locale),
+      api<{ items: InvestmentObject[] }>('/me/favorites', { signal: controller.signal }, locale),
     ]).then(([nextStats, objectResponse, appResponse, favoriteResponse]) => {
+      if (!active) return;
       setStats(nextStats);
       setProjects(objectResponse.items);
       setApplications(appResponse.items);
       setFavorites(favoriteResponse.items);
-    }).catch(() => undefined).finally(() => setLoading(false));
+    }).catch(() => undefined).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => {
+      active = false;
+      controller.abort();
+    };
   }, [locale]);
 
   const metricCards = useMemo(() => [
@@ -100,7 +120,7 @@ export function DashboardView({ activeSection = 'overview' }: { activeSection?: 
           <article className="dashboard-panel dashboard-guide"><span><ShieldCheck size={21} /></span><p>{t('investorGuide')}</p><h2>{t('startInvesting')}</h2><ol><li>{t('guideChooseObject')}</li><li>{t('guideStudyTerms')}</li><li>{t('guideSubmitApplication')}</li></ol><Link href="/dashboard/map">{t('startProcess')} <ArrowIcon /></Link></article>
         </section>
 
-        <section className="dashboard-panel dashboard-projects" id="favorites"><div className="dashboard-panel-header"><div><p>{t('projects').toUpperCase()}</p><h2>{t('recommendedObjects')}</h2></div><Link href="/dashboard/projects">{t('seeAll')} <ChevronRight size={16} /></Link></div><div className="dashboard-project-grid">{(projects.length ? projects : favorites).slice(0, 4).map((project) => <Link href={localizedPath(locale, `/objects/${project.slug}`)} className="dashboard-project-card" key={project.id}><div className={`dashboard-project-image ${project.type}`}><span>{translateStatus(project.status, t)}</span></div><div><h3>{project.title}</h3><p>{project.address} · {projectAreaLabel(project)}</p><strong>{formatInvestmentAmount(project.investmentAmountUsd, locale)}</strong></div></Link>)}{!loading && !projects.length && !favorites.length ? <div className="dashboard-empty dashboard-empty-wide"><Building2 size={24} /><p>{t('projectsUnavailable')}</p><Link href="/dashboard/map">{t('openMap')}</Link></div> : null}</div></section>
+        <section className="dashboard-panel dashboard-projects" id="favorites"><div className="dashboard-panel-header"><div><p>{t('projects').toUpperCase()}</p><h2>{t('recommendedObjects')}</h2></div><Link href="/dashboard/projects">{t('seeAll')} <ChevronRight size={16} /></Link></div><div className="dashboard-project-grid">{(projects.length ? projects : favorites).slice(0, 4).map((project) => <Link href={localizedPath(locale, `/objects/${project.slug}`)} className="dashboard-project-card" key={project.id}><div className={`dashboard-project-image ${project.type}`}><span>{translateStatus(project.status, t)}</span></div><div><h3>{project.title}</h3><p>{project.address} · {projectAreaLabel(project, locale)}</p><strong>{formatInvestmentAmount(project.investmentAmountUsd, locale)}</strong></div></Link>)}{!loading && !projects.length && !favorites.length ? <div className="dashboard-empty dashboard-empty-wide"><Building2 size={24} /><p>{t('projectsUnavailable')}</p><Link href="/dashboard/map">{t('openMap')}</Link></div> : null}</div></section>
         </> : null}
   </DashboardShell>;
 }
@@ -109,11 +129,11 @@ function ArrowIcon() { return <ChevronRight size={17} aria-hidden="true" />; }
 
 function DashboardMapContent() { return <section className="dashboard-route-page dashboard-route-map"><div className="dashboard-map-frame"><MapPageClient /></div></section>; }
 
-function DashboardProjectsContent({ projects, loading }: { projects: InvestmentObject[]; loading: boolean }) { const { locale, t } = useLanguage(); return <section className="dashboard-route-page"><div className="dashboard-panel dashboard-projects dashboard-route-panel"><div className="dashboard-project-grid">{projects.map((project) => <Link href={localizedPath(locale, `/objects/${project.slug}`)} className="dashboard-project-card" key={project.id}><div className={`dashboard-project-image ${project.type}`}><span>{translateStatus(project.status, t)}</span></div><div><h3>{project.title}</h3><p>{project.address} · {projectAreaLabel(project)}</p><strong>{formatInvestmentAmount(project.investmentAmountUsd, locale)}</strong></div></Link>)}{!loading && !projects.length ? <div className="dashboard-empty dashboard-empty-wide"><Building2 size={24} /><p>{t('noProjectsYet')}</p><Link href="/dashboard/map">{t('openMap')}</Link></div> : null}</div></div></section>; }
+function DashboardProjectsContent({ projects, loading }: { projects: InvestmentObject[]; loading: boolean }) { const { locale, t } = useLanguage(); return <section className="dashboard-route-page"><div className="dashboard-panel dashboard-projects dashboard-route-panel"><div className="dashboard-project-grid">{projects.map((project) => <Link href={localizedPath(locale, `/objects/${project.slug}`)} className="dashboard-project-card" key={project.id}><div className={`dashboard-project-image ${project.type}`}><span>{translateStatus(project.status, t)}</span></div><div><h3>{project.title}</h3><p>{project.address} · {projectAreaLabel(project, locale)}</p><strong>{formatInvestmentAmount(project.investmentAmountUsd, locale)}</strong></div></Link>)}{!loading && !projects.length ? <div className="dashboard-empty dashboard-empty-wide"><Building2 size={24} /><p>{t('noProjectsYet')}</p><Link href="/dashboard/map">{t('openMap')}</Link></div> : null}</div></div></section>; }
 
 function DashboardApplicationsContent({ applications, locale }: { applications: Application[]; locale: 'uz' | 'ru' }) { const { t } = useLanguage(); return <section className="dashboard-route-page"><article className="dashboard-panel dashboard-route-panel"><div className="dashboard-panel-header"><div><p>{t('applications').toUpperCase()}</p><h2>{t('allApplications')}</h2></div><Link href="/dashboard/map" className="dashboard-primary-action"><Plus size={17} />{t('newApplication')}</Link></div>{applications.length ? <div className="application-list">{applications.map((application) => <Link href={localizedPath(locale, `/objects/${application.object.slug}`)} className="application-row" key={application.id}><span className="application-icon"><FileClock size={18} /></span><div><b>{application.object.title}</b><small>{new Date(application.createdAt).toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'uz-UZ')}</small></div><em className={`application-status ${application.status}`}>{translateStatus(application.status, t)}</em></Link>)}</div> : <div className="dashboard-empty"><ClipboardList size={24} /><p>{t('noApplicationsSubmitted')}</p><Link href="/dashboard/map">{t('viewObjects')}</Link></div>}</article></section>; }
 
-function DashboardFavoritesContent({ favorites, loading }: { favorites: InvestmentObject[]; loading: boolean }) { const { locale, t } = useLanguage(); return <section className="dashboard-route-page"><div className="dashboard-panel dashboard-projects dashboard-route-panel"><div className="dashboard-project-grid">{favorites.map((project) => <Link href={localizedPath(locale, `/objects/${project.slug}`)} className="dashboard-project-card" key={project.id}><div className={`dashboard-project-image ${project.type}`}><span>{t('watching')}</span></div><div><h3>{project.title}</h3><p>{project.address} · {projectAreaLabel(project)}</p><strong>{formatInvestmentAmount(project.investmentAmountUsd, locale)}</strong></div></Link>)}{!loading && !favorites.length ? <div className="dashboard-empty dashboard-empty-wide"><Bookmark size={24} /><p>{t('noFavorites')}</p><Link href="/dashboard/map">{t('chooseFromMap')}</Link></div> : null}</div></div></section>; }
+function DashboardFavoritesContent({ favorites, loading }: { favorites: InvestmentObject[]; loading: boolean }) { const { locale, t } = useLanguage(); return <section className="dashboard-route-page"><div className="dashboard-panel dashboard-projects dashboard-route-panel"><div className="dashboard-project-grid">{favorites.map((project) => <Link href={localizedPath(locale, `/objects/${project.slug}`)} className="dashboard-project-card" key={project.id}><div className={`dashboard-project-image ${project.type}`}><span>{t('watching')}</span></div><div><h3>{project.title}</h3><p>{project.address} · {projectAreaLabel(project, locale)}</p><strong>{formatInvestmentAmount(project.investmentAmountUsd, locale)}</strong></div></Link>)}{!loading && !favorites.length ? <div className="dashboard-empty dashboard-empty-wide"><Bookmark size={24} /><p>{t('noFavorites')}</p><Link href="/dashboard/map">{t('chooseFromMap')}</Link></div> : null}</div></div></section>; }
 
 function DashboardProfileContent({ session, userName }: { session: Session | null; userName: string }) { const { t } = useLanguage(); return <section className="dashboard-route-page"><article className="dashboard-panel dashboard-account-card"><div className="dashboard-avatar dashboard-avatar-large">{userName.slice(0, 2).toUpperCase()}</div><div><h2>{userName}</h2><p>{session?.user.email}</p><span>{t('investorAccount')}</span></div><button className="dashboard-outline-action" type="button">{t('editInformation')}</button></article></section>; }
 

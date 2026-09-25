@@ -138,17 +138,30 @@ function buildPublicWhere(filters) {
   return where;
 }
 
-function filterObjects(objects, filters) {
+function preferredTranslations(object, locale) {
+  const translations = object.translations || [];
+  const localized = translations.filter((translation) => translation.locale === locale);
+  if (localized.length) return localized;
+  const uzbek = translations.filter((translation) => translation.locale === 'uz');
+  return uzbek.length ? uzbek : translations.slice(0, 1);
+}
+
+function filterObjects(objects, filters, locale = 'uz') {
   if (!filters.polygon && !filters.q) return objects;
-  const search = filters.q.toLocaleLowerCase();
+  const search = filters.q.toLocaleLowerCase(locale === 'ru' ? 'ru-RU' : 'uz-UZ');
   return objects.filter((object) => {
-    const translation = object.translation || object.translations?.[0];
+    const translations = object.translation
+      ? [object.translation]
+      : preferredTranslations(object, locale);
     const isInside = pointInPolygon(
       [Number(object.longitude), Number(object.latitude)],
       filters.polygon,
     );
-    const searchable =
-      `${translation?.title || ''} ${translation?.address || ''} ${object.district} ${object.cadastralNumber}`.toLocaleLowerCase();
+    const searchable = `${translations
+      .map((translation) => `${translation?.title || ''} ${translation?.address || ''}`)
+      .join(' ')} ${object.district || ''} ${object.cadastralNumber || ''}`.toLocaleLowerCase(
+      locale === 'ru' ? 'ru-RU' : 'uz-UZ',
+    );
     return isInside && (!search || searchable.includes(search));
   });
 }
@@ -162,4 +175,5 @@ module.exports = {
   statuses,
   sectors,
   smartQuery,
+  preferredTranslations,
 };

@@ -115,6 +115,7 @@ export function ObjectDetail({
     return (
       <main className="center-state">
         <h1>404</h1>
+        <p>{t("pageNotFound")}</p>
         <Link href={localizedPath(locale, "/map")}>{t("exploreMap")}</Link>
       </main>
     );

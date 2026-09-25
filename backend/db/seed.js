@@ -164,7 +164,7 @@ async function seed() {
           investmentObjectId: object.id,
           locale: 'ru',
           title: `${titleRu[index % titleRu.length]} ${index + 1}`,
-          shortDescription: `Инвестиционная возможность в ${district}.`,
+          shortDescription: `Инвестиционная возможность в ${locality.nameRu}.`,
           description:
             'Демонстрационный инвестиционный объект с инженерной инфраструктурой для инвесторов.',
           address: `${locality.nameRu}, Ташкентский район, Ташкентская область`,

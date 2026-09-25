@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { LocalizedNotFound } from '@/views/not-found';
 
 export const metadata: Metadata = {
-  title: 'Sahifa topilmadi',
+  title: 'Sahifa topilmadi | Страница не найдена',
   robots: { index: false, follow: false },
 };
 

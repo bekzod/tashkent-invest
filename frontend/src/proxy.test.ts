@@ -6,6 +6,12 @@ function request(path: string) {
   return new NextRequest(`https://toshkent-tuman-invest.uz${path}`);
 }
 
+function requestWithCookie(path: string, cookie: string) {
+  return new NextRequest(`https://toshkent-tuman-invest.uz${path}`, {
+    headers: { cookie },
+  });
+}
+
 describe('proxy', () => {
   it.each([
     ['/?utm_source=google', '/uz?utm_source=google'],
@@ -35,6 +41,15 @@ describe('proxy', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('location')).toBeNull();
     expect(response.headers.get('x-middleware-request-x-invest-locale')).toBeNull();
+  });
+
+  it('forwards the saved locale for the private dashboard first render', () => {
+    const response = proxy(
+      requestWithCookie('/dashboard', 'tashkent-invest.locale=ru'),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('x-middleware-request-x-invest-locale')).toBe('ru');
   });
 
   it.each([
