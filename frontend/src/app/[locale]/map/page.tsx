@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { MapPageClient } from '@/features/investment-map/map-page-client';
 import { isLocale } from '@/shared/i18n/routing';
-import { publicPageMetadata } from '@/shared/lib/seo';
+import { mapMetadata } from '@/shared/lib/seo';
 
 type MapSearchParams = {
   q?: string | string[];
@@ -19,12 +19,12 @@ type LocalizedMapPageProps = {
 const list = (value: string | string[] | undefined) =>
   (Array.isArray(value) ? value[0] : value || '').split(',').filter(Boolean);
 
-export const metadata: Metadata = publicPageMetadata({
-  title: 'Investitsiya obyektlari xaritasi',
-  description:
-    "Toshkent tumanidagi yer uchastkalari, tayyor binolar, investitsiya takliflari va auksion obyektlarini xaritada qidiring va filtrlang.",
-  path: '/map',
-});
+export async function generateMetadata({ params }: LocalizedMapPageProps): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+
+  return mapMetadata(locale);
+}
 
 export default async function LocalizedMapPage({ params, searchParams }: LocalizedMapPageProps) {
   const [{ locale }, query] = await Promise.all([params, searchParams]);

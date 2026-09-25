@@ -1,15 +1,87 @@
 import type { Metadata } from "next";
 import type { InvestmentObject } from "@/entities/investment-object/types";
 import { apiBaseUrl } from "@/shared/api/base-url";
+import { localizedPath, type Locale } from "@/shared/i18n/routing";
 
-const fallbackSiteUrl = "https://invest-tuman.uz";
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || fallbackSiteUrl;
+const fallbackSiteUrl = "https://toshkent-tuman-invest.uz";
+
+function resolveSiteUrl(value: string | undefined) {
+  if (!value?.trim()) return fallbackSiteUrl;
+
+  try {
+    return new URL(value).origin;
+  } catch {
+    return fallbackSiteUrl;
+  }
+}
+
+const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+
+export const seoCatalog = {
+  uz: {
+    siteTitle: "Invest Tuman — Toshkent tumani investitsiya portali",
+    siteDescription:
+      "Toshkent tumanidagi yer uchastkalari, tayyor binolar, investitsiya takliflari va auksion obyektlarini interaktiv xaritada toping.",
+    keywords: [
+      "Toshkent tumani investitsiya",
+      "investitsiya obyektlari",
+      "investitsiya xaritasi",
+      "yer uchastkalari",
+      "auksion obyektlari",
+    ],
+    home: {
+      title: "Invest Tuman — Toshkent tumani investitsiya portali",
+      description:
+        "Toshkent tumanidagi investitsiya obyektlari, yer uchastkalari, tayyor binolar va e-auksion imkoniyatlarini bitta portalda ko‘ring.",
+      imageAlt: "Toshkent tumani investitsiya imkoniyatlari",
+    },
+    map: {
+      title: "Investitsiya obyektlari xaritasi",
+      description:
+        "Toshkent tumanidagi yer uchastkalari, tayyor binolar, investitsiya takliflari va auksion obyektlarini xaritada qidiring va filtrlang.",
+      imageAlt: "Toshkent tumani investitsiya obyektlari xaritasi",
+    },
+    login: {
+      title: "Investor kabinetiga kirish",
+      description: "Invest Tuman investor kabinetiga xavfsiz kirish sahifasi.",
+      imageAlt: "Invest Tuman investor kabineti",
+    },
+  },
+  ru: {
+    siteTitle: "Invest Tuman — инвестиционный портал Ташкентского района",
+    siteDescription:
+      "Найдите земельные участки, готовые здания, инвестиционные предложения и объекты аукциона Ташкентского района на интерактивной карте.",
+    keywords: [
+      "инвестиции Ташкентский район",
+      "инвестиционные объекты",
+      "инвестиционная карта",
+      "земельные участки",
+      "объекты аукциона",
+    ],
+    home: {
+      title: "Invest Tuman — инвестиционный портал Ташкентского района",
+      description:
+        "Инвестиционные объекты, земельные участки, готовые здания и электронные аукционы Ташкентского района на одном портале.",
+      imageAlt: "Инвестиционные возможности Ташкентского района",
+    },
+    map: {
+      title: "Карта инвестиционных объектов",
+      description:
+        "Ищите и фильтруйте на карте земельные участки, готовые здания, инвестиционные предложения и объекты аукциона Ташкентского района.",
+      imageAlt: "Инвестиционная карта Ташкентского района",
+    },
+    login: {
+      title: "Вход в кабинет инвестора",
+      description: "Безопасная страница входа в кабинет инвестора Invest Tuman.",
+      imageAlt: "Кабинет инвестора Invest Tuman",
+    },
+  },
+} as const;
 
 export const site = {
   name: "Invest Tuman",
-  title: "Invest Tuman - Toshkent investitsiya obyektlari portali",
-  description:
-    "Toshkent tumani bo'yicha yer uchastkalari, tayyor binolar, investitsiya takliflari va auksion obyektlarini interaktiv xaritada toping.",
+  title: seoCatalog.uz.siteTitle,
+  description: seoCatalog.uz.siteDescription,
   url: siteUrl,
   locale: "uz_UZ",
   alternateLocale: "ru_RU",
@@ -28,46 +100,86 @@ export function compactText(value: string | undefined, maxLength = 155) {
 }
 
 export function publicPageMetadata({
+  locale,
   title,
   description,
   path,
-  images,
+  imageAlt,
 }: {
+  locale: Locale;
   title: string;
   description: string;
   path: string;
-  images?: string[];
+  imageAlt: string;
 }): Metadata {
-  const canonical = absoluteUrl(path);
+  const copy = seoCatalog[locale];
+  const localizedCanonicalPath = localizedPath(locale, path);
+  const canonical = absoluteUrl(localizedCanonicalPath);
+  const alternates = {
+    uz: absoluteUrl(localizedPath("uz", path)),
+    ru: absoluteUrl(localizedPath("ru", path)),
+    "x-default": absoluteUrl(localizedPath("uz", path)),
+  };
   const pageTitle = title.includes(site.name) ? title : `${title} | ${site.name}`;
+  const compactDescription = compactText(description);
+  const socialImage = {
+    url: absoluteUrl(`${localizedCanonicalPath}/opengraph-image`),
+    width: 1200,
+    height: 630,
+    alt: imageAlt,
+  };
+
   return {
     title: { absolute: pageTitle },
-    description,
-    alternates: { canonical },
+    description: compactDescription,
+    keywords: [...copy.keywords],
+    alternates: { canonical, languages: alternates },
     openGraph: {
       title: pageTitle,
-      description,
+      description: compactDescription,
       url: canonical,
       siteName: site.name,
-      locale: site.locale,
-      alternateLocale: site.alternateLocale,
+      locale: locale === "uz" ? "uz_UZ" : "ru_RU",
+      alternateLocale: [locale === "uz" ? "ru_RU" : "uz_UZ"],
       type: "website",
-      images,
+      images: [socialImage],
     },
     twitter: {
-      card: images?.length ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title: pageTitle,
-      description,
-      images,
+      description: compactDescription,
+      images: [socialImage],
     },
   };
 }
 
-export function objectMetadata(object: InvestmentObject): Metadata {
+export function homeMetadata(locale: Locale): Metadata {
+  const copy = seoCatalog[locale].home;
+  return publicPageMetadata({ locale, path: "/", ...copy });
+}
+
+export function mapMetadata(locale: Locale): Metadata {
+  const copy = seoCatalog[locale].map;
+  return publicPageMetadata({ locale, path: "/map", ...copy });
+}
+
+export function loginMetadata(locale: Locale): Metadata {
+  const copy = seoCatalog[locale].login;
+  return {
+    ...publicPageMetadata({ locale, path: "/login", ...copy }),
+    robots: { index: false, follow: false },
+  };
+}
+
+export function objectMetadata(object: InvestmentObject, locale: Locale): Metadata {
   const area = object.landAreaHa
-    ? `${object.landAreaHa} ga`
+    ? locale === "uz"
+      ? `${object.landAreaHa} ga`
+      : `${object.landAreaHa} га`
     : object.buildingAreaSqm
-      ? `${object.buildingAreaSqm} m2`
+      ? locale === "uz"
+        ? `${object.buildingAreaSqm} m²`
+        : `${object.buildingAreaSqm} м²`
       : undefined;
   const amount = object.investmentAmountUsd
     ? `$${Number(object.investmentAmountUsd).toLocaleString("en-US")}`
@@ -75,29 +187,37 @@ export function objectMetadata(object: InvestmentObject): Metadata {
   const description = compactText(
     [
       object.shortDescription || object.description,
-      object.district ? `${object.district} tumani` : undefined,
-      area ? `maydoni ${area}` : undefined,
-      amount ? `investitsiya hajmi ${amount}` : undefined,
+      object.district
+        ? locale === "uz"
+          ? `${object.district} tumani`
+          : `район ${object.district}`
+        : undefined,
+      area ? (locale === "uz" ? `maydoni ${area}` : `площадь ${area}`) : undefined,
+      amount
+        ? locale === "uz"
+          ? `investitsiya hajmi ${amount}`
+          : `объём инвестиций ${amount}`
+        : undefined,
     ]
       .filter(Boolean)
       .join(". "),
   );
-  const image = object.imageUrl || object.media?.find((media) => media.kind === "image")?.url;
   const canonicalPath = `/objects/${object.slug}`;
+  const metadata = publicPageMetadata({
+    locale,
+    title: object.title,
+    description: description || seoCatalog[locale].siteDescription,
+    path: canonicalPath,
+    imageAlt:
+      locale === "uz"
+        ? `${object.title} investitsiya obyekti`
+        : `Инвестиционный объект «${object.title}»`,
+  });
+
   return {
-    ...publicPageMetadata({
-      title: `${object.title} | Invest Tuman`,
-      description,
-      path: canonicalPath,
-      images: image ? [image] : undefined,
-    }),
+    ...metadata,
     openGraph: {
-      ...publicPageMetadata({
-        title: `${object.title} | Invest Tuman`,
-        description,
-        path: canonicalPath,
-        images: image ? [image] : undefined,
-      }).openGraph,
+      ...metadata.openGraph,
       type: "article",
     },
   };

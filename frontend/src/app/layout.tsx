@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 import './globals.css';
 import { LanguageProvider } from '@/shared/i18n/language-provider';
 import { defaultLocale, isLocale } from '@/shared/i18n/routing';
-import { site } from '@/shared/lib/seo';
+import { seoCatalog, site } from '@/shared/lib/seo';
 import { AppFrame } from '@/widgets/app-frame';
 
 const manrope = Manrope({ subsets: ['latin', 'cyrillic'], display: 'swap', variable: '--font-manrope' });
@@ -16,17 +16,10 @@ export const metadata: Metadata = {
     template: `%s | ${site.name}`,
   },
   description: site.description,
-  keywords: [
-    'Toshkent investitsiya',
-    'Toshkent tumani investitsiya obyektlari',
-    'investitsiya xaritasi',
-    'yer uchastkalari',
-    'auksion obyektlari',
-    'investment in Tashkent',
-  ],
-  authors: [{ name: 'Invest Tuman' }],
-  creator: 'Invest Tuman',
-  publisher: 'Invest Tuman',
+  keywords: [...seoCatalog.uz.keywords, ...seoCatalog.ru.keywords],
+  authors: [{ name: site.name }],
+  creator: site.name,
+  publisher: site.name,
   category: 'investment portal',
   formatDetection: { email: false, address: false, telephone: false },
   robots: {

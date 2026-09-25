@@ -17,14 +17,14 @@ export async function generateMetadata({ params }: ObjectPageProps): Promise<Met
   const { locale, slug } = await params;
   if (!isLocale(locale)) return { robots: { index: false, follow: false } };
 
-  const object = await fetchPublicObject(slug).catch(() => null);
+  const object = await fetchPublicObject(slug, locale).catch(() => null);
   if (!object) {
     return {
-      title: 'Obyekt topilmadi',
+      title: locale === 'uz' ? 'Obyekt topilmadi' : 'Объект не найден',
       robots: { index: false, follow: false },
     };
   }
-  return objectMetadata(object);
+  return objectMetadata(object, locale);
 }
 
 function objectJsonLd(object: InvestmentObject) {
@@ -88,7 +88,7 @@ export default async function LocalizedObjectPage({ params }: ObjectPageProps) {
   const { locale, slug } = await params;
   if (!isLocale(locale)) notFound();
 
-  const object = await fetchPublicObject(slug).catch(() => null);
+  const object = await fetchPublicObject(slug, locale).catch(() => null);
   if (!object) notFound();
 
   return (

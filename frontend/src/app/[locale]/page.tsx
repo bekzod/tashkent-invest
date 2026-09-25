@@ -6,17 +6,10 @@ import {
   absoluteUrl,
   fetchPublicObjects,
   fetchPublicStatistics,
-  publicPageMetadata,
+  homeMetadata,
   site,
   structuredData,
 } from '@/shared/lib/seo';
-
-export const metadata: Metadata = publicPageMetadata({
-  title: site.title,
-  description:
-    "Toshkent tumanidagi investitsiya obyektlari, yer uchastkalari, tayyor binolar va e-auksion imkoniyatlarini bitta interaktiv portalda ko'ring.",
-  path: '/',
-});
 
 const homeJsonLd = [
   {
@@ -45,13 +38,20 @@ const homeJsonLd = [
 
 type LocalizedHomePageProps = { params: Promise<{ locale: string }> };
 
+export async function generateMetadata({ params }: LocalizedHomePageProps): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+
+  return homeMetadata(locale);
+}
+
 export default async function LocalizedHomePage({ params }: LocalizedHomePageProps) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
   const [initialStats, initialObjects] = await Promise.all([
-    fetchPublicStatistics().catch(() => null),
-    fetchPublicObjects(4).catch(() => []),
+    fetchPublicStatistics(locale).catch(() => null),
+    fetchPublicObjects(4, locale).catch(() => []),
   ]);
 
   return (

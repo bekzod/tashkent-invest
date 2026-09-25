@@ -1,19 +1,21 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { isLocale } from '@/shared/i18n/routing';
+import { loginMetadata } from '@/shared/lib/seo';
 import { LoginView } from '@/views/login';
 
-export const metadata: Metadata = {
-  title: 'Investor kabinetiga kirish',
-  description: 'Invest Tuman investor kabinetiga xavfsiz kirish sahifasi.',
-  robots: { index: false, follow: false },
-};
+type LocalizedLoginPageProps = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({ params }: LocalizedLoginPageProps): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+
+  return loginMetadata(locale);
+}
 
 export default async function LocalizedLoginPage({
   params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+}: LocalizedLoginPageProps) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
