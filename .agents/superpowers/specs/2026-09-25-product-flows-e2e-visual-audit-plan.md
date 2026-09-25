@@ -357,24 +357,31 @@ git commit -am "feat: complete investor application workflow"
 - Create/modify: SEO focused tests and `frontend/e2e/seo-discovery.spec.ts`
 - Modify: `README.md`
 - Create: `docs/seo-release-checklist.md`
+- Modify: `backend/Dockerfile`
+- Modify: `backend/db/seed.js`
+- Create: `backend/db/seed-e2e.js`
 
 **Step 1: Resume the approved SEO implementation plan**
 
 Continue Tasks 6–12 of `2026-09-25-localized-seo-implementation.md`. Preserve already committed locale routing/navigation/metadata work.
 
-**Step 2: Incorporate OpenSEO crawl findings**
+**Step 2: Separate production inventory from demo fixtures**
+
+Stop unconditional demo seeding during production startup. Move numbered mock objects, Picsum images and example documents into an explicit local/E2E seed. Only verified publishable records with truthful source/media/status/update information may be indexable or included in sitemaps. Add regression coverage proving production startup cannot create demo inventory.
+
+**Step 3: Incorporate OpenSEO crawl findings**
 
 Eliminate the wrong `invest-tuman.uz` canonical, thin route shells, missing H1s, incomplete first-page sitemap and production 404s for `/uz`, `/ru`, locale sitemaps, manifest and `llms.txt`.
 
-**Step 3: Verify locally and through Playwright**
+**Step 4: Verify locally and through Playwright**
 
 Check redirects, canonical/hreflang, JSON-LD, social image content type/dimensions, sitemap index and all object URLs, robots/AI crawler rules, `llms.txt`, manifest, H1/title/description, UZ/RU desktop/mobile cards.
 
-**Step 4: Run OpenSEO follow-up crawl after deployment is available**
+**Step 5: Run OpenSEO follow-up crawl after deployment is available**
 
 Document that rankings, AI citations and social preview selection are external outcomes, not guarantees. Save the OpenSEO report and release checklist.
 
-**Step 5: Commit**
+**Step 6: Commit**
 
 ```bash
 git commit -am "feat: complete localized SEO discovery"
