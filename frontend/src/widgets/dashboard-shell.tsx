@@ -16,6 +16,7 @@ import { useState, type ReactNode } from 'react';
 import { clearSession, type Session } from '@/shared/auth/session';
 import { dashboardSectionMessageKey, type DashboardSection } from '@/shared/lib/dashboard';
 import { useLanguage } from '@/shared/i18n/language-provider';
+import { localizedPath } from '@/shared/i18n/routing';
 import {
   dashboardSettingsEntry,
   getDashboardNavigation,
@@ -53,14 +54,14 @@ export function DashboardShell({ activeSection, children, role, session }: Props
 
   function logout() {
     clearSession();
-    window.location.assign('/');
+    window.location.assign(localizedPath(locale, '/'));
   }
 
   return (
     <div className={`invest-dashboard ${collapsed ? 'is-collapsed' : ''}`} data-dashboard-role={role}>
       <aside className="dashboard-sidebar" aria-label={t('dashboardNavigation')}>
         <div className="dashboard-brand-row">
-          <Link href="/" className="dashboard-brand"><span className="dashboard-brand-mark"><Map size={21} /></span><span className="dashboard-brand-copy"><strong>Invest Tuman</strong><small>{t('portalName').toUpperCase()}</small></span></Link>
+          <Link href={localizedPath(locale, '/')} className="dashboard-brand"><span className="dashboard-brand-mark"><Map size={21} /></span><span className="dashboard-brand-copy"><strong>Invest Tuman</strong><small>{t('portalName').toUpperCase()}</small></span></Link>
           <button className="dashboard-collapse" type="button" aria-label={t('collapseMenu')} onClick={() => setCollapsed((value) => !value)}><Menu size={19} /></button>
         </div>
         {role === 'admin' ? null : <Link className="dashboard-create" href={primaryAction.href}><PrimaryIcon size={19} /><span>{t(primaryAction.labelKey)}</span></Link>}

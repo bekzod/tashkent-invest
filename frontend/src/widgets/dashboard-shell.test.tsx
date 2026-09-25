@@ -27,6 +27,8 @@ test('localizes authenticated dashboard navigation when the locale changes', () 
   fireEvent.change(screen.getByRole('combobox', { name: 'Til' }), { target: { value: 'ru' } });
 
   expect(screen.getByRole('navigation').closest('aside')).toHaveAttribute('aria-label', 'Навигация кабинета');
+  expect(screen.getByRole('link', { name: /Invest Tuman/ })).toHaveAttribute('href', '/ru');
+  expect(screen.getByRole('link', { name: 'Объекты' })).toHaveAttribute('href', '/dashboard/projects');
   expect(screen.getAllByText('Панель управления').length).toBeGreaterThan(0);
   expect(screen.getByText('Центр помощи')).toBeVisible();
 });

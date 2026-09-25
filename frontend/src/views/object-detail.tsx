@@ -10,6 +10,7 @@ import { ApplicationForm } from "@/features/application/application-form";
 import { PanoramaViewer } from "@/features/virtual-tour/panorama-viewer";
 import { LazyImage } from "@/shared/ui/lazy-image";
 import type { MessageKey } from "@/shared/i18n/messages";
+import { localizedPath } from "@/shared/i18n/routing";
 
 const factKeys: Record<string, MessageKey> = {
   electricity: "electricity",
@@ -114,7 +115,7 @@ export function ObjectDetail({
     return (
       <main className="center-state">
         <h1>404</h1>
-        <Link href="/map">{t("exploreMap")}</Link>
+        <Link href={localizedPath(locale, "/map")}>{t("exploreMap")}</Link>
       </main>
     );
   if (!object) return <main className="center-state">{t("loading")}</main>;
@@ -132,12 +133,12 @@ export function ObjectDetail({
       );
       setSubscribed(true);
     } catch {
-      window.location.assign("/login");
+      window.location.assign(localizedPath(locale, "/login"));
     }
   }
   return (
     <main className="detail-page">
-      <Link className="back-link" href="/map">
+      <Link className="back-link" href={localizedPath(locale, "/map")}>
         <ArrowLeft size={16} /> {t("map")}
       </Link>
       <div className="detail-grid">

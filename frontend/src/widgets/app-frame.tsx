@@ -14,7 +14,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <PublicHeader />
+      <PublicHeader pathname={pathname || "/"} />
       {children}
       <footer id="contacts">
         <strong>Invest Tuman</strong>

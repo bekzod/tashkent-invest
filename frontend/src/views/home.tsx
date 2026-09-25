@@ -22,6 +22,7 @@ import { MapPageClient } from '@/features/investment-map/map-page-client';
 import { uniqueObjects } from '@/features/landing/unique-objects';
 import { api } from '@/shared/api/client';
 import { useLanguage } from '@/shared/i18n/language-provider';
+import { localizedPath } from '@/shared/i18n/routing';
 
 type Statistics = { objects: number; auctions: number; upcoming: number; investmentAmountUsd: number };
 type ObjectResponse = { items: InvestmentObject[] };
@@ -119,7 +120,7 @@ export default function HomePage({
     if (typeFilters.length) params.set('types', typeFilters.join(','));
     if (statusFilters.length) params.set('statuses', statusFilters.join(','));
     const query = params.toString();
-    return query ? `/map?${query}` : '/map';
+    return localizedPath(locale, query ? `/map?${query}` : '/map');
   };
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -163,7 +164,7 @@ export default function HomePage({
 
     <section id="projects" className="landing-container reference-content-grid">
       <div className="reference-popular" id="news">
-        <div className="reference-section-heading"><h2>{t('popular')}</h2><Link href="/map">{t('seeAll')} <ArrowRight size={15} /></Link></div>
+        <div className="reference-section-heading"><h2>{t('popular')}</h2><Link href={localizedPath(locale, '/map')}>{t('seeAll')} <ArrowRight size={15} /></Link></div>
         <div className="reference-card-grid" aria-busy={isLoading}>
           {objects.map((object) => <ObjectCard object={object} key={object.id} />)}
           {isLoading && objects.length === 0 && Array.from({ length: 4 }, (_, index) => <ContentPlaceholder key={index} />)}
@@ -172,7 +173,7 @@ export default function HomePage({
           <p>{loadError}</p>
           <button type="button" onClick={() => setRetryCount((count) => count + 1)} disabled={isLoading}>{t('retry')}</button>
         </div>}
-        <section className="reference-categories"><h2>{t('categories')}</h2><div>{categories.map(({ icon: Icon, label, count, sector }) => <Link href={`/map?sectors=${sector}`} className="category-card" key={label}><Icon size={21} /><span><strong>{label}</strong><small>{count} {t('objects')}</small></span></Link>)}</div></section>
+        <section className="reference-categories"><h2>{t('categories')}</h2><div>{categories.map(({ icon: Icon, label, count, sector }) => <Link href={localizedPath(locale, `/map?sectors=${sector}`)} className="category-card" key={label}><Icon size={21} /><span><strong>{label}</strong><small>{count} {t('objects')}</small></span></Link>)}</div></section>
       </div>
       <aside className="reference-process" id="about">
         <h2>{t('howItWorks')}</h2>
@@ -180,7 +181,7 @@ export default function HomePage({
         <ProcessStep number={2} title={t('study')}>{t('processStudyText')}</ProcessStep>
         <ProcessStep number={3} title={t('apply')}>{t('processApplyText')}</ProcessStep>
         <ProcessStep number={4} title={t('participate')}>{t('processParticipateText')}</ProcessStep>
-        <Link href="/map">{t('processDetails')} <ArrowRight size={15} /></Link>
+        <Link href={localizedPath(locale, '/map')}>{t('processDetails')} <ArrowRight size={15} /></Link>
       </aside>
     </section>
 

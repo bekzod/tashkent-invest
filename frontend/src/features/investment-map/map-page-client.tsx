@@ -9,6 +9,7 @@ import type {
 } from "@/entities/investment-object/types";
 import { ObjectCard } from "@/entities/investment-object/object-card";
 import { useLanguage } from "@/shared/i18n/language-provider";
+import { localizedPath } from "@/shared/i18n/routing";
 import { InvestmentMap } from "./investment-map";
 import type { MapFilters } from "./map-utils";
 import {
@@ -108,7 +109,7 @@ function SelectedObjectPanel({
       </dl>
       <Link
         className="button primary selected-object-details"
-        href={`/objects/${object.slug}`}
+        href={localizedPath(locale, `/objects/${object.slug}`)}
       >
         {t("details")}
       </Link>

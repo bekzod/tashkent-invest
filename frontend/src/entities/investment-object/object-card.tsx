@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { InvestmentObject } from "./types";
 import { useLanguage } from "@/shared/i18n/language-provider";
+import { localizedPath } from "@/shared/i18n/routing";
 import { LazyImage } from "@/shared/ui/lazy-image";
 
 export function ObjectCard({
@@ -52,7 +53,7 @@ export function ObjectCard({
         </div>
         <Link
           className="text-link"
-          href={`/objects/${object.slug}`}
+          href={localizedPath(locale, `/objects/${object.slug}`)}
           onClick={(event) => event.stopPropagation()}
         >
           {t("details")} →

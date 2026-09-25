@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "@/shared/api/client";
 import { readSession } from "@/shared/auth/session";
 import { useLanguage } from "@/shared/i18n/language-provider";
+import { localizedPath } from "@/shared/i18n/routing";
 
 export function ApplicationForm({ objectId }: { objectId: string }) {
   const { locale, t } = useLanguage();
@@ -13,7 +14,7 @@ export function ApplicationForm({ objectId }: { objectId: string }) {
   const [submitting, setSubmitting] = useState(false);
   if (!readSession())
     return (
-      <Link className="button primary" href="/login">
+      <Link className="button primary" href={localizedPath(locale, "/login")}>
         {t("login")}
       </Link>
     );

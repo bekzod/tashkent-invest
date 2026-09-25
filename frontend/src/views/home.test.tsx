@@ -5,7 +5,9 @@ import { LanguageProvider, useLanguage } from '@/shared/i18n/language-provider';
 import { api } from '@/shared/api/client';
 import HomePage from './home';
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
+
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: pushMock }) }));
 vi.mock('next/link', () => ({ default: ({ children, href, ...props }: React.ComponentProps<'a'>) => <a href={href} {...props}>{children}</a> }));
 vi.mock('@/features/investment-map/map-page-client', () => ({ MapPageClient: () => <div /> }));
 vi.mock('@/shared/api/client', () => ({ api: vi.fn() }));
@@ -27,6 +29,7 @@ function LocaleSwitch() {
 beforeEach(() => {
   window.localStorage.clear();
   apiMock.mockReset();
+  pushMock.mockReset();
 });
 afterEach(cleanup);
 
@@ -68,4 +71,36 @@ test('shows an error and retries the landing request', async () => {
 
   await waitFor(() => expect(screen.getByText('Test object')).toBeVisible());
   expect(screen.queryAllByTestId('content-placeholder')).toHaveLength(0);
+});
+
+test('keeps landing searches, filters, and object cards in the active locale', () => {
+  render(
+    <LanguageProvider initialLocale="ru">
+      <HomePage
+        initialLocale="ru"
+        initialObjects={[object]}
+        initialStats={{ objects: 1, auctions: 1, upcoming: 0, investmentAmountUsd: 0 }}
+      />
+    </LanguageProvider>,
+  );
+
+  expect(screen.getByRole('link', { name: 'Смотреть все' })).toHaveAttribute('href', '/ru/map');
+  expect(screen.getByRole('link', { name: 'Подробнее →' })).toHaveAttribute(
+    'href',
+    '/ru/objects/object-1',
+  );
+  expect(screen.getByRole('link', { name: /Промышленность/ })).toHaveAttribute(
+    'href',
+    '/ru/map?sectors=manufacturing',
+  );
+
+  const searchInput = screen.getByRole('textbox', { name: /Поиск по названию/ });
+  fireEvent.change(searchInput, {
+    target: { value: 'Chinobod' },
+  });
+  fireEvent.submit(searchInput.closest('form')!);
+
+  expect(pushMock).toHaveBeenCalledWith(
+    '/ru/map?q=Chinobod&types=land&statuses=auction',
+  );
 });
