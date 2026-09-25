@@ -1,10 +1,9 @@
-import type { Metadata } from 'next';
-import { LoginView } from '@/views/login';
+import { redirectLegacyPublicPath, type LegacySearchParams } from '../_legacy-public-redirect';
 
-export const metadata: Metadata = {
-  title: 'Investor kabinetiga kirish',
-  description: 'Invest Tuman investor kabinetiga xavfsiz kirish sahifasi.',
-  robots: { index: false, follow: false },
-};
-
-export default function LoginPage() { return <LoginView />; }
+export default async function LegacyLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<LegacySearchParams>;
+}) {
+  redirectLegacyPublicPath('/login', await searchParams);
+}
