@@ -19,8 +19,11 @@ import type {
   AdminMedia,
   AdminTranslation,
 } from "./types";
+import { useLanguage } from "@/shared/i18n/language-provider";
+import type { MessageKey } from "@/shared/i18n/messages";
+import { statusMessageKey } from "@/shared/lib/dashboard";
 
-const steps = ["Asosiy", "Joylashuv", "Shartlar", "Media", "Ko‘rib chiqish"];
+const stepKeys: MessageKey[] = ["stepMain", "stepLocation", "stepTerms", "stepMedia", "stepReview"];
 const sectors = [
   "manufacturing",
   "logistics",
@@ -31,6 +34,16 @@ const sectors = [
   "construction",
   "energy",
 ];
+const sectorMessageKeys: Record<string, MessageKey> = {
+  manufacturing: "industry",
+  logistics: "logistics",
+  tourism: "tourism",
+  trade: "trade",
+  it: "itTechnology",
+  agriculture: "agriculture",
+  construction: "constructionSector",
+  energy: "energy",
+};
 const emptyTranslation: AdminTranslation = {
   title: "",
   shortDescription: "",
@@ -47,6 +60,8 @@ function translation(object: AdminObject | undefined, locale: "uz" | "ru") {
 
 export function ObjectEditor({ object }: { object?: AdminObject }) {
   const router = useRouter();
+  const { t } = useLanguage();
+  const steps = stepKeys.map(t);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -71,15 +86,15 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
   const publishIssues = useMemo(
     () =>
       [
-        !form.uz.title && "O‘zbekcha nom",
-        !form.district && "tuman",
-        !form.cadastralNumber && "kadastr",
-        !form.latitude && "latitude",
-        !form.longitude && "longitude",
-        !form.investmentAmountUsd && "investitsiya hajmi",
-        !form.sectors.length && "soha",
+        !form.uz.title && t("uzbekName"),
+        !form.district && t("requiredDistrict"),
+        !form.cadastralNumber && t("requiredCadastral"),
+        !form.latitude && t("latitude"),
+        !form.longitude && t("longitude"),
+        !form.investmentAmountUsd && t("requiredInvestment"),
+        !form.sectors.length && t("requiredSector"),
       ].filter(Boolean),
-    [form],
+    [form, t],
   );
   const set = (key: string, value: string | string[]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -116,8 +131,8 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
         ? await adminObjectsApi.update(object.id, payload)
         : await adminObjectsApi.create(payload);
       router.replace(`/dashboard/projects/${saved.id}/edit`);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Saqlashda xatolik");
+    } catch {
+      setError(t("saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -130,10 +145,10 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
     <form className="admin-editor" onSubmit={onSubmit}>
       <header className="admin-page-header">
         <Link className="admin-back" href="/dashboard/projects">
-          <ChevronLeft size={16} /> Obyektlar
+          <ChevronLeft size={16} /> {t("objectsBack")}
         </Link>
         <button className="admin-outline" type="submit" disabled={saving}>
-          <Save size={16} /> Qoralama saqlash
+          <Save size={16} /> {t("saveDraft")}
         </button>
       </header>
       <ol className="admin-steps">
@@ -153,27 +168,27 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
       <section className="admin-form-card">
         {step === 0 && (
           <div className="admin-form-grid">
-            <Field label="Obyekt turi">
+            <Field label={t("objectType")}>
               <select
                 value={form.type}
                 onChange={(event) => set("type", event.target.value)}
               >
                 {["land", "building", "proposal"].map((item) => (
-                  <option key={item}>{item}</option>
+                  <option key={item} value={item}>{t(item as "land" | "building" | "proposal")}</option>
                 ))}
               </select>
             </Field>
-            <Field label="Status">
+            <Field label={t("status")}>
               <select
                 value={form.status}
                 onChange={(event) => set("status", event.target.value)}
               >
                 {["draft", "available", "auction", "upcoming"].map((item) => (
-                  <option key={item}>{item}</option>
+                  <option key={item} value={item}>{statusMessageKey(item) ? t(statusMessageKey(item)!) : item}</option>
                 ))}
               </select>
             </Field>
-            <Field label="O‘zbekcha nom">
+            <Field label={t("uzbekName")}>
               <input
                 value={form.uz.title}
                 onChange={(event) =>
@@ -181,7 +196,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                 }
               />
             </Field>
-            <Field label="Ruscha nom (ixtiyoriy)">
+            <Field label={t("russianNameOptional")}>
               <input
                 value={form.ru.title}
                 onChange={(event) =>
@@ -189,7 +204,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                 }
               />
             </Field>
-            <Field label="O‘zbekcha manzil">
+            <Field label={t("uzbekAddress")}>
               <input
                 value={form.uz.address}
                 onChange={(event) =>
@@ -197,13 +212,13 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                 }
               />
             </Field>
-            <Field label="Tuman">
+            <Field label={t("district")}>
               <input
                 value={form.district}
                 onChange={(event) => set("district", event.target.value)}
               />
             </Field>
-            <Field wide label="Qisqa tavsif">
+            <Field wide label={t("shortDescription")}>
               <textarea
                 value={form.uz.shortDescription}
                 onChange={(event) =>
@@ -211,7 +226,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                 }
               />
             </Field>
-            <Field wide label="Batafsil tavsif">
+            <Field wide label={t("detailedDescription")}>
               <textarea
                 value={form.uz.description}
                 onChange={(event) =>
@@ -225,11 +240,10 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
           <div className="admin-location">
             <div>
               <h2>
-                <MapPin size={18} /> Xarita joylashuvi
+                <MapPin size={18} /> {t("mapLocation")}
               </h2>
               <p>
-                Nuqtani xaritada bosing yoki koordinatani qo‘lda kiriting.
-                Marker darhol ko‘rinadi.
+                {t("mapLocationHelp")}
               </p>
             </div>
             <LocationPicker
@@ -240,7 +254,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
               }
             />
             <div className="admin-form-grid">
-              <Field label="Latitude">
+              <Field label={t("latitude")}>
                 <input
                   type="number"
                   step="any"
@@ -248,7 +262,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                   onChange={(event) => set("latitude", event.target.value)}
                 />
               </Field>
-              <Field label="Longitude">
+              <Field label={t("longitude")}>
                 <input
                   type="number"
                   step="any"
@@ -256,7 +270,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                   onChange={(event) => set("longitude", event.target.value)}
                 />
               </Field>
-              <Field wide label="Kadastr raqami">
+              <Field wide label={t("cadastralNumber")}>
                 <input
                   value={form.cadastralNumber}
                   onChange={(event) =>
@@ -269,7 +283,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
         )}
         {step === 2 && (
           <div className="admin-form-grid">
-            <Field label="Yer maydoni, ga">
+            <Field label={t("landArea")}>
               <input
                 type="number"
                 min="0"
@@ -277,7 +291,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                 onChange={(event) => set("landAreaHa", event.target.value)}
               />
             </Field>
-            <Field label="Bino maydoni, m²">
+            <Field label={t("buildingArea")}>
               <input
                 type="number"
                 min="0"
@@ -285,7 +299,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                 onChange={(event) => set("buildingAreaSqm", event.target.value)}
               />
             </Field>
-            <Field label="Investitsiya, USD">
+            <Field label={t("investmentUsd")}>
               <input
                 type="number"
                 min="0"
@@ -295,7 +309,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                 }
               />
             </Field>
-            <Field label="Ish o‘rni">
+            <Field label={t("workplace")}>
               <input
                 type="number"
                 min="0"
@@ -303,7 +317,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                 onChange={(event) => set("jobsPlanned", event.target.value)}
               />
             </Field>
-            <Field wide label="Soha">
+            <Field wide label={t("sector")}>
               <div className="admin-sector-list">
                 {sectors.map((sector) => (
                   <label key={sector}>
@@ -319,13 +333,13 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                         )
                       }
                     />
-                    {sector}
+                    {t(sectorMessageKeys[sector])}
                   </label>
                 ))}
               </div>
             </Field>
             {form.status === "auction" && (
-              <Field wide label="E-auksion havolasi">
+              <Field wide label={t("auctionLink")}>
                 <input
                   type="url"
                   value={form.auctionUrl}
@@ -343,17 +357,17 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
         )}{" "}
         {step === 4 && (
           <div className="admin-review">
-            <h2>Investor ko‘radigan ma’lumot</h2>
-            <h3>{form.uz.title || "Nomsiz obyekt"}</h3>
+            <h2>{t("reviewHeading")}</h2>
+            <h3>{form.uz.title || t("unnamedObject")}</h3>
             <p>
-              {form.district || "Tuman tanlanmagan"} ·{" "}
+              {form.district || t("districtNotSelected")} ·{" "}
               {form.landAreaHa || form.buildingAreaSqm || "—"}{" "}
-              {form.landAreaHa ? "ga" : "m²"}
+              {form.landAreaHa ? t("hectare") : "m²"}
             </p>
             <p>
               {publishIssues.length
-                ? `Nashr qilishdan oldin: ${publishIssues.join(", ")} kiritilishi kerak.`
-                : "Obyekt nashr qilishga tayyor."}
+                ? `${t("requiredBeforePublish")} ${publishIssues.join(", ")}.`
+                : t("readyToPublish")}
             </p>
           </div>
         )}
@@ -365,7 +379,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
           disabled={!step}
           onClick={() => setStep((value) => value - 1)}
         >
-          <ChevronLeft size={16} /> Oldingi
+          <ChevronLeft size={16} /> {t("previous")}
         </button>
         {step < steps.length - 1 ? (
           <button
@@ -373,7 +387,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
             className="admin-primary"
             onClick={() => setStep((value) => value + 1)}
           >
-            Keyingi <ChevronRight size={16} />
+            {t("next")} <ChevronRight size={16} />
           </button>
         ) : (
           <button
@@ -382,7 +396,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
             disabled={saving || publishIssues.length > 0}
             onClick={() => void submit(true)}
           >
-            <Send size={16} /> Nashr qilish
+            <Send size={16} /> {t("publish")}
           </button>
         )}
       </footer>
@@ -412,15 +426,13 @@ function MediaStep({
   media: AdminMedia[];
   onChange: (media: AdminMedia[]) => void;
 }) {
+  const { t } = useLanguage();
   const add = () => onChange([...media, { kind: "image", url: "", title: "" }]);
   return (
     <div className="admin-media">
       <div>
-        <h2>Media havolalari</h2>
-        <p>
-          Foto, video, PDF yoki 2:1 equirectangular 360° panorama uchun HTTPS
-          havola kiriting.
-        </p>
+        <h2>{t("mediaLinks")}</h2>
+        <p>{t("mediaHelp")}</p>
       </div>
       {media.map((item, index) => (
         <div className="admin-media-row" key={index}>
@@ -439,10 +451,10 @@ function MediaStep({
               )
             }
           >
-            <option value="image">Foto</option>
-            <option value="video">Video</option>
-            <option value="document">Hujjat</option>
-            <option value="virtual_tour">360° panorama</option>
+            <option value="image">{t("photo")}</option>
+            <option value="video">{t("video")}</option>
+            <option value="document">{t("document")}</option>
+            <option value="virtual_tour">{t("virtualTour")}</option>
           </select>
           <input
             type="url"
@@ -464,12 +476,12 @@ function MediaStep({
               onChange(media.filter((_, position) => position !== index))
             }
           >
-            Olib tashlash
+            {t("remove")}
           </button>
         </div>
       ))}
       <button type="button" className="admin-outline" onClick={add}>
-        + Media qo‘shish
+        + {t("addMedia")}
       </button>
     </div>
   );

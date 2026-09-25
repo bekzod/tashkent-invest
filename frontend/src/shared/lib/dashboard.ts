@@ -1,4 +1,5 @@
 import type { InvestmentObject } from '@/entities/investment-object/types';
+import type { MessageKey } from '@/shared/i18n/messages';
 
 export type DashboardSection =
   | 'overview'
@@ -9,10 +10,10 @@ export type DashboardSection =
   | 'profile'
   | 'settings';
 
-export function formatInvestmentAmount(value: number) {
+export function formatInvestmentAmount(value: number, locale: 'uz' | 'ru' = 'uz') {
   if (!Number.isFinite(value)) return '—';
-  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)} mlrd`;
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)} mln`;
+  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)} ${locale === 'ru' ? 'млрд' : 'mlrd'}`;
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)} ${locale === 'ru' ? 'млн' : 'mln'}`;
   return `$${value.toLocaleString('en-US')}`;
 }
 
@@ -22,21 +23,29 @@ export function projectAreaLabel(project: InvestmentObject) {
   return `${area} ${project.landAreaHa != null ? 'ga' : 'm²'}`;
 }
 
-export function applicationStatusLabel(status: string, locale: 'uz' | 'ru') {
-  const labels = locale === 'ru'
-    ? { pending: 'На рассмотрении', approved: 'Одобрено', rejected: 'Отклонено' }
-    : { pending: 'Ko‘rib chiqilmoqda', approved: 'Tasdiqlangan', rejected: 'Rad etilgan' };
-  return labels[status as keyof typeof labels] ?? status;
+export function statusMessageKey(status: string): MessageKey | undefined {
+  const keys: Record<string, MessageKey> = {
+    pending: 'pending',
+    approved: 'approved',
+    rejected: 'rejected',
+    draft: 'draft',
+    available: 'available',
+    auction: 'auction',
+    upcoming: 'upcoming',
+    archived: 'archived',
+  };
+  return keys[status];
 }
 
-export function dashboardSectionLabel(section: DashboardSection) {
-  return ({
-    overview: 'Bosh sahifa',
-    map: 'Investitsiya xaritasi',
-    projects: 'Loyihalar',
-    applications: 'Arizalarim',
-    favorites: 'Kuzatuvdagilar',
-    profile: 'Profil',
-    settings: 'Sozlamalar',
-  })[section];
+export function dashboardSectionMessageKey(section: DashboardSection): MessageKey {
+  const keys: Record<DashboardSection, MessageKey> = {
+    overview: 'dashboardHome',
+    map: 'investmentMap',
+    projects: 'projects',
+    applications: 'applications',
+    favorites: 'watched',
+    profile: 'profile',
+    settings: 'settings',
+  };
+  return keys[section];
 }

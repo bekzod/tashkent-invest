@@ -45,6 +45,8 @@ test('keeps server-rendered object cards visible while a locale refresh is pendi
   fireEvent.click(screen.getByRole('button', { name: 'Russian' }));
 
   expect(screen.getByText('Test object')).toBeVisible();
+  expect(screen.getByRole('heading', { name: 'Инвестируйте в будущее района' })).toBeVisible();
+  expect(screen.getByText('Тип объекта')).toBeVisible();
   expect(screen.queryAllByTestId('content-placeholder')).toHaveLength(0);
 });
 

@@ -44,8 +44,8 @@ export function ApplicationForm({ objectId }: { objectId: string }) {
       );
       setDone(true);
       event.currentTarget.reset();
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Error");
+    } catch {
+      setError(t("requestFailed"));
     } finally {
       setSubmitting(false);
     }

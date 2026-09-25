@@ -176,15 +176,11 @@ export function InvestmentMap({
     } catch (error) {
       if (!coordinator.isCurrent(request.id)) return;
       if (error instanceof Error && error.name === "AbortError") return;
-      setLoadError(
-        locale === "ru"
-          ? "Не удалось загрузить объекты карты."
-          : "Xarita obyektlarini yuklab bo‘lmadi.",
-      );
+      setLoadError(t("mapLoadFailed"));
     } finally {
       if (coordinator.isCurrent(request.id)) setIsLoading(false);
     }
-  }, [coordinator, locale, maxVisible]);
+  }, [coordinator, locale, maxVisible, t]);
 
   useEffect(() => {
     loadRef.current = () => {
@@ -434,7 +430,7 @@ export function InvestmentMap({
               ],
             )
             .setHTML(
-              `<strong>${object.title}</strong><br/><small>${object.district}</small>`,
+              `<strong>${object.title}</strong><br/><small>${object.address}</small>`,
             )
             .addTo(map);
       });
@@ -568,12 +564,12 @@ export function InvestmentMap({
       <div
         ref={holder}
         className="map-canvas"
-        aria-label="Toshkent investitsiya xaritasi"
+        aria-label={t("mapLabel")}
         data-selected-object-id={selected?.id || ""}
       />
       {isLoading && (
         <div className="map-loading-overlay" role="status" aria-live="polite">
-          {locale === "ru" ? "Обновление карты…" : "Xarita yangilanmoqda…"}
+          {t("mapUpdating")}
         </div>
       )}
       {loadError && (

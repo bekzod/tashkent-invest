@@ -12,7 +12,7 @@ export function ObjectCard({
   onSelect?: () => void;
   selected?: boolean;
 }) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const status =
     object.status === "auction"
       ? t("auction")
@@ -40,14 +40,14 @@ export function ObjectCard({
       </div>
       <div className="object-card-body">
         <p className="eyebrow">
-          {object.district} · {t(object.type)}
+          {object.address} · {t(object.type)}
         </p>
         <h3>{object.title}</h3>
         <p>{object.shortDescription}</p>
         <div className="object-card-meta">
-          <span>{object.landAreaHa ? `${object.landAreaHa} га` : "—"}</span>
+          <span>{object.landAreaHa ? `${object.landAreaHa} ${t("hectare")}` : "—"}</span>
           <strong>
-            ${Number(object.investmentAmountUsd).toLocaleString()}
+            ${Number(object.investmentAmountUsd).toLocaleString(locale === "ru" ? "ru-RU" : "uz-UZ")}
           </strong>
         </div>
         <Link

@@ -10,4 +10,5 @@ test('persists selected language in local storage', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Russian' }));
   expect(screen.getByTestId('locale')).toHaveTextContent('ru');
   expect(window.localStorage.getItem('tashkent-invest.locale')).toBe('ru');
+  expect(document.documentElement).toHaveAttribute('lang', 'ru');
 });

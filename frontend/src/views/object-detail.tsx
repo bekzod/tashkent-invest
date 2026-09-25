@@ -9,6 +9,40 @@ import { useLanguage } from "@/shared/i18n/language-provider";
 import { ApplicationForm } from "@/features/application/application-form";
 import { PanoramaViewer } from "@/features/virtual-tour/panorama-viewer";
 import { LazyImage } from "@/shared/ui/lazy-image";
+import type { MessageKey } from "@/shared/i18n/messages";
+
+const factKeys: Record<string, MessageKey> = {
+  electricity: "electricity",
+  gas: "gas",
+  water: "water",
+  sewerage: "sewerage",
+  internet: "internet",
+  asphaltRoad: "asphaltRoad",
+  status: "status",
+  ownership: "ownership",
+  maxFloors: "maxFloors",
+  coveragePercent: "coveragePercent",
+  tax: "tax",
+  support: "supportLabel",
+};
+
+const factValueKeys: Record<string, MessageKey> = {
+  "Tayyor hujjatlar": "readyDocuments",
+  "Davlat mulki": "stateProperty",
+  "Mahalliy imtiyozlar mavjud": "localBenefits",
+  "Hokimlik ko‘magi": "authoritySupport",
+};
+
+const sectorKeys: Record<string, MessageKey> = {
+  manufacturing: "industry",
+  logistics: "logistics",
+  tourism: "tourism",
+  trade: "trade",
+  it: "itTechnology",
+  agriculture: "agriculture",
+  construction: "constructionSector",
+  energy: "energy",
+};
 
 function Facts({
   title,
@@ -17,6 +51,7 @@ function Facts({
   title: string;
   values?: Record<string, string | number | boolean>;
 }) {
+  const { t } = useLanguage();
   if (!values) return null;
   return (
     <section className="facts">
@@ -24,9 +59,13 @@ function Facts({
       <dl>
         {Object.entries(values).map(([key, value]) => (
           <div key={key}>
-            <dt>{key}</dt>
+            <dt>{factKeys[key] ? t(factKeys[key]) : key}</dt>
             <dd>
-              {typeof value === "boolean" ? (value ? "✓" : "—") : String(value)}
+              {typeof value === "boolean"
+                ? (value ? "✓" : "—")
+                : typeof value === "string" && factValueKeys[value]
+                  ? t(factValueKeys[value])
+                  : String(value)}
             </dd>
           </div>
         ))}
@@ -78,7 +117,7 @@ export function ObjectDetail({
         <Link href="/map">{t("exploreMap")}</Link>
       </main>
     );
-  if (!object) return <main className="center-state">Loading…</main>;
+  if (!object) return <main className="center-state">{t("loading")}</main>;
   const image = object.media?.find((media) => media.kind === "image")?.url;
   const virtualTour = object.media?.find(
     (media) => media.kind === "virtual_tour",
@@ -130,14 +169,14 @@ export function ObjectDetail({
             <div>
               <span>{t("investment")}</span>
               <strong>
-                ${Number(object.investmentAmountUsd).toLocaleString()}
+                ${Number(object.investmentAmountUsd).toLocaleString(locale === "ru" ? "ru-RU" : "uz-UZ")}
               </strong>
             </div>
             <div>
               <span>{t("area")}</span>
               <strong>
                 {object.landAreaHa ?? object.buildingAreaSqm}{" "}
-                {object.landAreaHa ? "га" : "m²"}
+                {object.landAreaHa ? t("hectare") : "m²"}
               </strong>
             </div>
             <div>
@@ -159,7 +198,7 @@ export function ObjectDetail({
             <h2>{t("permitted")}</h2>
             <div className="chips">
               {object.permittedBusinesses?.map((business) => (
-                <span key={business}>{business}</span>
+                <span key={business}>{sectorKeys[business] ? t(sectorKeys[business]) : business}</span>
               ))}
             </div>
           </section>

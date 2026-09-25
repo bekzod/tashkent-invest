@@ -52,9 +52,9 @@ export function LoginView() {
       >
         <h1>{t("loginTitle")}</h1>
         <p className="demo-hint">
-          Investor: investor@demo.uz / invest2026
+          {t("investorDefaultName")}: investor@demo.uz / invest2026
           <br />
-          Admin: admin@demo.uz / invest2026
+          {t("adminDefaultName")}: admin@demo.uz / invest2026
         </p>
         {error && <p className="error">{t("loginFailed")}</p>}
         <label>

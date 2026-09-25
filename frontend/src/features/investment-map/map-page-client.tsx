@@ -54,8 +54,8 @@ function SelectedObjectPanel({
       : object.status === "upcoming"
         ? t("upcoming")
         : t("available");
-  const heading = locale === "ru" ? "Объект на карте" : "Xaritadagi obyekt";
-  const back = locale === "ru" ? "К списку" : "Ro‘yxatga qaytish";
+  const heading = t("objectOnMap");
+  const back = t("backToList");
   return (
     <aside
       className="map-results selected-object-panel"
@@ -84,13 +84,13 @@ function SelectedObjectPanel({
       <h2>{object.title}</h2>
       <p className="selected-object-location">
         <MapPin size={16} />
-        {object.district}
+        {object.address}
       </p>
       <p className="selected-object-description">{object.shortDescription}</p>
       <dl className="selected-object-facts">
         <div>
           <dt>{t("area")}</dt>
-          <dd>{object.landAreaHa ? `${object.landAreaHa} га` : "—"}</dd>
+          <dd>{object.landAreaHa ? `${object.landAreaHa} ${t("hectare")}` : "—"}</dd>
         </div>
         <div>
           <dt>{t("investment")}</dt>
@@ -155,28 +155,16 @@ export function MapPageClient({
     auction: t("auction"),
     upcoming: t("upcoming"),
   };
-  const sectorLabels =
-    locale === "ru"
-      ? {
-          manufacturing: "Промышленность",
-          logistics: "Логистика",
-          tourism: "Туризм",
-          trade: "Торговля",
-          it: "IT",
-          agriculture: "Сельское хозяйство",
-          construction: "Строительство",
-          energy: "Энергетика",
-        }
-      : {
-          manufacturing: "Sanoat",
-          logistics: "Logistika",
-          tourism: "Turizm",
-          trade: "Savdo",
-          it: "IT",
-          agriculture: "Qishloq xo‘jaligi",
-          construction: "Qurilish",
-          energy: "Energetika",
-        };
+  const sectorLabels = {
+    manufacturing: t("industry"),
+    logistics: t("logistics"),
+    tourism: t("tourism"),
+    trade: t("trade"),
+    it: "IT",
+    agriculture: t("agriculture"),
+    construction: t("constructionSector"),
+    energy: t("energy"),
+  };
 
   const selectArea = (
     area: GeographicArea,
@@ -269,15 +257,13 @@ export function MapPageClient({
           <div className="map-toolbar-header">
             <div>
               <span className="map-toolbar-kicker">
-                {locale === "ru" ? "Интерактивная карта" : "Interaktiv xarita"}
+                {t("interactiveMap")}
               </span>
               <h2>{t("filters")}</h2>
               <p>
                 {activeFilterCount
-                  ? `${activeFilterCount} ${locale === "ru" ? "активных фильтра" : "ta faol filtr"}`
-                  : locale === "ru"
-                    ? "Все объекты на карте"
-                    : "Xaritadagi barcha obyektlar"}
+                  ? `${activeFilterCount} ${t("activeFilters")}`
+                  : t("allMapObjects")}
               </p>
             </div>
             {!compact && (
@@ -291,7 +277,7 @@ export function MapPageClient({
             )}
           </div>
           <label className="map-search-field">
-            <span>{locale === "ru" ? "Поиск" : "Qidiruv"}</span>
+            <span>{t("searchLabel")}</span>
             <input
               value={filters.q}
               onChange={(event) => updateQuery(event.target.value)}
@@ -299,7 +285,7 @@ export function MapPageClient({
             />
           </label>
           <div className="map-filter-section">
-            <h3>{locale === "ru" ? "Тип объекта" : "Obyekt turi"}</h3>
+            <h3>{t("objectType")}</h3>
             <div className="filter-row">
             {types.map((type) => (
               <button
@@ -315,7 +301,7 @@ export function MapPageClient({
             </div>
           </div>
           <div className="map-filter-section">
-            <h3>{locale === "ru" ? "Статус" : "Holati"}</h3>
+            <h3>{t("status")}</h3>
             <div className="filter-row">
             {statuses.map((status) => (
               <button
@@ -332,7 +318,7 @@ export function MapPageClient({
           </div>
           {!compact && (
             <div className="map-filter-section">
-              <h3>{locale === "ru" ? "Направление" : "Yo‘nalish"}</h3>
+              <h3>{t("direction")}</h3>
               <div className="filter-row">
                 {sectors.map((sector) => (
                   <button

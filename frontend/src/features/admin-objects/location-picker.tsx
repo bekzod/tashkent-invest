@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import maplibregl, { type Map as MapLibreMap, type Marker } from "maplibre-gl";
+import { useLanguage } from "@/shared/i18n/language-provider";
 
 export function LocationPicker({
   latitude,
@@ -12,6 +13,7 @@ export function LocationPicker({
   longitude: string;
   onChange: (point: { latitude: string; longitude: string }) => void;
 }) {
+  const { t } = useLanguage();
   const node = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const marker = useRef<Marker | null>(null);
@@ -65,7 +67,7 @@ export function LocationPicker({
     <div className="admin-location-picker">
       <div ref={node} />
       <p>
-        Xaritada kerakli joyni bosing — latitude va longitude avtomatik to‘ladi.
+        {t("mapPickerHelp")}
       </p>
     </div>
   );

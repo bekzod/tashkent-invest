@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { LocalizedNotFound } from '@/views/not-found';
 
 export const metadata: Metadata = {
   title: 'Sahifa topilmadi',
   robots: { index: false, follow: false },
 };
 
-export default function NotFound() { return <main className="center-state"><h1>404</h1><p>Bu sahifa topilmadi.</p><Link className="button primary" href="/">Bosh sahifa</Link></main>; }
+export default function NotFound() { return <LocalizedNotFound />; }

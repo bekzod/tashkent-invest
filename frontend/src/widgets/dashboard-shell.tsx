@@ -5,6 +5,7 @@ import {
   Bell,
   ChevronDown,
   CircleHelp,
+  Globe2,
   LogOut,
   Map,
   Menu,
@@ -13,7 +14,8 @@ import {
 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { clearSession, type Session } from '@/shared/auth/session';
-import { dashboardSectionLabel, type DashboardSection } from '@/shared/lib/dashboard';
+import { dashboardSectionMessageKey, type DashboardSection } from '@/shared/lib/dashboard';
+import { useLanguage } from '@/shared/i18n/language-provider';
 import {
   dashboardSettingsEntry,
   getDashboardNavigation,
@@ -31,11 +33,12 @@ type Props = {
 export function DashboardShell({ activeSection, children, role, session }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const { locale, setLocale, t } = useLanguage();
   const navigation = getDashboardNavigation(role);
   const primaryAction = getDashboardPrimaryAction(role);
   const PrimaryIcon = primaryAction.icon;
   const SettingsIcon = dashboardSettingsEntry.icon;
-  const userName = session.user.name || (role === 'admin' ? 'Administrator' : 'Investor');
+  const userName = session.user.name || (role === 'admin' ? t('adminDefaultName') : t('investorDefaultName'));
   const initials = userName
     .split(/\s+/)
     .map((part) => part[0])
@@ -43,10 +46,10 @@ export function DashboardShell({ activeSection, children, role, session }: Props
     .slice(0, 2)
     .toUpperCase();
   const breadcrumb = role === 'admin' && activeSection === 'projects'
-    ? 'Obyektlar'
+    ? t('objectsBack')
     : role === 'admin' && activeSection === 'overview'
-      ? 'Boshqaruv paneli'
-      : dashboardSectionLabel(activeSection);
+      ? t('managementDashboard')
+      : t(dashboardSectionMessageKey(activeSection));
 
   function logout() {
     clearSession();
@@ -55,29 +58,29 @@ export function DashboardShell({ activeSection, children, role, session }: Props
 
   return (
     <div className={`invest-dashboard ${collapsed ? 'is-collapsed' : ''}`} data-dashboard-role={role}>
-      <aside className="dashboard-sidebar" aria-label="Dashboard navigation">
+      <aside className="dashboard-sidebar" aria-label={t('dashboardNavigation')}>
         <div className="dashboard-brand-row">
-          <Link href="/" className="dashboard-brand"><span className="dashboard-brand-mark"><Map size={21} /></span><span className="dashboard-brand-copy"><strong>Invest Tuman</strong><small>INVESTMENT PORTAL</small></span></Link>
-          <button className="dashboard-collapse" type="button" aria-label="Menyuni yig‘ish" onClick={() => setCollapsed((value) => !value)}><Menu size={19} /></button>
+          <Link href="/" className="dashboard-brand"><span className="dashboard-brand-mark"><Map size={21} /></span><span className="dashboard-brand-copy"><strong>Invest Tuman</strong><small>{t('portalName').toUpperCase()}</small></span></Link>
+          <button className="dashboard-collapse" type="button" aria-label={t('collapseMenu')} onClick={() => setCollapsed((value) => !value)}><Menu size={19} /></button>
         </div>
-        {role === 'admin' ? null : <Link className="dashboard-create" href={primaryAction.href}><PrimaryIcon size={19} /><span>{primaryAction.label}</span></Link>}
+        {role === 'admin' ? null : <Link className="dashboard-create" href={primaryAction.href}><PrimaryIcon size={19} /><span>{t(primaryAction.labelKey)}</span></Link>}
         <nav className="dashboard-nav">
-          <p>ASOSIY</p>
-          {navigation.map(({ icon: Icon, href, label, section }) => <Link className={`dashboard-nav-link ${section === activeSection ? 'active' : ''}`} href={href} key={href}><Icon size={18} /><span>{label}</span></Link>)}
-          {role === 'investor' ? <><p>SOZLAMALAR</p><Link className={`dashboard-nav-link ${activeSection === 'settings' ? 'active' : ''}`} href={dashboardSettingsEntry.href}><SettingsIcon size={18} /><span>{dashboardSettingsEntry.label}</span></Link></> : null}
+          <p>{t('mainSection')}</p>
+          {navigation.map(({ icon: Icon, href, labelKey, section }) => <Link className={`dashboard-nav-link ${section === activeSection ? 'active' : ''}`} href={href} key={href}><Icon size={18} /><span>{t(labelKey)}</span></Link>)}
+          {role === 'investor' ? <><p>{t('settingsSection')}</p><Link className={`dashboard-nav-link ${activeSection === 'settings' ? 'active' : ''}`} href={dashboardSettingsEntry.href}><SettingsIcon size={18} /><span>{t(dashboardSettingsEntry.labelKey)}</span></Link></> : null}
         </nav>
         <div className="dashboard-sidebar-bottom">
-          <button type="button" className="dashboard-help"><CircleHelp size={18} /><span>Yordam markazi</span></button>
+          <button type="button" className="dashboard-help"><CircleHelp size={18} /><span>{t('helpCenter')}</span></button>
           <button type="button" className="dashboard-profile-side" onClick={() => setProfileOpen((value) => !value)}><span className="dashboard-avatar">{initials}</span><span className="dashboard-profile-copy"><b>{userName}</b><small>{session.user.email}</small></span><ChevronDown size={16} /></button>
         </div>
       </aside>
 
       <section className="dashboard-stage">
         <header className="dashboard-topbar">
-          <div><p className="dashboard-breadcrumb">Kabinet / <b>{breadcrumb}</b></p></div>
+          <div><p className="dashboard-breadcrumb">{t('cabinet')} / <b>{breadcrumb}</b></p></div>
           <div className="dashboard-page-actions" id="dashboard-page-actions" />
-          <div className="dashboard-top-actions">{role === 'admin' && activeSection === 'projects' ? null : <button type="button" aria-label="Qidiruv"><Search size={18} /></button>}<button type="button" className="dashboard-notification" aria-label="Xabarnomalar"><Bell size={18} /><i /></button><div className="dashboard-divider" /><button type="button" className="dashboard-profile-button" onClick={() => setProfileOpen((value) => !value)}><span className="dashboard-avatar">{initials}</span><ChevronDown size={16} /></button></div>
-          {profileOpen ? <div className="dashboard-profile-menu"><div><span className="dashboard-avatar">{initials}</span><p><b>{userName}</b><small>{session.user.email}</small></p></div><Link href="/dashboard/profile"><UserRound size={16} />Profil sozlamalari</Link><button onClick={logout}><LogOut size={16} />Chiqish</button></div> : null}
+          <div className="dashboard-top-actions"><label className="locale-select"><Globe2 size={14}/><select aria-label={t('language')} value={locale} onChange={(event) => setLocale(event.target.value as 'uz' | 'ru')}><option value="uz">O‘z</option><option value="ru">RU</option></select></label>{role === 'admin' && activeSection === 'projects' ? null : <button type="button" aria-label={t('searchLabel')}><Search size={18} /></button>}<button type="button" className="dashboard-notification" aria-label={t('notifications')}><Bell size={18} /><i /></button><div className="dashboard-divider" /><button type="button" className="dashboard-profile-button" onClick={() => setProfileOpen((value) => !value)}><span className="dashboard-avatar">{initials}</span><ChevronDown size={16} /></button></div>
+          {profileOpen ? <div className="dashboard-profile-menu"><div><span className="dashboard-avatar">{initials}</span><p><b>{userName}</b><small>{session.user.email}</small></p></div><Link href="/dashboard/profile"><UserRound size={16} />{t('profileSettings')}</Link><button onClick={logout}><LogOut size={16} />{t('logout')}</button></div> : null}
         </header>
         <main className={`dashboard-content dashboard-content--${activeSection}`}>{children}</main>
       </section>

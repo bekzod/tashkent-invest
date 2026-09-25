@@ -14,6 +14,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (saved !== 'uz' && saved !== 'ru') return;
     queueMicrotask(() => setLocaleState(saved));
   }, []);
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
   const value = useMemo(() => ({ locale, setLocale: (next: Locale) => { window.localStorage.setItem(storageKey, next); setLocaleState(next); }, t: (key: MessageKey) => messages[locale][key] }), [locale]);
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

@@ -8,11 +8,14 @@ import { ListTable, type ListTableColumn } from "@/shared/ui/list-table";
 import { ServerPagination } from "@/shared/ui/server-pagination";
 import { adminObjectsApi } from "./api";
 import type { AdminObject, AdminObjectsMeta } from "./types";
+import { useLanguage } from "@/shared/i18n/language-provider";
+import { statusMessageKey } from "@/shared/lib/dashboard";
 
 const statuses = ["draft", "available", "auction", "upcoming", "archived"];
 const initialMeta: AdminObjectsMeta = { page: 1, limit: 10, total: 0, totalPages: 1 };
 
 export function AdminObjectsList() {
+  const { locale, t } = useLanguage();
   const [items, setItems] = useState<AdminObject[]>([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
@@ -49,42 +52,43 @@ export function AdminObjectsList() {
   const archive = useCallback(async (id: string) => {
     if (
       !window.confirm(
-        "Obyekt investorlar xaritasidan olib tashlanadi. Davom etilsinmi?",
+        t("archiveConfirm"),
       )
     )
       return;
     await adminObjectsApi.archive(id);
     await loadObjects();
-  }, [loadObjects]);
+  }, [loadObjects, t]);
 
   const columns = useMemo<ListTableColumn<AdminObject>[]>(
     () => [
       {
         id: "object",
-        header: "Obyekt",
+        header: t("objectsBack"),
         cell: (item) => (
           <span className="admin-object-cell">
             <b>
-              {item.translations?.find((translation) => translation.locale === "uz")?.title ||
-                "Nomsiz qoralama"}
+              {item.translations?.find((translation) => translation.locale === locale)?.title ||
+                item.translations?.find((translation) => translation.locale === "uz")?.title ||
+                t("unnamedDraft")}
             </b>
-            <small>{item.cadastralNumber || "Kadastr kiritilmagan"}</small>
+            <small>{item.cadastralNumber || t("cadastralMissing")}</small>
           </span>
         ),
       },
       {
         id: "district",
-        header: "Joylashuv",
+        header: t("location"),
         cell: (item) => item.district || "—",
       },
       {
         id: "status",
-        header: "Status",
-        cell: (item) => <span className={`admin-status ${item.status}`}>{item.status}</span>,
+        header: t("status"),
+        cell: (item) => <span className={`admin-status ${item.status}`}>{statusMessageKey(item.status) ? t(statusMessageKey(item.status)!) : item.status}</span>,
       },
       {
         id: "media",
-        header: "Media",
+        header: t("stepMedia"),
         align: "center",
         cell: (item) => item.media?.length || 0,
       },
@@ -94,11 +98,11 @@ export function AdminObjectsList() {
         align: "right",
         cell: (item) => (
           <div className="admin-table-actions">
-            <Link aria-label="Tahrirlash" href={`/dashboard/projects/${item.id}/edit`}>
+            <Link aria-label={t("edit")} href={`/dashboard/projects/${item.id}/edit`}>
               <PencilLine size={17} />
             </Link>
             {item.status !== "archived" && (
-              <button aria-label="Arxivlash" type="button" onClick={() => archive(item.id)}>
+              <button aria-label={t("archive")} type="button" onClick={() => archive(item.id)}>
                 <Archive size={17} />
               </button>
             )}
@@ -106,7 +110,7 @@ export function AdminObjectsList() {
         ),
       },
     ],
-    [archive],
+    [archive, locale, t],
   );
   const updateQuery = (value: string) => {
     setQuery(value);
@@ -127,7 +131,7 @@ export function AdminObjectsList() {
         <input
           value={query}
           onChange={(event) => updateQuery(event.target.value)}
-          placeholder="Nomi, tuman yoki kadastr"
+          placeholder={t("adminSearch")}
         />
       </label>
       <select
@@ -135,15 +139,15 @@ export function AdminObjectsList() {
         value={status}
         onChange={(event) => updateStatus(event.target.value)}
       >
-        <option value="">Barcha statuslar</option>
+        <option value="">{t("allStatuses")}</option>
         {statuses.map((value) => (
           <option key={value} value={value}>
-            {value}
+            {statusMessageKey(value) ? t(statusMessageKey(value)!) : value}
           </option>
         ))}
       </select>
       <Link className="admin-primary admin-topbar-create" href="/dashboard/projects/new">
-        <Plus size={17} /> Yangi obyekt
+        <Plus size={17} /> {t("newObject")}
       </Link>
     </div>
   );
@@ -156,7 +160,7 @@ export function AdminObjectsList() {
         data={items}
         getRowId={(item) => item.id}
         loading={loading}
-        emptyState={<p>Mos obyekt topilmadi.</p>}
+        emptyState={<p>{t("noMatchingObjects")}</p>}
       />
       <ServerPagination
         currentPage={meta.page}
