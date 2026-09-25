@@ -63,7 +63,9 @@ function Facts({
             <dt>{factKeys[key] ? t(factKeys[key]) : key}</dt>
             <dd>
               {typeof value === "boolean"
-                ? (value ? "✓" : "—")
+                ? value
+                  ? "✓"
+                  : "—"
                 : typeof value === "string" && factValueKeys[value]
                   ? t(factValueKeys[value])
                   : String(value)}
@@ -171,7 +173,10 @@ export function ObjectDetail({
             <div>
               <span>{t("investment")}</span>
               <strong>
-                ${Number(object.investmentAmountUsd).toLocaleString(locale === "ru" ? "ru-RU" : "uz-UZ")}
+                $
+                {Number(object.investmentAmountUsd).toLocaleString(
+                  locale === "ru" ? "ru-RU" : "uz-UZ",
+                )}
               </strong>
             </div>
             <div>
@@ -200,7 +205,9 @@ export function ObjectDetail({
             <h2>{t("permitted")}</h2>
             <div className="chips">
               {object.permittedBusinesses?.map((business) => (
-                <span key={business}>{sectorKeys[business] ? t(sectorKeys[business]) : business}</span>
+                <span key={business}>
+                  {sectorKeys[business] ? t(sectorKeys[business]) : business}
+                </span>
               ))}
             </div>
           </section>
@@ -223,7 +230,10 @@ export function ObjectDetail({
                 {t("activeAuction")}
               </a>
             ) : (
-              <ApplicationForm objectId={object.id} />
+              <ApplicationForm
+                objectId={object.id}
+                returnTo={`${localizedPath(locale, `/objects/${slug}`)}#application`}
+              />
             )}{" "}
             {object.status === "upcoming" && (
               <button className="button ghost" onClick={subscribe}>

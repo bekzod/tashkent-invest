@@ -18,6 +18,19 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: 'investor',
       },
+      consentedAt: { type: DataTypes.DATE, allowNull: true, field: 'consented_at' },
+      consentPolicyVersion: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        field: 'consent_policy_version',
+      },
+      consentLocale: {
+        type: DataTypes.STRING(2),
+        allowNull: true,
+        field: 'consent_locale',
+        validate: { isIn: [['uz', 'ru']] },
+      },
+      emailVerifiedAt: { type: DataTypes.DATE, allowNull: true, field: 'email_verified_at' },
     },
     { tableName: 'users', underscored: true },
   );

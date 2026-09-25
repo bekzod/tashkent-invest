@@ -1,69 +1,103 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { LanguageProvider } from '@/shared/i18n/language-provider';
-import { PublicHeader } from './public-header';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { LanguageProvider } from "@/shared/i18n/language-provider";
+import { PublicHeader } from "./public-header";
 
 const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
 
-vi.mock('next/navigation', () => ({
+vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
-vi.mock('next/link', () => ({
-  default: ({ children, href, ...props }: React.ComponentProps<'a'>) => (
-    <a href={href} {...props}>{children}</a>
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...props }: React.ComponentProps<"a">) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
   ),
 }));
 
 beforeEach(() => {
   pushMock.mockReset();
   window.localStorage.clear();
-  window.history.replaceState({}, '', '/ru/objects/demo?from=map#application');
+  window.history.replaceState({}, "", "/ru/objects/demo?from=map#application");
 });
 
 afterEach(() => {
   cleanup();
-  window.history.replaceState({}, '', '/');
+  window.history.replaceState({}, "", "/");
 });
 
-test('uses the active locale for every public navigation link', () => {
+test("uses the active locale for every public navigation link", () => {
   render(
     <LanguageProvider initialLocale="ru">
       <PublicHeader pathname="/ru/objects/demo" />
     </LanguageProvider>,
   );
 
-  expect(screen.getByRole('link', { name: /Invest Tuman/ })).toHaveAttribute('href', '/ru');
-  expect(screen.getByRole('link', { name: 'Карта' })).toHaveAttribute('href', '/ru/map');
-  expect(screen.getByRole('link', { name: 'Проекты' })).toHaveAttribute('href', '/ru#projects');
-  expect(screen.getByRole('link', { name: 'Аукционы' })).toHaveAttribute(
-    'href',
-    '/ru/map?statuses=auction',
+  expect(screen.getByRole("link", { name: /Invest Tuman/ })).toHaveAttribute(
+    "href",
+    "/ru",
   );
-  expect(screen.getByRole('link', { name: 'Новости' })).toHaveAttribute('href', '/ru#news');
-  expect(screen.getByRole('link', { name: /Войти/ })).toHaveAttribute('href', '/ru/login');
+  expect(screen.getByRole("link", { name: "Карта" })).toHaveAttribute(
+    "href",
+    "/ru/map",
+  );
+  expect(screen.getByRole("link", { name: "Проекты" })).toHaveAttribute(
+    "href",
+    "/ru#projects",
+  );
+  expect(screen.getByRole("link", { name: "Аукционы" })).toHaveAttribute(
+    "href",
+    "/ru/map?statuses=auction",
+  );
+  expect(screen.getByRole("link", { name: "Новости" })).toHaveAttribute(
+    "href",
+    "/ru#news",
+  );
+  expect(screen.getByRole("link", { name: /Войти/ })).toHaveAttribute(
+    "href",
+    "/ru/login",
+  );
+  expect(screen.getByRole("link", { name: /Регистрация/ })).toHaveAttribute(
+    "href",
+    "/ru/register",
+  );
 });
 
-test('switches to the equivalent localized URL and persists the choice', () => {
+test("switches to the equivalent localized URL and persists the choice", () => {
   render(
     <LanguageProvider initialLocale="ru">
       <PublicHeader pathname="/ru/objects/demo" />
     </LanguageProvider>,
   );
 
-  fireEvent.change(screen.getByRole('combobox', { name: 'Язык' }), {
-    target: { value: 'uz' },
+  fireEvent.change(screen.getByRole("combobox", { name: "Язык" }), {
+    target: { value: "uz" },
   });
 
-  expect(pushMock).toHaveBeenCalledWith('/uz/objects/demo?from=map#application');
-  expect(window.localStorage.getItem('tashkent-invest.locale')).toBe('uz');
+  expect(pushMock).toHaveBeenCalledWith(
+    "/uz/objects/demo?from=map#application",
+  );
+  expect(window.localStorage.getItem("tashkent-invest.locale")).toBe("uz");
 });
 
-test('keeps an authenticated dashboard destination unprefixed', async () => {
+test("keeps an authenticated dashboard destination unprefixed", async () => {
   window.localStorage.setItem(
-    'tashkent-invest.session',
+    "tashkent-invest.session",
     JSON.stringify({
-      token: 'token',
-      user: { id: 'admin-1', name: 'Admin', email: 'admin@example.com', role: 'admin' },
+      token: "token",
+      user: {
+        id: "admin-1",
+        name: "Admin",
+        email: "admin@example.com",
+        role: "admin",
+      },
     }),
   );
 
@@ -74,6 +108,25 @@ test('keeps an authenticated dashboard destination unprefixed', async () => {
   );
 
   await waitFor(() =>
-    expect(screen.getByRole('link', { name: /Войти/ })).toHaveAttribute('href', '/dashboard'),
+    expect(screen.getByRole("link", { name: /Кабинет/ })).toHaveAttribute(
+      "href",
+      "/dashboard",
+    ),
   );
+});
+
+test("opens an accessible mobile navigation menu", () => {
+  render(
+    <LanguageProvider initialLocale="uz">
+      <PublicHeader pathname="/uz" />
+    </LanguageProvider>,
+  );
+
+  const menu = screen.getByRole("button", { name: "Menyuni ochish" });
+  expect(menu).toHaveAttribute("aria-expanded", "false");
+  fireEvent.click(menu);
+  expect(
+    screen.getByRole("button", { name: "Menyuni yopish" }),
+  ).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getAllByRole("link", { name: "Xarita" })).toHaveLength(2);
 });

@@ -6,15 +6,25 @@ import { api } from "@/shared/api/client";
 import { readSession } from "@/shared/auth/session";
 import { useLanguage } from "@/shared/i18n/language-provider";
 import { localizedPath } from "@/shared/i18n/routing";
+import { withReturnTo } from "@/shared/auth/return-to";
 
-export function ApplicationForm({ objectId }: { objectId: string }) {
+export function ApplicationForm({
+  objectId,
+  returnTo,
+}: {
+  objectId: string;
+  returnTo?: string;
+}) {
   const { locale, t } = useLanguage();
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   if (!readSession())
     return (
-      <Link className="button primary" href={localizedPath(locale, "/login")}>
+      <Link
+        className="button primary"
+        href={withReturnTo(localizedPath(locale, "/login"), returnTo)}
+      >
         {t("login")}
       </Link>
     );
@@ -52,7 +62,7 @@ export function ApplicationForm({ objectId }: { objectId: string }) {
     }
   }
   return (
-    <form className="application-form" onSubmit={submit}>
+    <form id="application" className="application-form" onSubmit={submit}>
       <h2>{t("application")}</h2>
       {done && <p className="success">{t("applicationDone")}</p>}
       {error && <p className="error">{error}</p>}
