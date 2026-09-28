@@ -54,6 +54,14 @@ function finite(value, name) {
   return parsed;
 }
 
+function mapLimit(value, fallback = 800) {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1)
+    throw Object.assign(new Error('Invalid limit'), { statusCode: 400 });
+  return Math.min(parsed, 800);
+}
+
 function smartQuery(value) {
   let query = String(value || '').trim();
   const normalized = query.toLocaleLowerCase();
@@ -177,4 +185,5 @@ module.exports = {
   sectors,
   smartQuery,
   preferredTranslations,
+  mapLimit,
 };

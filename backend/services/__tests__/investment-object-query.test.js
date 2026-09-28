@@ -5,6 +5,7 @@ const {
   buildPublicWhere,
   buildWhere,
   filterObjects,
+  mapLimit,
   parseFilters,
 } = require('../investment-object-query');
 
@@ -114,4 +115,12 @@ test('keeps a location term after extracting a smart query filter', () => {
 
   expect(filters.q).toBe('Yunusobod');
   expect(filters.sectors).toEqual(['manufacturing']);
+});
+
+test('bounds map responses with a validated deterministic limit', () => {
+  expect(mapLimit(undefined)).toBe(800);
+  expect(mapLimit('20')).toBe(20);
+  expect(mapLimit('5000')).toBe(800);
+  expect(() => mapLimit('0')).toThrow('Invalid limit');
+  expect(() => mapLimit('2.5')).toThrow('Invalid limit');
 });

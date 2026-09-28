@@ -10,6 +10,8 @@ type MapSearchParams = {
   types?: string | string[];
   statuses?: string | string[];
   sectors?: string | string[];
+  areaMin?: string | string[];
+  areaMax?: string | string[];
 };
 
 type LocalizedMapPageProps = {
@@ -19,6 +21,11 @@ type LocalizedMapPageProps = {
 
 const list = (value: string | string[] | undefined) =>
   (Array.isArray(value) ? value[0] : value || '').split(',').filter(Boolean);
+
+const number = (value: string | string[] | undefined) => {
+  const parsed = Number(Array.isArray(value) ? value[0] : value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+};
 
 export async function generateMetadata({ params }: LocalizedMapPageProps): Promise<Metadata> {
   const { locale } = await params;
@@ -57,6 +64,8 @@ export default async function LocalizedMapPage({ params, searchParams }: Localiz
           types: list(query.types),
           statuses: list(query.statuses),
           sectors: list(query.sectors),
+          areaMin: number(query.areaMin),
+          areaMax: number(query.areaMax),
         }}
       />
     </main>

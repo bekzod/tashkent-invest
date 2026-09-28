@@ -115,6 +115,7 @@ export function InvestmentMap({
   cluster = true,
   maxVisible,
   showControls = true,
+  animateAreaChanges = true,
 }: {
   filters: MapFilters;
   selected?: InvestmentObject | null;
@@ -124,6 +125,7 @@ export function InvestmentMap({
   cluster?: boolean;
   maxVisible?: number;
   showControls?: boolean;
+  animateAreaChanges?: boolean;
 }) {
   const holder = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -184,25 +186,11 @@ export function InvestmentMap({
     setLoadError(null);
     try {
       const collection = await api<FeatureCollection>(
-        `/objects/map?${buildMapQuery(bounds(map), filtersRef.current)}`,
+        `/objects/map?${buildMapQuery(bounds(map), filtersRef.current, maxVisible)}`,
         { signal: request.signal },
         locale,
       );
       if (!coordinator.isCurrent(request.id)) return;
-      const visible =
-        maxVisible && collection.features.length > maxVisible
-          ? {
-              ...collection,
-              features: collection.features
-                .filter(
-                  (_, index) =>
-                    index %
-                      Math.ceil(collection.features.length / maxVisible) ===
-                    0,
-                )
-                .slice(0, maxVisible),
-            }
-          : collection;
       objectsByIdRef.current = new Map(
         collection.features.map((feature) => [
           feature.properties.id,
@@ -211,8 +199,8 @@ export function InvestmentMap({
       );
       (
         map.getSource("objects") as unknown as GeoJsonSource | undefined
-      )?.setData(visible);
-      const boundaries = objectBoundaryFeatures(visible.features);
+      )?.setData(collection);
+      const boundaries = objectBoundaryFeatures(collection.features);
       (
         map.getSource("object-boundaries") as unknown as GeoJsonSource | undefined
       )?.setData(boundaries);
@@ -597,10 +585,10 @@ export function InvestmentMap({
     if (nextBounds)
       map?.fitBounds(nextBounds, {
         padding: 72,
-        duration: 650,
+        duration: animateAreaChanges ? 650 : 0,
         maxZoom: 13,
       });
-  }, [filters.areaKind, filters.polygon]);
+  }, [animateAreaChanges, filters.areaKind, filters.polygon]);
   useEffect(() => {
     if (mapRef.current) setSelectedObject(mapRef.current, selected);
   }, [selected]);

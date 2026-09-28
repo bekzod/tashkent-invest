@@ -6,6 +6,7 @@ const {
   parseFilters,
   buildPublicWhere,
   filterObjects,
+  mapLimit,
 } = require('../../services/investment-object-query');
 const { feature, preview, detail } = require('../../services/investment-object-presenter');
 
@@ -65,15 +66,17 @@ module.exports = async (app) => {
     route(async (request) => {
       const requestLocale = locale(request);
       const filters = parseFilters(request.query);
+      const limit = mapLimit(request.query.limit);
       await resolveAreaPolygon(app, filters, request.query.areaSlug);
       const objects = filterObjects(
         await app.db.InvestmentObject.findAll({
           where: publicWhere(filters),
           include,
+          order: [['slug', 'ASC']],
         }),
         filters,
         requestLocale,
-      );
+      ).slice(0, limit);
       return {
         type: 'FeatureCollection',
         features: objects.map((object) => feature(object, requestLocale)),

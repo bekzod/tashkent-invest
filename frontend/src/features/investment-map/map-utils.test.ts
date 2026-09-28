@@ -3,10 +3,13 @@ import { buildMapQuery, objectBoundaryFeatures, objectSelectionGeometry, objectT
 
 describe('map query', () => {
   test('serializes viewport, filters and polygon', () => {
-    const query = buildMapQuery([69.1, 41.2, 69.4, 41.5], { q: 'Yunusobod', types: ['land'], statuses: [], sectors: ['logistics'], polygon: { type: 'Polygon', coordinates: [[[69.1, 41.2], [69.2, 41.2], [69.1, 41.2]]] } });
+    const query = buildMapQuery([69.1, 41.2, 69.4, 41.5], { q: 'Yunusobod', types: ['land'], statuses: [], sectors: ['logistics'], areaMin: 5, areaMax: 25, polygon: { type: 'Polygon', coordinates: [[[69.1, 41.2], [69.2, 41.2], [69.1, 41.2]]] } }, 20);
     expect(query).toContain('bbox=69.1%2C41.2%2C69.4%2C41.5');
     expect(query).toContain('types=land');
     expect(query).toContain('sectors=logistics');
+    expect(query).toContain('areaMin=5');
+    expect(query).toContain('areaMax=25');
+    expect(query).toContain('limit=20');
   });
   test('uses an area slug instead of serializing a recognised boundary', () => {
     const query = buildMapQuery([69.1, 41.2, 69.4, 41.5], {

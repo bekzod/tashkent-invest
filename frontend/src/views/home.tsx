@@ -10,16 +10,22 @@ import {
   Landmark,
   Map,
   Search,
+  SlidersHorizontal,
   Store,
   Tractor,
   Truck,
   Users,
 } from 'lucide-react';
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { ObjectCard } from '@/entities/investment-object/object-card';
 import type { InvestmentObject } from '@/entities/investment-object/types';
 import { MapPageClient } from '@/features/investment-map/map-page-client';
 import { uniqueObjects } from '@/features/landing/unique-objects';
+import {
+  emptyHomeMapFilters,
+  homeMapHref,
+  toMapFilters,
+} from '@/features/landing/home-map-filters';
 import { api } from '@/shared/api/client';
 import { useLanguage } from '@/shared/i18n/language-provider';
 import { localizedPath } from '@/shared/i18n/routing';
@@ -59,9 +65,12 @@ export default function HomePage({
   const [isLoading, setIsLoading] = useState(!hasInitialData);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [selectedTypes, setSelectedTypes] = useState(['land', 'auction']);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedSector, setSelectedSector] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [area, setArea] = useState(58);
+  const [area, setArea] = useState(0);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
     if (loadedLocale === locale && retryCount === 0) return;
@@ -109,19 +118,38 @@ export default function HomePage({
     { value: 'land', label: t('land') },
     { value: 'building', label: t('building') },
     { value: 'proposal', label: t('proposal') },
+  ];
+  const statusOptions = [
+    { value: 'available', label: t('available') },
     { value: 'auction', label: t('auction') },
     { value: 'upcoming', label: t('upcoming') },
   ];
   const toggleType = (type: string) => setSelectedTypes((current) => current.includes(type) ? current.filter((item) => item !== type) : [...current, type]);
-  const mapSearchHref = () => {
-    const params = new URLSearchParams();
-    const typeFilters = selectedTypes.filter((type) => ['land', 'building', 'proposal'].includes(type));
-    const statusFilters = selectedTypes.filter((type) => ['auction', 'upcoming'].includes(type));
-    if (searchQuery.trim()) params.set('q', searchQuery.trim());
-    if (typeFilters.length) params.set('types', typeFilters.join(','));
-    if (statusFilters.length) params.set('statuses', statusFilters.join(','));
-    const query = params.toString();
-    return localizedPath(locale, query ? `/map?${query}` : '/map');
+  const toggleStatus = (status: string) => setSelectedStatuses((current) => current.includes(status) ? current.filter((item) => item !== status) : [...current, status]);
+  const discoveryFilters = {
+    q: searchQuery,
+    selections: [...selectedTypes, ...selectedStatuses],
+    sector: selectedSector,
+    areaMin: area,
+  };
+  const embeddedMapFilters = useMemo(
+    () =>
+      toMapFilters({
+        q: searchQuery,
+        selections: [...selectedTypes, ...selectedStatuses],
+        sector: selectedSector,
+        areaMin: area,
+      }),
+    [area, searchQuery, selectedSector, selectedStatuses, selectedTypes],
+  );
+  const mapSearchHref = () => homeMapHref(locale, discoveryFilters);
+  const clearFilters = () => {
+    const empty = emptyHomeMapFilters();
+    setSearchQuery(empty.q);
+    setSelectedTypes([]);
+    setSelectedStatuses([]);
+    setSelectedSector(empty.sector);
+    setArea(empty.areaMin);
   };
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -147,18 +175,39 @@ export default function HomePage({
         </div>
 
         <div className="reference-map" aria-label={t('mapLabel')}>
-          <MapPageClient compact showToolbar={false} showMapControls={false} />
+          <MapPageClient
+            compact
+            showToolbar={false}
+            showMapControls={false}
+            controlledFilters={embeddedMapFilters}
+          />
         </div>
 
         <aside className="reference-filter" aria-label={t('filters')}>
-          <div className="filter-heading"><strong>{t('filters')}</strong><button type="button" onClick={() => { setSelectedTypes([]); setArea(58); }}>{t('clear')}</button></div>
-          <fieldset>
-            <legend>{t('objectType')}</legend>
-            {typeOptions.map((item) => <label key={item.value}><input type="checkbox" checked={selectedTypes.includes(item.value)} onChange={() => toggleType(item.value)} />{item.label}</label>)}
-          </fieldset>
-          <label className="reference-select"><span>{t('direction')}</span><select defaultValue="manufacturing"><option value="manufacturing">{t('industry')}</option><option value="logistics">{t('logistics')}</option><option value="tourism">{t('tourism')}</option></select></label>
-          <label className="reference-range"><span>{t('area')}, {t('hectare')}</span><input type="range" min="0" max="100" value={area} onChange={(event) => setArea(Number(event.target.value))} /><small>0 <b>{area}+</b> 100+</small></label>
-          <Link className="button primary filter-submit" href={mapSearchHref()}>{t('showObjects')}</Link>
+          <button
+            type="button"
+            className="home-filter-toggle"
+            aria-expanded={mobileFiltersOpen}
+            aria-controls="home-filter-fields"
+            onClick={() => setMobileFiltersOpen((current) => !current)}
+          >
+            <SlidersHorizontal size={18} aria-hidden="true" />
+            {mobileFiltersOpen ? t('hideFilters') : t('showFilters')}
+          </button>
+          <div id="home-filter-fields" className={`home-filter-fields ${mobileFiltersOpen ? 'is-open' : ''}`}>
+            <div className="filter-heading"><strong>{t('filters')}</strong><button type="button" onClick={clearFilters}>{t('clear')}</button></div>
+            <fieldset>
+              <legend>{t('objectType')}</legend>
+              {typeOptions.map((item) => <label key={item.value}><input type="checkbox" checked={selectedTypes.includes(item.value)} onChange={() => toggleType(item.value)} />{item.label}</label>)}
+            </fieldset>
+            <fieldset>
+              <legend>{t('status')}</legend>
+              {statusOptions.map((item) => <label key={item.value}><input type="checkbox" checked={selectedStatuses.includes(item.value)} onChange={() => toggleStatus(item.value)} />{item.label}</label>)}
+            </fieldset>
+            <label className="reference-select"><span>{t('direction')}</span><select value={selectedSector} onChange={(event) => setSelectedSector(event.target.value)}><option value="">{t('allDirections')}</option><option value="manufacturing">{t('industry')}</option><option value="logistics">{t('logistics')}</option><option value="tourism">{t('tourism')}</option><option value="trade">{t('trade')}</option><option value="it">IT</option><option value="agriculture">{t('agriculture')}</option><option value="construction">{t('constructionSector')}</option><option value="energy">{t('energy')}</option></select></label>
+            <label className="reference-range"><span>{t('area')}, {t('hectare')}</span><input type="range" min="0" max="100" value={area} onChange={(event) => setArea(Number(event.target.value))} /><small>0 <b>{area}+</b> 100+</small></label>
+            <Link className="button primary filter-submit" href={mapSearchHref()}>{t('showObjects')}</Link>
+          </div>
         </aside>
       </div>
     </section>

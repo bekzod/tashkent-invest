@@ -6,13 +6,19 @@ export type MapFilters = {
   types: string[];
   statuses: string[];
   sectors: string[];
+  areaMin?: number;
+  areaMax?: number;
   polygon?: GeoJSON.Polygon;
   districtPolygon?: GeoJSON.Polygon;
   areaSlug?: string;
   areaKind?: 'district' | 'locality' | 'manual';
   areaMatchesQuery?: boolean;
 };
-export function buildMapQuery(bbox: [number, number, number, number], filters: MapFilters) {
+export function buildMapQuery(
+  bbox: [number, number, number, number],
+  filters: MapFilters,
+  limit?: number,
+) {
   const params = new URLSearchParams({ bbox: bbox.join(',') });
   if (filters.areaSlug) params.set('areaSlug', filters.areaSlug);
   // A recognised geographic area is already represented by its polygon. Do not
@@ -21,6 +27,9 @@ export function buildMapQuery(bbox: [number, number, number, number], filters: M
   if (filters.types.length) params.set('types', filters.types.join(','));
   if (filters.statuses.length) params.set('statuses', filters.statuses.join(','));
   if (filters.sectors.length) params.set('sectors', filters.sectors.join(','));
+  if (filters.areaMin !== undefined) params.set('areaMin', String(filters.areaMin));
+  if (filters.areaMax !== undefined) params.set('areaMax', String(filters.areaMax));
+  if (limit !== undefined) params.set('limit', String(limit));
   if (filters.polygon && !filters.areaSlug) params.set('polygon', JSON.stringify(filters.polygon));
   return params.toString();
 }

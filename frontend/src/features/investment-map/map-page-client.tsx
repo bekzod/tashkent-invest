@@ -53,7 +53,70 @@ type Props = {
   showToolbar?: boolean;
   showMapControls?: boolean;
   initialFilters?: Partial<MapFilters>;
+  controlledFilters?: Partial<MapFilters>;
 };
+
+function CompactMapResults({
+  objects,
+  selected,
+  ready,
+  onSelect,
+  onClear,
+}: {
+  objects: InvestmentObject[];
+  selected: InvestmentObject | null;
+  ready: boolean;
+  onSelect: (object: InvestmentObject) => void;
+  onClear: () => void;
+}) {
+  const { locale, t } = useLanguage();
+
+  if (selected)
+    return (
+      <aside className="compact-map-preview" data-testid="home-map-preview" aria-live="polite">
+        <div>
+          <span>{t("objectOnMap")}</span>
+          <h2>{selected.title}</h2>
+          <p>{selected.address}</p>
+        </div>
+        <div className="compact-map-preview-actions">
+          <Link
+            className="button primary"
+            href={localizedPath(locale, `/objects/${selected.slug}`)}
+          >
+            {t("details")}
+          </Link>
+          <button type="button" onClick={onClear}>
+            {t("backToList")}
+          </button>
+        </div>
+      </aside>
+    );
+
+  return (
+    <aside className="compact-map-results" aria-label={t("mapLabel")} aria-live="polite">
+      {!ready ? (
+        <p>{t("mapUpdating")}</p>
+      ) : objects.length ? (
+        <div>
+          {objects.slice(0, 4).map((object) => (
+            <button
+              type="button"
+              key={object.id}
+              data-testid="home-map-result"
+              onClick={() => onSelect(object)}
+            >
+              <strong>{object.title}</strong>
+              <span>{object.address}</span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p>{t("noResults")}</p>
+      )}
+    </aside>
+  );
+}
 
 function SelectedObjectPanel({
   object,
@@ -140,18 +203,56 @@ export function MapPageClient({
   showToolbar = true,
   showMapControls = true,
   initialFilters,
+  controlledFilters,
 }: Props) {
   const { locale, t } = useLanguage();
   const initialQuery = useRef(initialFilters?.q || "");
   const [filters, setFilters] = useState<MapFilters>(() => ({
     ...initial,
     ...initialFilters,
+    ...controlledFilters,
   }));
   const [areas, setAreas] = useState<GeographicArea[]>([]);
   const [features, setFeatures] = useState<FeatureCollection["features"]>([]);
+  const [featuresReady, setFeaturesReady] = useState(false);
   const [selected, setSelected] = useState<InvestmentObject | null>(null);
+  const [selectedFilterKey, setSelectedFilterKey] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [resultPage, setResultPage] = useState(1);
+  const effectiveFilters = useMemo(
+    () =>
+      controlledFilters
+        ? {
+            ...filters,
+            q: controlledFilters.q || "",
+            types: controlledFilters.types || [],
+            statuses: controlledFilters.statuses || [],
+            sectors: controlledFilters.sectors || [],
+            areaMin: controlledFilters.areaMin,
+            areaMax: controlledFilters.areaMax,
+          }
+        : filters,
+    [controlledFilters, filters],
+  );
+  const filterSelectionKey = JSON.stringify({
+    q: effectiveFilters.q.trim(),
+    types: effectiveFilters.types,
+    statuses: effectiveFilters.statuses,
+    sectors: effectiveFilters.sectors,
+    areaMin: effectiveFilters.areaMin,
+    areaMax: effectiveFilters.areaMax,
+    areaSlug: effectiveFilters.areaSlug,
+    polygon: effectiveFilters.areaKind === "manual" ? effectiveFilters.polygon : undefined,
+  });
+  const currentSelected =
+    selectedFilterKey === filterSelectionKey ? selected : null;
+  const selectObject = useCallback(
+    (object: InvestmentObject | null) => {
+      setSelected(object);
+      setSelectedFilterKey(object ? filterSelectionKey : "");
+    },
+    [filterSelectionKey],
+  );
   const objects = useMemo(
     () => features.map((feature) => feature.properties),
     [features],
@@ -164,10 +265,11 @@ export function MapPageClient({
   );
   const district = useMemo(() => getTashkentDistrict(areas), [areas]);
   const activeFilterCount =
-    (filters.q.trim() ? 1 : 0) +
-    filters.types.length +
-    filters.statuses.length +
-    filters.sectors.length;
+    (effectiveFilters.q.trim() ? 1 : 0) +
+    effectiveFilters.types.length +
+    effectiveFilters.statuses.length +
+    effectiveFilters.sectors.length +
+    (effectiveFilters.areaMin !== undefined || effectiveFilters.areaMax !== undefined ? 1 : 0);
   const typeLabels = {
     land: t("land"),
     building: t("building"),
@@ -281,6 +383,7 @@ export function MapPageClient({
   const updateFeatures = useCallback(
     (nextFeatures: FeatureCollection["features"]) => {
       setFeatures(nextFeatures);
+      setFeaturesReady(true);
       setResultPage((current) =>
         clampResultPage(current, nextFeatures.length, MAP_RESULT_PAGE_SIZE),
       );
@@ -394,20 +497,30 @@ export function MapPageClient({
         </div>
       )}
       <InvestmentMap
-        filters={filters}
-        selected={selected}
+        filters={effectiveFilters}
+        selected={currentSelected}
         onFeatures={updateFeatures}
-        onSelect={setSelected}
+        onSelect={selectObject}
         onPolygonChange={setPolygon}
         cluster={false}
         maxVisible={compact ? 20 : 800}
         showControls={showMapControls}
+        animateAreaChanges={!compact}
       />
+      {compact && (
+        <CompactMapResults
+          objects={objects}
+          selected={currentSelected}
+          ready={featuresReady}
+          onSelect={selectObject}
+          onClear={() => selectObject(null)}
+        />
+      )}
       {!compact &&
-        (selected ? (
+        (currentSelected ? (
           <SelectedObjectPanel
-            object={selected}
-            onBack={() => setSelected(null)}
+            object={currentSelected}
+            onBack={() => selectObject(null)}
           />
         ) : (
           <aside className="map-results">
@@ -421,7 +534,7 @@ export function MapPageClient({
                 <ObjectCard
                   object={object}
                   key={object.id}
-                  onSelect={() => setSelected(object)}
+                  onSelect={() => selectObject(object)}
                 />
               ))
             ) : (
