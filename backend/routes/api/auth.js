@@ -20,7 +20,7 @@ function publicUser(user) {
   };
 }
 
-function createFixedWindowLimiter({ limit, windowMs }) {
+function createFixedWindowLimiter({ limit, windowMs, keyFor = (request) => request.ip }) {
   const attempts = new Map();
 
   return function check(request, reply) {
@@ -31,7 +31,7 @@ function createFixedWindowLimiter({ limit, windowMs }) {
       }
       while (attempts.size > 10_000) attempts.delete(attempts.keys().next().value);
     }
-    const key = request.ip;
+    const key = keyFor(request);
     const current = attempts.get(key);
     const entry =
       !current || current.resetAt <= now ? { count: 0, resetAt: now + windowMs } : current;
@@ -48,8 +48,18 @@ function createFixedWindowLimiter({ limit, windowMs }) {
 }
 
 module.exports = async (app) => {
-  const limitLogin = createFixedWindowLimiter({ limit: 10, windowMs: 15 * 60 * 1000 });
-  const limitRegistration = createFixedWindowLimiter({ limit: 5, windowMs: 60 * 60 * 1000 });
+  const identityKey = (request) =>
+    `${request.ip}:${normalizeEmail(request.body?.email || 'unknown')}`;
+  const limitLogin = createFixedWindowLimiter({
+    limit: 10,
+    windowMs: 15 * 60 * 1000,
+    keyFor: identityKey,
+  });
+  const limitRegistration = createFixedWindowLimiter({
+    limit: 5,
+    windowMs: 60 * 60 * 1000,
+    keyFor: identityKey,
+  });
 
   app.post(
     '/login',

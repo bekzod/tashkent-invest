@@ -20,14 +20,26 @@ module.exports = (sequelize, DataTypes) => {
       },
       projectDescription: { type: DataTypes.TEXT, allowNull: true, field: 'project_description' },
       comment: { type: DataTypes.TEXT, allowNull: true },
-      status: { type: DataTypes.ENUM('received'), allowNull: false, defaultValue: 'received' },
+      status: {
+        type: DataTypes.ENUM('received', 'in_review', 'approved', 'rejected'),
+        allowNull: false,
+        defaultValue: 'received',
+      },
+      reviewerUserId: { type: DataTypes.UUID, allowNull: true, field: 'reviewer_user_id' },
+      reviewedAt: { type: DataTypes.DATE, allowNull: true, field: 'reviewed_at' },
+      reviewNote: { type: DataTypes.TEXT, allowNull: true, field: 'review_note' },
     },
     { tableName: 'applications', underscored: true },
   );
 
-  Application.associate = ({ User, InvestmentObject }) => {
+  Application.associate = ({ User, InvestmentObject, ApplicationStatusHistory }) => {
     Application.belongsTo(User, { as: 'user', foreignKey: 'user_id' });
     Application.belongsTo(InvestmentObject, { as: 'object', foreignKey: 'investment_object_id' });
+    Application.belongsTo(User, { as: 'reviewer', foreignKey: 'reviewer_user_id' });
+    Application.hasMany(ApplicationStatusHistory, {
+      as: 'history',
+      foreignKey: 'application_id',
+    });
   };
 
   return Application;

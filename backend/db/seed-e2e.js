@@ -38,14 +38,32 @@ function demoStatus(index) {
 }
 
 async function seedDemoUsers(database, passwordHash) {
-  await database.User.findOrCreate({
+  const [investor] = await database.User.findOrCreate({
     where: { email: 'investor@demo.uz' },
     defaults: { name: 'Demo Investor', passwordHash },
   });
-  await database.User.findOrCreate({
+  const [admin] = await database.User.findOrCreate({
     where: { email: 'admin@demo.uz' },
     defaults: { name: 'Portal Admin', passwordHash, role: 'admin' },
   });
+  const lifecycleInvestors = await Promise.all(
+    ['desktop', 'mobile'].map(async (device) => {
+      const [user] = await database.User.findOrCreate({
+        where: { email: `application-${device}@demo.uz` },
+        defaults: { name: `Application ${device} investor`, passwordHash },
+      });
+      await user.update({
+        name: `Application ${device} investor`,
+        passwordHash,
+        role: 'investor',
+        isActive: true,
+      });
+      return user;
+    }),
+  );
+  await investor.update({ name: 'Demo Investor', passwordHash, role: 'investor', isActive: true });
+  await admin.update({ name: 'Portal Admin', passwordHash, role: 'admin', isActive: true });
+  return { investor, admin, lifecycleInvestors };
 }
 
 async function seedDemoObjects(database) {
@@ -156,8 +174,16 @@ async function seedE2E(database = db) {
     throw new Error('Refusing to seed demo inventory without ALLOW_E2E_SEED=true');
   }
   await seedVerifiedBaseline(database);
-  await seedDemoUsers(database, await bcrypt.hash('invest2026', 10));
+  const { investor, lifecycleInvestors } = await seedDemoUsers(
+    database,
+    await bcrypt.hash('invest2026', 10),
+  );
   const objects = await seedDemoObjects(database);
+  // Exact demo-user cleanup keeps the mutable lifecycle test repeatable without
+  // touching production-like investors or relying on wildcard deletion.
+  await database.Application.destroy({
+    where: { userId: [investor.id, ...lifecycleInvestors.map((user) => user.id)] },
+  });
   console.log(`Seeded ${objects.length} isolated E2E investment objects.`);
 }
 

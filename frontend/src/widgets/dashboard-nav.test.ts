@@ -7,6 +7,7 @@ describe('getDashboardNavigation', () => {
     expect(getDashboardNavigation('admin').map((entry) => entry.href)).toEqual([
       '/dashboard',
       '/dashboard/projects',
+      '/dashboard/applications',
     ]);
   });
 });

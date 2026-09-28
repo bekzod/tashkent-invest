@@ -48,6 +48,8 @@ export function DashboardShell({ activeSection, children, role, session }: Props
     .toUpperCase();
   const breadcrumb = role === 'admin' && activeSection === 'projects'
     ? t('objectsBack')
+    : role === 'admin' && activeSection === 'applications'
+      ? t('adminApplications')
     : role === 'admin' && activeSection === 'overview'
       ? t('managementDashboard')
       : t(dashboardSectionMessageKey(activeSection));

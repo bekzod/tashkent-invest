@@ -3,61 +3,59 @@
 const route = require('../../utils/async-handler');
 const ensureAuth = require('../../middleware/ensure-auth');
 const { preview } = require('../../services/investment-object-presenter');
+const {
+  ApplicationWorkflowError,
+  submitApplication,
+} = require('../../services/application-workflow');
 
-function required(body, fields) {
-  return fields.every((field) => typeof body?.[field] === 'string' && body[field].trim());
+function pageOptions(query) {
+  const page = Math.max(1, Number(query?.page || 1));
+  const limit = Math.min(50, Math.max(1, Number(query?.limit || 10)));
+  return { page, limit, offset: (page - 1) * limit };
+}
+
+function workflowError(request, reply, error) {
+  if (error instanceof ApplicationWorkflowError) {
+    return reply.code(error.statusCode).send({
+      code: error.code,
+      error: error.code,
+      ...(Object.keys(error.fieldErrors).length ? { fieldErrors: error.fieldErrors } : {}),
+    });
+  }
+  request.log.error(error);
+  return reply
+    .code(500)
+    .send({ code: 'APPLICATION_CREATE_FAILED', error: 'APPLICATION_CREATE_FAILED' });
 }
 
 module.exports = async (app) => {
   app.post(
     '/applications',
-    { preHandler: ensureAuth() },
+    { preHandler: ensureAuth('investor') },
     route(async (request, reply) => {
-      const {
-        objectId,
-        name,
-        company,
-        country,
-        phone,
-        email,
-        telegram,
-        investmentAmountUsd,
-        projectDescription,
-        comment,
-      } = request.body || {};
-      if (!objectId || !required(request.body, ['name', 'phone', 'email']))
-        return reply.code(400).send({ error: 'Object, name, phone and email are required' });
-      const object = await app.db.InvestmentObject.findByPk(objectId);
-      if (!object) return reply.code(404).send({ error: 'Object not found' });
-      const amount =
-        investmentAmountUsd === undefined || investmentAmountUsd === ''
-          ? null
-          : Number(investmentAmountUsd);
-      if (amount !== null && (!Number.isFinite(amount) || amount < 0))
-        return reply.code(400).send({ error: 'Investment amount must be a positive number' });
-      const application = await app.db.Application.create({
-        userId: request.user.id,
-        investmentObjectId: objectId,
-        name: name.trim(),
-        company: typeof company === 'string' ? company.trim() || null : null,
-        country: typeof country === 'string' ? country.trim() || null : null,
-        phone: phone.trim(),
-        email: email.trim(),
-        telegram: typeof telegram === 'string' ? telegram.trim() || null : null,
-        investmentAmountUsd: amount,
-        projectDescription:
-          typeof projectDescription === 'string' ? projectDescription.trim() || null : null,
-        comment: typeof comment === 'string' ? comment.trim() : null,
-      });
-      return reply.code(201).send({ id: application.id, status: application.status });
+      try {
+        const { application, created } = await submitApplication(
+          app.db,
+          request.user.id,
+          request.body || {},
+        );
+        return reply.code(created ? 201 : 200).send({
+          id: application.id,
+          status: application.status,
+          duplicate: !created,
+        });
+      } catch (error) {
+        return workflowError(request, reply, error);
+      }
     }),
   );
 
   app.get(
     '/me/applications',
-    { preHandler: ensureAuth() },
+    { preHandler: ensureAuth('investor') },
     route(async (request) => {
-      const applications = await app.db.Application.findAll({
+      const { page, limit, offset } = pageOptions(request.query);
+      const { count, rows } = await app.db.Application.findAndCountAll({
         where: { userId: request.user.id },
         include: [
           {
@@ -66,17 +64,28 @@ module.exports = async (app) => {
           },
         ],
         order: [['createdAt', 'DESC']],
+        distinct: true,
+        limit,
+        offset,
       });
       return {
-        items: applications.map((application) => ({
+        items: rows.map((application) => ({
           id: application.id,
           status: application.status,
           createdAt: application.createdAt,
+          reviewedAt: application.reviewedAt,
+          reviewNote: application.reviewNote,
           object: preview(
             application.object,
             request.headers['accept-language']?.startsWith('ru') ? 'ru' : 'uz',
           ),
         })),
+        meta: {
+          page,
+          limit,
+          total: count,
+          totalPages: Math.max(1, Math.ceil(count / limit)),
+        },
       };
     }),
   );

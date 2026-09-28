@@ -31,16 +31,32 @@ module.exports = (sequelize, DataTypes) => {
         validate: { isIn: [['uz', 'ru']] },
       },
       emailVerifiedAt: { type: DataTypes.DATE, allowNull: true, field: 'email_verified_at' },
+      isActive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+      },
     },
     { tableName: 'users', underscored: true },
   );
 
-  User.associate = ({ Application, Favorite, NotificationSubscription }) => {
+  User.associate = ({
+    Application,
+    ApplicationStatusHistory,
+    Favorite,
+    NotificationSubscription,
+  }) => {
     User.hasMany(Application, { as: 'applications', foreignKey: 'user_id' });
     User.hasMany(Favorite, { as: 'favorites', foreignKey: 'user_id' });
     User.hasMany(NotificationSubscription, {
       as: 'notificationSubscriptions',
       foreignKey: 'user_id',
+    });
+    User.hasMany(Application, { as: 'reviewedApplications', foreignKey: 'reviewer_user_id' });
+    User.hasMany(ApplicationStatusHistory, {
+      as: 'applicationStatusChanges',
+      foreignKey: 'changed_by_user_id',
     });
   };
 

@@ -145,7 +145,7 @@ export function ObjectDetail({
         <ArrowLeft size={16} /> {t("map")}
       </Link>
       <div className="detail-grid">
-        <section>
+        <section className="detail-summary">
           <div className="detail-hero">
             {image ? (
               <LazyImage
@@ -173,10 +173,7 @@ export function ObjectDetail({
             <div>
               <span>{t("investment")}</span>
               <strong>
-                $
-                {Number(object.investmentAmountUsd).toLocaleString(
-                  locale === "ru" ? "ru-RU" : "uz-UZ",
-                )}
+                ${Number(object.investmentAmountUsd).toLocaleString("en-US")}
               </strong>
             </div>
             <div>
@@ -191,6 +188,43 @@ export function ObjectDetail({
               <strong>{object.jobsPlanned ?? "—"}</strong>
             </div>
           </div>
+        </section>
+        <aside className="detail-aside">
+          <div className="aside-card">
+            <span>{t("cadastral")}</span>
+            <strong>{object.cadastralNumber}</strong>
+            <button className="button ghost">
+              <Heart size={16} />
+              {t("favorite")}
+            </button>
+            {object.status === "auction" && object.auctionUrl ? (
+              <a
+                className="button primary"
+                href={object.auctionUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t("activeAuction")}
+              </a>
+            ) : object.status === "available" ? (
+              <ApplicationForm
+                objectId={object.id}
+                returnTo={`${localizedPath(locale, `/objects/${slug}`)}#application`}
+              />
+            ) : (
+              <p className="application-unavailable">
+                {t("applicationObjectUnavailable")}
+              </p>
+            )}{" "}
+            {object.status === "upcoming" && (
+              <button className="button ghost" onClick={subscribe}>
+                <Bell size={16} />
+                {subscribed ? t("notificationDone") : t("notification")}
+              </button>
+            )}
+          </div>
+        </aside>
+        <section className="detail-facts">
           {virtualTour && (
             <PanoramaViewer url={virtualTour} title={object.title} />
           )}
@@ -212,37 +246,6 @@ export function ObjectDetail({
             </div>
           </section>
         </section>
-        <aside className="detail-aside">
-          <div className="aside-card">
-            <span>{t("cadastral")}</span>
-            <strong>{object.cadastralNumber}</strong>
-            <button className="button ghost">
-              <Heart size={16} />
-              {t("favorite")}
-            </button>
-            {object.status === "auction" && object.auctionUrl ? (
-              <a
-                className="button primary"
-                href={object.auctionUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t("activeAuction")}
-              </a>
-            ) : (
-              <ApplicationForm
-                objectId={object.id}
-                returnTo={`${localizedPath(locale, `/objects/${slug}`)}#application`}
-              />
-            )}{" "}
-            {object.status === "upcoming" && (
-              <button className="button ghost" onClick={subscribe}>
-                <Bell size={16} />
-                {subscribed ? t("notificationDone") : t("notification")}
-              </button>
-            )}
-          </div>
-        </aside>
       </div>
     </main>
   );

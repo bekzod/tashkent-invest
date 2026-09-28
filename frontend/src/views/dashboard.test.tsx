@@ -19,6 +19,7 @@ vi.mock('@/widgets/dashboard-shell', () => ({ DashboardShell: ({ children }: { c
 vi.mock('@/features/investment-map/map-page-client', () => ({ MapPageClient: () => <div /> }));
 vi.mock('@/features/admin-objects/admin-objects-list', () => ({ AdminObjectsList: () => <div /> }));
 vi.mock('@/features/admin-objects/admin-overview', () => ({ AdminOverview: () => <div /> }));
+vi.mock('@/features/admin-applications/admin-applications', () => ({ AdminApplications: () => <div /> }));
 
 const apiMock = vi.mocked(api);
 
@@ -91,4 +92,22 @@ test('ignores an older dashboard response after the locale changes', async () =>
 
   expect(screen.getByText('Русский объект')).toBeVisible();
   expect(screen.queryByText('Eski o‘zbek obyekt')).not.toBeInTheDocument();
+});
+
+test('keeps successful dashboard data when one independent request fails', async () => {
+  apiMock.mockImplementation((path) => {
+    if (path === '/statistics') {
+      return Promise.resolve({ objects: 1, auctions: 0, upcoming: 0, investmentAmountUsd: 1000 }) as never;
+    }
+    if (path.startsWith('/objects')) {
+      return Promise.resolve({ items: [object('Saqlangan loyiha')], meta: { total: 1 } }) as never;
+    }
+    if (path.includes('applications')) return Promise.resolve({ items: [] }) as never;
+    return Promise.reject(new Error('favorites unavailable')) as never;
+  });
+
+  render(<LanguageProvider><DashboardView activeSection="projects" /></LanguageProvider>);
+
+  expect(await screen.findByText('Saqlangan loyiha')).toBeVisible();
+  expect(screen.getByRole('alert')).toHaveTextContent('Ayrim ma’lumotlar yuklanmadi');
 });

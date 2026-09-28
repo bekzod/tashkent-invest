@@ -19,6 +19,7 @@ const db = {
   InvestmentObjectTranslation: require('./investment-object-translation')(sequelize, DataTypes),
   ObjectMedia: require('./object-media')(sequelize, DataTypes),
   Application: require('./application')(sequelize, DataTypes),
+  ApplicationStatusHistory: require('./application-status-history')(sequelize, DataTypes),
   Favorite: require('./favorite')(sequelize, DataTypes),
   NotificationSubscription: require('./notification-subscription')(sequelize, DataTypes),
   GeographicArea: require('./geographic-area')(sequelize, DataTypes),

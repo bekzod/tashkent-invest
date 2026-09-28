@@ -626,7 +626,17 @@ nav a:hover,
 .detail-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-areas:
+    "summary aside"
+    "facts aside";
+  align-items: start;
   gap: 34px;
+}
+.detail-summary {
+  grid-area: summary;
+}
+.detail-facts {
+  grid-area: facts;
 }
 .detail-hero {
   height: 380px;
@@ -706,6 +716,7 @@ nav a:hover,
   gap: 8px;
 }
 .detail-aside {
+  grid-area: aside;
   position: relative;
 }
 .aside-card {
@@ -727,6 +738,28 @@ nav a:hover,
 .application-form {
   display: grid;
   gap: 11px;
+}
+.application-form fieldset {
+  display: grid;
+  gap: 11px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.application-form fieldset:disabled {
+  opacity: 0.75;
+}
+.application-auth-actions {
+  display: grid;
+  gap: 10px;
+}
+.application-auth-actions p,
+.application-unavailable {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 .application-form h2 {
   margin: 8px 0;
@@ -849,9 +882,13 @@ footer {
   }
   .detail-grid {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "summary"
+      "aside"
+      "facts";
   }
   .detail-aside {
-    order: -1;
+    order: initial;
   }
   .aside-card {
     position: static;
@@ -3418,6 +3455,11 @@ body {
   color: #a46a00;
   background: #fff5de;
 }
+.application-status.received,
+.application-status.in_review {
+  color: #a46a00;
+  background: #fff5de;
+}
 .application-status.approved {
   color: #198451;
   background: #e7f7ee;
@@ -3425,6 +3467,229 @@ body {
 .application-status.rejected {
   color: #bf3b3b;
   background: #ffeded;
+}
+.dashboard-load-warning {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  color: #8a5a00;
+  border: 1px solid #f1d58c;
+  border-radius: 9px;
+  background: #fff9e8;
+  font-size: 13px;
+}
+.admin-application-page {
+  display: grid;
+  gap: 16px;
+}
+.admin-application-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.admin-application-header p {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.admin-application-header h1 {
+  margin: 0;
+  color: #263a56;
+  font-size: 24px;
+}
+.admin-application-header label,
+.admin-review-note {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.admin-application-header select,
+.admin-review-note textarea {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+.admin-application-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr);
+  align-items: start;
+  gap: 16px;
+}
+.admin-application-list,
+.admin-application-detail {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.admin-application-list > button {
+  display: flex;
+  width: 100%;
+  min-height: 72px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 0;
+  border-bottom: 1px solid #eef1f5;
+  background: #fff;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.admin-application-list > button:last-child {
+  border-bottom: 0;
+}
+.admin-application-list > button:hover,
+.admin-application-list > button:focus-visible,
+.admin-application-list > button.is-selected {
+  background: #f7f8ff;
+  outline: none;
+}
+.admin-application-list > button:focus-visible {
+  box-shadow: inset 0 0 0 2px #623bff;
+}
+.admin-application-list > button > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 4px;
+}
+.admin-application-list strong,
+.admin-application-list small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.admin-application-list strong {
+  color: #33445c;
+  font-size: 13px;
+}
+.admin-application-list small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.admin-application-detail {
+  position: sticky;
+  top: 76px;
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+.admin-application-detail > header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.admin-application-detail header p,
+.admin-application-detail header h2 {
+  margin: 0;
+}
+.admin-application-detail header p {
+  color: var(--muted);
+  font-size: 11px;
+}
+.admin-application-detail header h2 {
+  margin-top: 3px;
+  color: #263a56;
+  font-size: 18px;
+}
+.admin-application-detail dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.admin-application-detail dl div {
+  display: grid;
+  grid-template-columns: minmax(100px, .4fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.admin-application-detail dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+.admin-application-detail dd {
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: #33445c;
+  font-size: 13px;
+  font-weight: 600;
+}
+.admin-application-copy b,
+.admin-review-note span {
+  color: #33445c;
+  font-size: 12px;
+}
+.admin-application-copy p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.admin-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.admin-review-actions button {
+  min-height: 44px;
+}
+.admin-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 14px;
+  color: #b42318;
+  border: 1px solid #f3aaa5;
+  border-radius: 8px;
+  background: #fff5f4;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .admin-application-layout {
+    grid-template-columns: 1fr;
+  }
+  .admin-application-detail {
+    position: static;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-application-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .admin-application-header select {
+    width: 100%;
+  }
+  .admin-application-list > button {
+    min-height: 84px;
+    padding: 12px;
+  }
+  .admin-application-list .application-icon {
+    display: none;
+  }
+  .admin-application-detail {
+    padding: 16px;
+  }
+  .admin-application-detail dl div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .admin-review-actions,
+  .admin-review-actions button {
+    width: 100%;
+  }
 }
 .dashboard-guide {
   padding: 21px;

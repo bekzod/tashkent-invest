@@ -41,6 +41,8 @@ export function pluralMessageKey(
 
 export function statusMessageKey(status: string): MessageKey | undefined {
   const keys: Record<string, MessageKey> = {
+    received: 'received',
+    in_review: 'inReview',
     pending: 'pending',
     approved: 'approved',
     rejected: 'rejected',

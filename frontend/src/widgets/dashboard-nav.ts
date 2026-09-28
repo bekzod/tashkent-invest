@@ -30,6 +30,7 @@ export const dashboardSettingsEntry: DashboardNavEntry = {
 const adminDashboardNavigation: DashboardNavEntry[] = [
   { icon: Grid2X2, href: '/dashboard', labelKey: 'managementDashboard', section: 'overview' },
   { icon: Building2, href: '/dashboard/projects', labelKey: 'objectsBack', section: 'projects' },
+  { icon: ClipboardList, href: '/dashboard/applications', labelKey: 'adminApplications', section: 'applications' },
 ];
 
 export function getDashboardNavigation(role: DashboardRole) {
