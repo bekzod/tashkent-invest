@@ -26,6 +26,15 @@ export function ObjectCard({
       data-object-id={object.id}
       data-object-status={object.status}
       onClick={onSelect}
+      onKeyDown={(event) => {
+        if (!onSelect || event.target !== event.currentTarget) return;
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        onSelect();
+      }}
+      tabIndex={onSelect ? 0 : undefined}
+      aria-label={onSelect ? `${t("showOnMap")}: ${object.title}` : undefined}
+      aria-current={selected ? "true" : undefined}
       className={`object-card ${onSelect ? "selectable" : ""} ${selected ? "selected" : ""}`}
     >
       <div className={`object-card-image ${object.type}`}>
@@ -48,7 +57,7 @@ export function ObjectCard({
         <div className="object-card-meta">
           <span>{object.landAreaHa ? `${object.landAreaHa} ${t("hectare")}` : "—"}</span>
           <strong>
-            ${Number(object.investmentAmountUsd).toLocaleString(locale === "ru" ? "ru-RU" : "uz-UZ")}
+            ${Number(object.investmentAmountUsd).toLocaleString("en-US")}
           </strong>
         </div>
         <Link

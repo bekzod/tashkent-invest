@@ -1,7 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, MapPin, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import type {
   FeatureCollection,
@@ -20,6 +27,12 @@ import {
 import { api } from "@/shared/api/client";
 import { LazyImage } from "@/shared/ui/lazy-image";
 import { pluralMessageKey } from "@/shared/lib/dashboard";
+import {
+  clampResultPage,
+  MAP_RESULT_PAGE_SIZE,
+  resultPageCount,
+  resultPageSlice,
+} from "./map-mobile";
 
 const initial: MapFilters = { q: "", types: [], statuses: [], sectors: [] };
 const types = ["land", "building", "proposal"];
@@ -137,9 +150,17 @@ export function MapPageClient({
   const [areas, setAreas] = useState<GeographicArea[]>([]);
   const [features, setFeatures] = useState<FeatureCollection["features"]>([]);
   const [selected, setSelected] = useState<InvestmentObject | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [resultPage, setResultPage] = useState(1);
   const objects = useMemo(
     () => features.map((feature) => feature.properties),
     [features],
+  );
+  const currentResultPage = clampResultPage(resultPage, objects.length);
+  const totalResultPages = resultPageCount(objects.length);
+  const visibleObjects = useMemo(
+    () => resultPageSlice(objects, currentResultPage),
+    [currentResultPage, objects],
   );
   const district = useMemo(() => getTashkentDistrict(areas), [areas]);
   const activeFilterCount =
@@ -173,6 +194,7 @@ export function MapPageClient({
     q = "",
     areaMatchesQuery = false,
   ) => {
+    setResultPage(1);
     setFilters((current) => ({
       ...current,
       q,
@@ -215,14 +237,17 @@ export function MapPageClient({
     };
   }, []);
 
-  const toggle = (key: "types" | "statuses" | "sectors", value: string) =>
+  const toggle = (key: "types" | "statuses" | "sectors", value: string) => {
+    setResultPage(1);
     setFilters((current) => ({
       ...current,
       [key]: current[key].includes(value)
         ? current[key].filter((item) => item !== value)
         : [...current[key], value],
     }));
+  };
   const updateQuery = (q: string) => {
+    setResultPage(1);
     const area = findGeographicArea(areas, q);
     if (area) {
       selectArea(area, q, true);
@@ -235,10 +260,12 @@ export function MapPageClient({
     setFilters((current) => ({ ...current, q }));
   };
   const reset = () => {
+    setResultPage(1);
     if (district) selectArea(district);
     else setFilters(initial);
   };
   const setPolygon = (polygon?: GeoJSON.Polygon) => {
+    setResultPage(1);
     if (!polygon && district) {
       selectArea(district);
       return;
@@ -251,6 +278,15 @@ export function MapPageClient({
       areaMatchesQuery: false,
     }));
   };
+  const updateFeatures = useCallback(
+    (nextFeatures: FeatureCollection["features"]) => {
+      setFeatures(nextFeatures);
+      setResultPage((current) =>
+        clampResultPage(current, nextFeatures.length, MAP_RESULT_PAGE_SIZE),
+      );
+    },
+    [],
+  );
 
   return (
     <section className={compact ? "map-preview" : "map-page"}>
@@ -269,85 +305,102 @@ export function MapPageClient({
               </p>
             </div>
             {!compact && (
-              <button
-                type="button"
-                className="map-clear-button"
-                onClick={reset}
-              >
-                {t("clear")}
-              </button>
+              <div className="map-toolbar-buttons">
+                <button
+                  type="button"
+                  className="map-filter-toggle"
+                  aria-expanded={filtersOpen}
+                  aria-controls="map-filter-panel"
+                  onClick={() => setFiltersOpen((current) => !current)}
+                >
+                  <SlidersHorizontal size={18} aria-hidden="true" />
+                  {filtersOpen ? t("hideFilters") : t("showFilters")}
+                </button>
+                <button
+                  type="button"
+                  className="map-clear-button"
+                  onClick={reset}
+                >
+                  {t("clear")}
+                </button>
+              </div>
             )}
           </div>
-          <label className="map-search-field">
-            <span>{t("searchLabel")}</span>
-            <input
-              value={filters.q}
-              onChange={(event) => updateQuery(event.target.value)}
-              placeholder={t("search")}
-            />
-          </label>
-          <div className="map-filter-section">
-            <h3>{t("objectType")}</h3>
-            <div className="filter-row">
-            {types.map((type) => (
-              <button
-                type="button"
-                className={filters.types.includes(type) ? "active" : ""}
-                aria-pressed={filters.types.includes(type)}
-                key={type}
-                onClick={() => toggle("types", type)}
-              >
-                {typeLabels[type as keyof typeof typeLabels]}
-              </button>
-            ))}
-            </div>
-          </div>
-          <div className="map-filter-section">
-            <h3>{t("status")}</h3>
-            <div className="filter-row">
-            {statuses.map((status) => (
-              <button
-                type="button"
-                className={filters.statuses.includes(status) ? "active" : ""}
-                aria-pressed={filters.statuses.includes(status)}
-                key={status}
-                onClick={() => toggle("statuses", status)}
-              >
-                {statusLabels[status as keyof typeof statusLabels]}
-              </button>
-            ))}
-            </div>
-          </div>
-          {!compact && (
+          <div
+            id="map-filter-panel"
+            className={`map-filter-content ${filtersOpen ? "is-open" : ""}`}
+          >
+            <label className="map-search-field">
+              <span>{t("searchLabel")}</span>
+              <input
+                value={filters.q}
+                onChange={(event) => updateQuery(event.target.value)}
+                placeholder={t("search")}
+              />
+            </label>
             <div className="map-filter-section">
-              <h3>{t("direction")}</h3>
+              <h3>{t("objectType")}</h3>
               <div className="filter-row">
-                {sectors.map((sector) => (
+                {types.map((type) => (
                   <button
                     type="button"
-                    className={
-                      filters.sectors.includes(sector) ? "active" : ""
-                    }
-                    aria-pressed={filters.sectors.includes(sector)}
-                    key={sector}
-                    onClick={() => toggle("sectors", sector)}
+                    className={filters.types.includes(type) ? "active" : ""}
+                    aria-pressed={filters.types.includes(type)}
+                    key={type}
+                    onClick={() => toggle("types", type)}
                   >
-                    {sectorLabels[sector as keyof typeof sectorLabels]}
+                    {typeLabels[type as keyof typeof typeLabels]}
                   </button>
                 ))}
               </div>
             </div>
-          )}
+            <div className="map-filter-section">
+              <h3>{t("status")}</h3>
+              <div className="filter-row">
+                {statuses.map((status) => (
+                  <button
+                    type="button"
+                    className={filters.statuses.includes(status) ? "active" : ""}
+                    aria-pressed={filters.statuses.includes(status)}
+                    key={status}
+                    onClick={() => toggle("statuses", status)}
+                  >
+                    {statusLabels[status as keyof typeof statusLabels]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {!compact && (
+              <div className="map-filter-section">
+                <h3>{t("direction")}</h3>
+                <div className="filter-row">
+                  {sectors.map((sector) => (
+                    <button
+                      type="button"
+                      className={
+                        filters.sectors.includes(sector) ? "active" : ""
+                      }
+                      aria-pressed={filters.sectors.includes(sector)}
+                      key={sector}
+                      onClick={() => toggle("sectors", sector)}
+                    >
+                      {sectorLabels[sector as keyof typeof sectorLabels]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
       <InvestmentMap
         filters={filters}
         selected={selected}
-        onFeatures={setFeatures}
+        onFeatures={updateFeatures}
         onSelect={setSelected}
         onPolygonChange={setPolygon}
         cluster={false}
-        maxVisible={compact ? 20 : undefined}
+        maxVisible={compact ? 20 : 800}
         showControls={showMapControls}
       />
       {!compact &&
@@ -364,7 +417,7 @@ export function MapPageClient({
               </strong>
             </div>
             {objects.length ? (
-              objects.map((object) => (
+              visibleObjects.map((object) => (
                 <ObjectCard
                   object={object}
                   key={object.id}
@@ -373,6 +426,34 @@ export function MapPageClient({
               ))
             ) : (
               <p>{t("noResults")}</p>
+            )}
+            {objects.length > MAP_RESULT_PAGE_SIZE && (
+              <nav
+                className="map-results-pagination"
+                aria-label={t("resultsPagination")}
+              >
+                <button
+                  type="button"
+                  aria-label={t("previousPage")}
+                  disabled={currentResultPage === 1}
+                  onClick={() => setResultPage((page) => Math.max(1, page - 1))}
+                >
+                  <ChevronLeft size={18} aria-hidden="true" />
+                </button>
+                <span aria-live="polite">
+                  {currentResultPage} / {totalResultPages}
+                </span>
+                <button
+                  type="button"
+                  aria-label={t("nextPage")}
+                  disabled={currentResultPage === totalResultPages}
+                  onClick={() =>
+                    setResultPage((page) => Math.min(totalResultPages, page + 1))
+                  }
+                >
+                  <ChevronRight size={18} aria-hidden="true" />
+                </button>
+              </nav>
             )}
           </aside>
         ))}

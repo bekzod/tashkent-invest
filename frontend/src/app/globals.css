@@ -3993,6 +3993,201 @@ body {
 .dashboard-map-frame .object-card-body {
   padding: 10px;
 }
+
+/* Full investment map: bounded desktop columns and a map-first mobile flow. */
+.map-page {
+  grid-template-areas: "filters map results";
+}
+.map-page > .map-toolbar {
+  grid-area: filters;
+}
+.map-page > .map-shell {
+  grid-area: map;
+}
+.map-page > .map-results {
+  grid-area: results;
+}
+.map-filter-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+.map-toolbar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.map-filter-toggle {
+  display: none;
+}
+.object-card.selectable:focus-visible {
+  outline: 3px solid #0b5ec8;
+  outline-offset: 2px;
+}
+.map-results .object-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 290px;
+}
+.map-results-pagination {
+  position: sticky;
+  bottom: -1.1rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 4rem;
+  margin: 0.75rem -1.1rem -1.1rem;
+  padding: 0.65rem 1rem;
+  border-top: 1px solid var(--line);
+  background: rgb(248 250 252 / 0.96);
+  backdrop-filter: blur(8px);
+}
+.map-results-pagination button,
+.map-filter-toggle {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid #b8d1f1;
+  border-radius: var(--radius-control);
+  background: #fff;
+  color: var(--blue);
+  font-weight: 800;
+}
+.map-results-pagination button {
+  display: inline-flex;
+}
+.selected-object-media {
+  flex: 0 0 172px;
+}
+.map-results-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+.map-drawing-controls {
+  display: grid;
+  gap: 0.55rem;
+  width: min(360px, calc(100vw - 2rem));
+  padding: 0.75rem;
+  border: 1px solid #b8d1f1;
+  border-radius: 0.6rem;
+  background: rgb(255 255 255 / 0.96);
+  box-shadow: 0 4px 18px rgb(15 23 42 / 18%);
+  color: #34445c;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.map-drawing-controls > div {
+  display: flex;
+  gap: 0.5rem;
+}
+.map-actions .map-drawing-controls button {
+  flex: 1;
+  width: auto;
+  min-height: 2.75rem;
+}
+.map-actions .map-drawing-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (max-width: 900px) {
+  .full-map-page {
+    overflow-x: clip;
+  }
+  .map-page {
+    grid-template-areas:
+      "map"
+      "filters"
+      "results";
+    grid-template-rows: minmax(430px, 58svh) auto auto;
+    width: 100%;
+    min-width: 0;
+  }
+  .map-page > .map-shell {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 430px;
+  }
+  .map-page > .map-toolbar {
+    max-height: min(560px, 68svh);
+    padding: 0.8rem 1rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .map-toolbar-header {
+    min-width: 0;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+  .map-toolbar-header > div:first-child {
+    min-width: 0;
+  }
+  .map-toolbar-header h2 {
+    font-size: 1.1rem;
+  }
+  .map-toolbar-kicker {
+    display: none;
+  }
+  .map-toolbar-buttons {
+    flex: 0 0 auto;
+  }
+  .map-filter-toggle {
+    display: inline-flex;
+    padding: 0 0.7rem;
+  }
+  .map-toolbar-buttons .map-clear-button,
+  .filter-row button,
+  .map-toolbar input {
+    min-height: 2.75rem;
+  }
+  .map-filter-content {
+    padding-top: 1rem;
+  }
+  .map-filter-content:not(.is-open) {
+    display: none;
+  }
+  .map-results {
+    max-height: min(470px, 58svh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+  .selected-object-panel-header button,
+  .selected-object-back,
+  .selected-object-details {
+    min-height: 2.75rem;
+  }
+  .map-actions {
+    right: 0.75rem;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    align-items: flex-end;
+  }
+  .map-actions button,
+  .map-actions .map-draw-button,
+  .map-actions .map-clear-button {
+    width: auto;
+    min-height: 2.75rem;
+    padding-inline: 0.75rem;
+  }
+  .map-drawing-controls {
+    width: 100%;
+  }
+  .map-page .maplibregl-ctrl-group button,
+  .map-page .maplibregl-ctrl-geolocate {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+  .map-page .maplibregl-ctrl-bottom-right {
+    right: 0.5rem;
+    bottom: 4.2rem;
+  }
+}
 .dashboard-account-card {
   display: flex;
   align-items: center;

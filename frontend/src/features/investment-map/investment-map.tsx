@@ -19,6 +19,7 @@ import {
 } from "./map-utils";
 import { MapRequestCoordinator } from "./map-request";
 import { PencilRuler } from "lucide-react";
+import { FreehandPolygonDraft, mapLibreControlLocale } from "./map-mobile";
 
 const TASHKENT_DISTRICT: [number, number] = [69.220651, 41.391335];
 const tileUrl =
@@ -129,6 +130,7 @@ export function InvestmentMap({
   const popupRef = useRef<Popup | null>(null);
   const polygonRef = useRef<GeoJSON.Polygon | undefined>(undefined);
   const [drawing, setDrawing] = useState(false);
+  const [drawingHasShape, setDrawingHasShape] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -136,11 +138,18 @@ export function InvestmentMap({
   const { locale, t } = useLanguage();
   const filtersRef = useRef(filters);
   const selectedRef = useRef(selected);
+  const localeRef = useRef(locale);
   const objectsByIdRef = useRef(new Map<string, InvestmentObject>());
   const drawingRef = useRef(false);
+  const drawingDraftRef = useRef(new FreehandPolygonDraft());
+  const drawingActionsRef = useRef<{ finish: () => void; cancel: () => void }>({
+    finish: () => undefined,
+    cancel: () => undefined,
+  });
   const showControlsRef = useRef(showControls);
   const onFeaturesRef = useRef(onFeatures);
   const onSelectRef = useRef(onSelect);
+  const onPolygonChangeRef = useRef(onPolygonChange);
   const [coordinator] = useState(() => new MapRequestCoordinator());
   const mapIsReadyRef = useRef(false);
   const loadRef = useRef<() => void>(() => undefined);
@@ -152,6 +161,9 @@ export function InvestmentMap({
     selectedRef.current = selected;
   }, [selected]);
   useEffect(() => {
+    localeRef.current = locale;
+  }, [locale]);
+  useEffect(() => {
     drawingRef.current = drawing;
   }, [drawing]);
   useEffect(() => {
@@ -160,6 +172,9 @@ export function InvestmentMap({
   useEffect(() => {
     onSelectRef.current = onSelect;
   }, [onSelect]);
+  useEffect(() => {
+    onPolygonChangeRef.current = onPolygonChange;
+  }, [onPolygonChange]);
 
   const load = useCallback(async () => {
     const map = mapRef.current;
@@ -240,6 +255,8 @@ export function InvestmentMap({
         },
         center: TASHKENT_DISTRICT,
         zoom: 10,
+        cooperativeGestures: true,
+        locale: mapLibreControlLocale(localeRef.current),
       });
       mapRef.current = map;
       mapIsReadyRef.current = false;
@@ -524,6 +541,14 @@ export function InvestmentMap({
       map.on("mouseleave", "object-boundaries-fill", () => {
         map.getCanvas().style.cursor = "";
       });
+      const resizeMap = () => map.resize();
+      const resizeObserver = new ResizeObserver(resizeMap);
+      resizeObserver.observe(holder.current);
+      window.addEventListener("orientationchange", resizeMap);
+      map.once("remove", () => {
+        resizeObserver.disconnect();
+        window.removeEventListener("orientationchange", resizeMap);
+      });
     })();
     return () => {
       disposed = true;
@@ -583,57 +608,102 @@ export function InvestmentMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !drawing) return;
-    const coordinates: [number, number][] = [];
-    const update = () => {
-      if (coordinates.length < 3) return;
-      polygonRef.current = {
-        type: "Polygon",
-        coordinates: [[...coordinates, coordinates[0]]],
-      };
+    const canvas = map.getCanvas();
+    const draft = drawingDraftRef.current;
+    const previousTouchAction = canvas.style.touchAction;
+    const update = (polygon?: GeoJSON.Polygon) => {
+      polygonRef.current = polygon;
       (
         map.getSource("selection") as unknown as GeoJsonSource | undefined
-      )?.setData({
-        type: "Feature",
-        properties: {},
-        geometry: polygonRef.current,
-      });
+      )?.setData(
+        polygon
+          ? {
+              type: "Feature",
+              properties: {},
+              geometry: polygon,
+            }
+          : emptyGeoJson,
+      );
     };
-    const down = (event: { lngLat: { lng: number; lat: number } }) => {
-      coordinates.splice(0);
-      coordinates.push([event.lngLat.lng, event.lngLat.lat]);
+    const coordinate = (event: PointerEvent): [number, number] => {
+      const rect = canvas.getBoundingClientRect();
+      const point = map.unproject([
+        event.clientX - rect.left,
+        event.clientY - rect.top,
+      ]);
+      return [point.lng, point.lat];
+    };
+    const down = (event: PointerEvent) => {
+      if (!event.isPrimary || event.button !== 0) return;
+      event.preventDefault();
+      draft.start(event.pointerId, coordinate(event));
+      canvas.setPointerCapture(event.pointerId);
       map.dragPan.disable();
     };
-    const move = (event: { lngLat: { lng: number; lat: number } }) => {
-      if (!coordinates.length) return;
-      const point: [number, number] = [event.lngLat.lng, event.lngLat.lat];
-      const last = coordinates.at(-1)!;
-      if (
-        Math.abs(last[0] - point[0]) + Math.abs(last[1] - point[1]) >
-        0.00025
-      ) {
-        coordinates.push(point);
-        update();
-      }
+    const move = (event: PointerEvent) => {
+      if (!draft.isActive(event.pointerId)) return;
+      event.preventDefault();
+      if (!draft.move(event.pointerId, coordinate(event))) return;
+      const polygon = draft.polygon();
+      update(polygon);
+      setDrawingHasShape(Boolean(polygon));
     };
-    const up = () => {
-      if (!coordinates.length) return;
+    const release = (pointerId: number) => {
+      if (canvas.hasPointerCapture(pointerId))
+        canvas.releasePointerCapture(pointerId);
       map.dragPan.enable();
-      update();
-      if (polygonRef.current) onPolygonChange(polygonRef.current);
+    };
+    const up = (event: PointerEvent) => {
+      if (!draft.isActive(event.pointerId)) return;
+      event.preventDefault();
+      const polygon = draft.end(event.pointerId);
+      release(event.pointerId);
+      update(polygon);
+      setDrawingHasShape(Boolean(polygon));
+      if (!polygon) setDrawing(false);
+    };
+    const cancel = (event?: PointerEvent) => {
+      if (event && !draft.isActive(event.pointerId)) return;
+      if (event) release(event.pointerId);
+      draft.cancel(event?.pointerId);
+      map.dragPan.enable();
+      update(undefined);
+      setDrawingHasShape(false);
       setDrawing(false);
     };
-    map.getCanvas().style.cursor = "crosshair";
-    map.on("mousedown", down);
-    map.on("mousemove", move);
-    map.on("mouseup", up);
-    return () => {
-      map.getCanvas().style.cursor = "";
-      map.dragPan.enable();
-      map.off("mousedown", down);
-      map.off("mousemove", move);
-      map.off("mouseup", up);
+    const lostCapture = (event: PointerEvent) => {
+      if (draft.isActive(event.pointerId)) cancel(event);
     };
-  }, [drawing, onPolygonChange]);
+    drawingActionsRef.current = {
+      finish: () => {
+        const polygon = draft.finish();
+        map.dragPan.enable();
+        if (!polygon) return;
+        update(polygon);
+        onPolygonChangeRef.current(polygon);
+        setDrawingHasShape(false);
+        setDrawing(false);
+      },
+      cancel: () => cancel(),
+    };
+    canvas.style.cursor = "crosshair";
+    canvas.style.touchAction = "none";
+    canvas.addEventListener("pointerdown", down, true);
+    canvas.addEventListener("pointermove", move, true);
+    canvas.addEventListener("pointerup", up, true);
+    canvas.addEventListener("pointercancel", cancel, true);
+    canvas.addEventListener("lostpointercapture", lostCapture, true);
+    return () => {
+      canvas.style.cursor = "";
+      canvas.style.touchAction = previousTouchAction;
+      map.dragPan.enable();
+      canvas.removeEventListener("pointerdown", down, true);
+      canvas.removeEventListener("pointermove", move, true);
+      canvas.removeEventListener("pointerup", up, true);
+      canvas.removeEventListener("pointercancel", cancel, true);
+      canvas.removeEventListener("lostpointercapture", lostCapture, true);
+    };
+  }, [drawing]);
 
   const beginDrawing = () => {
     const map = mapRef.current;
@@ -641,6 +711,8 @@ export function InvestmentMap({
     (
       map?.getSource("selection") as unknown as GeoJsonSource | undefined
     )?.setData(emptyGeoJson);
+    drawingDraftRef.current.cancel();
+    setDrawingHasShape(false);
     setDrawing(true);
   };
   const hasManualPolygon =
@@ -655,6 +727,7 @@ export function InvestmentMap({
         data-selected-object-id={selected?.id || ""}
         data-selected-boundary-source={selected?.geometrySource || ""}
         data-boundary-count={boundaryCount}
+        data-drawing={drawing || undefined}
       />
       {isLoading && (
         <div className="map-loading-overlay" role="status" aria-live="polite">
@@ -684,6 +757,28 @@ export function InvestmentMap({
               <PencilRuler size={15} aria-hidden="true" />
               {t("drawArea")}
             </button>
+          )}
+          {drawing && (
+            <div className="map-drawing-controls" role="status">
+              <span>{t("drawAreaHelp")}</span>
+              <div>
+                <button
+                  type="button"
+                  className="map-finish-drawing"
+                  disabled={!drawingHasShape}
+                  onClick={() => drawingActionsRef.current.finish()}
+                >
+                  {t("finishDrawing")}
+                </button>
+                <button
+                  type="button"
+                  className="map-cancel-drawing"
+                  onClick={() => drawingActionsRef.current.cancel()}
+                >
+                  {t("cancelDrawing")}
+                </button>
+              </div>
+            </div>
           )}
           {hasManualPolygon && (
             <button
