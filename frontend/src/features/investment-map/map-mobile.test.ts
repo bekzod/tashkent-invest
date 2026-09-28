@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
+  areaDrawingReady,
   clampResultPage,
   FreehandPolygonDraft,
   mapLibreControlLocale,
@@ -12,12 +13,20 @@ describe("mobile map result pagination", () => {
     const records = Array.from({ length: 40_001 }, (_, index) => index);
     expect(resultPageCount(records.length)).toBe(3334);
     expect(resultPageSlice(records, 1)).toEqual(records.slice(0, 12));
-    expect(resultPageSlice(records, 3334)).toEqual([39_996, 39_997, 39_998, 39_999, 40_000]);
+    expect(resultPageSlice(records, 3334)).toEqual([
+      39_996, 39_997, 39_998, 39_999, 40_000,
+    ]);
     expect(clampResultPage(9999, records.length)).toBe(3334);
   });
 });
 
 describe("pointer-safe area drawing", () => {
+  test("does not arm drawing until MapLibre has finished loading", () => {
+    expect(areaDrawingReady(false, false)).toBe(false);
+    expect(areaDrawingReady(false, true)).toBe(false);
+    expect(areaDrawingReady(true, true)).toBe(true);
+  });
+
   test("ignores other pointers and produces a closed polygon after pointer release", () => {
     const draft = new FreehandPolygonDraft();
     draft.start(7, [69.2, 41.3]);
@@ -48,8 +57,10 @@ describe("pointer-safe area drawing", () => {
 });
 
 test("MapLibre labels are localized", () => {
-  expect(mapLibreControlLocale("uz")["NavigationControl.ZoomIn"]).toBe("Yaqinlashtirish");
-  expect(mapLibreControlLocale("ru")["CooperativeGesturesHandler.MobileHelpText"]).toBe(
-    "Перемещайте карту двумя пальцами",
+  expect(mapLibreControlLocale("uz")["NavigationControl.ZoomIn"]).toBe(
+    "Yaqinlashtirish",
   );
+  expect(
+    mapLibreControlLocale("ru")["CooperativeGesturesHandler.MobileHelpText"],
+  ).toBe("Перемещайте карту двумя пальцами");
 });

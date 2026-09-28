@@ -92,7 +92,7 @@ test("registration shows localized validation and duplicate errors", async ({
 
 test("registration refuses an external returnTo destination", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.route("**/api/auth/register", (route) =>
     route.fulfill({
       status: 201,
@@ -104,10 +104,16 @@ test("registration refuses an external returnTo destination", async ({
   await fillRegistration(page, "uz");
   await page.getByRole("button", { name: "Hisob yaratish" }).click();
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem("tashkent-invest.session")))
+    .poll(() =>
+      page.evaluate(() => localStorage.getItem("tashkent-invest.session")),
+    )
     .toContain("e2e-registration-user");
   await expect.poll(() => page.url()).not.toContain("/uz/register");
-  expect(page.url()).toMatch(/localhost:3000\/dashboard\/profile$/);
+  const destination = new URL(page.url());
+  expect(destination.origin).toBe(
+    new URL(String(testInfo.project.use.baseURL)).origin,
+  );
+  expect(destination.pathname).toBe("/dashboard/profile");
 });
 
 test("real registration API completes the browser flow", async ({ page }) => {

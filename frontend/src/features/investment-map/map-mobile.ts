@@ -2,7 +2,14 @@ import type { Locale } from "@/shared/i18n/routing";
 
 export const MAP_RESULT_PAGE_SIZE = 12;
 
-export function resultPageCount(total: number, pageSize = MAP_RESULT_PAGE_SIZE) {
+export function areaDrawingReady(mapReady: boolean, drawing: boolean) {
+  return mapReady && drawing;
+}
+
+export function resultPageCount(
+  total: number,
+  pageSize = MAP_RESULT_PAGE_SIZE,
+) {
   return Math.max(1, Math.ceil(Math.max(0, total) / pageSize));
 }
 
@@ -11,7 +18,10 @@ export function clampResultPage(
   total: number,
   pageSize = MAP_RESULT_PAGE_SIZE,
 ) {
-  return Math.min(Math.max(1, Math.trunc(page) || 1), resultPageCount(total, pageSize));
+  return Math.min(
+    Math.max(1, Math.trunc(page) || 1),
+    resultPageCount(total, pageSize),
+  );
 }
 
 export function resultPageSlice<T>(
@@ -96,7 +106,8 @@ export class FreehandPolygonDraft {
   }
 
   cancel(pointerId?: number) {
-    if (pointerId !== undefined && this.activePointerId !== pointerId) return false;
+    if (pointerId !== undefined && this.activePointerId !== pointerId)
+      return false;
     this.reset();
     return true;
   }

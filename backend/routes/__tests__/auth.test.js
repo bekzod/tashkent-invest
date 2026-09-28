@@ -144,3 +144,46 @@ describe('POST /api/auth/register', () => {
     expect(response.body).not.toContain('database');
   });
 });
+
+describe('POST /api/auth/login', () => {
+  test('counts failed attempts but never locks out repeated successful logins', async () => {
+    const { app } = await buildAuthApp();
+    const registration = await app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: {
+        name: 'Repeat Investor',
+        email: 'repeat@example.uz',
+        password: 'investor2026',
+        consent: true,
+      },
+    });
+    expect(registration.statusCode).toBe(201);
+
+    for (let index = 0; index < 12; index += 1) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { email: 'repeat@example.uz', password: 'investor2026' },
+      });
+      expect(response.statusCode).toBe(200);
+    }
+
+    for (let index = 0; index < 10; index += 1) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { email: 'blocked@example.uz', password: 'wrong-password' },
+      });
+      expect(response.statusCode).toBe(401);
+    }
+    const blocked = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { email: 'blocked@example.uz', password: 'wrong-password' },
+    });
+    expect(blocked.statusCode).toBe(429);
+    expect(blocked.json()).toEqual({ code: 'RATE_LIMITED', error: 'Too many attempts' });
+    expect(blocked.headers['retry-after']).toBeString();
+  }, 15_000);
+});

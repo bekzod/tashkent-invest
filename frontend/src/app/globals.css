@@ -340,6 +340,9 @@ nav a:hover,
   position: absolute;
   inset: 0;
 }
+.map-canvas[data-drawing] canvas {
+  touch-action: none !important;
+}
 .map-loading-overlay {
   position: absolute;
   z-index: 4;
@@ -1881,7 +1884,10 @@ body {
 
 /* Map page audit polish: turn the filter sidebar into a compact control panel. */
 .map-page {
-  grid-template-columns: minmax(320px, 368px) minmax(0, 1fr) minmax(310px, 350px);
+  grid-template-columns: minmax(320px, 368px) minmax(0, 1fr) minmax(
+      310px,
+      350px
+    );
   background: #eef3f8;
 }
 .map-toolbar {
@@ -2552,8 +2558,12 @@ body {
   opacity: 0.65;
 }
 @keyframes reference-placeholder-pulse {
-  0% { background-position: 100% 50%; }
-  100% { background-position: 0 50%; }
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .reference-placeholder-image,
@@ -3492,7 +3502,7 @@ body {
   color: var(--muted);
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: .08em;
+  letter-spacing: 0.08em;
 }
 .admin-application-header h1 {
   margin: 0;
@@ -3518,7 +3528,7 @@ body {
 }
 .admin-application-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
   align-items: start;
   gap: 16px;
 }
@@ -3608,7 +3618,7 @@ body {
 }
 .admin-application-detail dl div {
   display: grid;
-  grid-template-columns: minmax(100px, .4fr) minmax(0, 1fr);
+  grid-template-columns: minmax(100px, 0.4fr) minmax(0, 1fr);
   gap: 10px;
 }
 .admin-application-detail dt {

@@ -11,9 +11,7 @@ async function loginAsAdmin(page: Page) {
 async function openSeededLocationEditor(page: Page) {
   const title = "Sanoat uchun yer uchastkasi 127";
   await page.goto("/dashboard/projects");
-  await page
-    .getByPlaceholder(/Nomi, tuman yoki kadastr/i)
-    .fill(title);
+  await page.getByPlaceholder(/Nomi, tuman yoki kadastr/i).fill(title);
   const row = page.getByRole("row").filter({
     hasText: title,
   });
@@ -33,7 +31,10 @@ async function saveDraft(page: Page) {
 }
 
 test.describe("admin object location", () => {
-  test.skip(!process.env.E2E_API_READY, "Requires the guarded seeded local API.");
+  test.skip(
+    !process.env.E2E_API_READY,
+    "Requires the guarded seeded local API.",
+  );
 
   test("admin selects, saves, reloads, geolocates and clears a point", async ({
     page,
@@ -65,6 +66,8 @@ test.describe("admin object location", () => {
 
     const latitudeInput = page.getByLabel("Kenglik");
     const longitudeInput = page.getByLabel("Uzunlik");
+    const originalLatitude = await latitudeInput.inputValue();
+    const originalLongitude = await longitudeInput.inputValue();
     await latitudeInput.selectText();
     await latitudeInput.pressSequentially("41.391335");
     await longitudeInput.selectText();
@@ -72,8 +75,14 @@ test.describe("admin object location", () => {
     await saveDraft(page);
     await page.reload();
     await page.getByRole("button", { name: /Joylashuv/ }).click();
-    expect(Number(await page.getByLabel("Kenglik").inputValue())).toBeCloseTo(41.391335, 6);
-    expect(Number(await page.getByLabel("Uzunlik").inputValue())).toBeCloseTo(69.220651, 6);
+    expect(Number(await page.getByLabel("Kenglik").inputValue())).toBeCloseTo(
+      41.391335,
+      6,
+    );
+    expect(Number(await page.getByLabel("Uzunlik").inputValue())).toBeCloseTo(
+      69.220651,
+      6,
+    );
 
     await page.getByRole("button", { name: /Joriy joyim/ }).click();
     await expect(page.getByLabel("Kenglik")).toHaveValue("41.391335");
@@ -94,8 +103,30 @@ test.describe("admin object location", () => {
     await expect(page.getByLabel("Kenglik")).toHaveValue("");
     await expect(page.locator(".maplibregl-marker")).toHaveCount(0);
 
+    // Restore the seeded public object so later specs do not inherit a hidden
+    // inventory item from this destructive clear-location assertion.
+    await page.getByLabel("Kenglik").fill(originalLatitude);
+    await page.getByLabel("Uzunlik").fill(originalLongitude);
+    await saveDraft(page);
+    await page.reload();
+    await page.getByRole("button", { name: /Joylashuv/ }).click();
+    await expect(page.getByLabel("Kenglik")).toHaveValue(originalLatitude);
+    await expect(page.getByLabel("Uzunlik")).toHaveValue(originalLongitude);
+    for (let step = 0; step < 3; step += 1) {
+      await page.getByRole("button", { name: /Keyingi/ }).click();
+    }
+    const publishResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === "PUT" &&
+        /\/api\/admin\/objects\//.test(response.url()),
+    );
+    await page.getByRole("button", { name: /Nashr qilish/ }).click();
+    expect((await publishResponse).status()).toBe(200);
+
     expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
     ).toBe(true);
   });
 });

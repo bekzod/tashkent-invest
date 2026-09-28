@@ -23,27 +23,50 @@ function publicUser(user) {
 function createFixedWindowLimiter({ limit, windowMs, keyFor = (request) => request.ip }) {
   const attempts = new Map();
 
-  return function check(request, reply) {
-    const now = Date.now();
-    if (attempts.size > 10_000) {
-      for (const [storedKey, stored] of attempts) {
-        if (stored.resetAt <= now) attempts.delete(storedKey);
-      }
-      while (attempts.size > 10_000) attempts.delete(attempts.keys().next().value);
+  function prune(now) {
+    if (attempts.size <= 10_000) return;
+    for (const [storedKey, stored] of attempts) {
+      if (stored.resetAt <= now) attempts.delete(storedKey);
     }
+    while (attempts.size > 10_000) attempts.delete(attempts.keys().next().value);
+  }
+
+  function activeEntry(request, now) {
     const key = keyFor(request);
     const current = attempts.get(key);
-    const entry =
-      !current || current.resetAt <= now ? { count: 0, resetAt: now + windowMs } : current;
-    entry.count += 1;
-    attempts.set(key, entry);
+    if (!current || current.resetAt <= now) {
+      attempts.delete(key);
+      return { key, entry: null };
+    }
+    return { key, entry: current };
+  }
 
-    if (entry.count <= limit) return false;
+  return {
+    isBlocked(request, reply) {
+      const now = Date.now();
+      prune(now);
+      const { entry } = activeEntry(request, now);
+      if (!entry || entry.count < limit) return false;
 
-    const retryAfter = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
-    reply.header('Retry-After', String(retryAfter));
-    reply.code(429).send({ code: 'RATE_LIMITED', error: 'Too many attempts' });
-    return true;
+      const retryAfter = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+      reply.header('Retry-After', String(retryAfter));
+      reply.code(429).send({ code: 'RATE_LIMITED', error: 'Too many attempts' });
+      return true;
+    },
+
+    recordFailure(request) {
+      const now = Date.now();
+      prune(now);
+      const { key, entry } = activeEntry(request, now);
+      attempts.set(
+        key,
+        entry ? { ...entry, count: entry.count + 1 } : { count: 1, resetAt: now + windowMs },
+      );
+    },
+
+    reset(request) {
+      attempts.delete(keyFor(request));
+    },
   };
 }
 
@@ -64,15 +87,20 @@ module.exports = async (app) => {
   app.post(
     '/login',
     route(async (request, reply) => {
-      if (limitLogin(request, reply)) return;
+      if (limitLogin.isBlocked(request, reply)) return;
       const { email, password } = request.body || {};
-      if (!email || !password)
+      if (!email || !password) {
+        limitLogin.recordFailure(request);
         return reply
           .code(400)
           .send({ code: 'LOGIN_REQUIRED', error: 'Email and password are required' });
+      }
       const user = await app.db.User.findOne({ where: { email: normalizeEmail(email) } });
-      if (!user || !(await bcrypt.compare(password, user.passwordHash)))
+      if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+        limitLogin.recordFailure(request);
         return reply.code(401).send({ code: 'INVALID_CREDENTIALS', error: 'Invalid credentials' });
+      }
+      limitLogin.reset(request);
       const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
         expiresIn: '8h',
       });
@@ -82,10 +110,11 @@ module.exports = async (app) => {
   app.post(
     '/register',
     route(async (request, reply) => {
-      if (limitRegistration(request, reply)) return;
+      if (limitRegistration.isBlocked(request, reply)) return;
 
       try {
         const user = await registerInvestor(app.db, request.body || {});
+        limitRegistration.reset(request);
         const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
           expiresIn: '8h',
         });
@@ -95,6 +124,7 @@ module.exports = async (app) => {
           emailVerification: 'not_configured',
         });
       } catch (error) {
+        limitRegistration.recordFailure(request);
         if (error instanceof RegistrationError) {
           return reply.code(error.statusCode).send({
             code: error.code,

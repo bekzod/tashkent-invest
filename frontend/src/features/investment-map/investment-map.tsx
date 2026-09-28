@@ -19,7 +19,11 @@ import {
 } from "./map-utils";
 import { MapRequestCoordinator } from "./map-request";
 import { PencilRuler } from "lucide-react";
-import { FreehandPolygonDraft, mapLibreControlLocale } from "./map-mobile";
+import {
+  areaDrawingReady,
+  FreehandPolygonDraft,
+  mapLibreControlLocale,
+} from "./map-mobile";
 
 const TASHKENT_DISTRICT: [number, number] = [69.220651, 41.391335];
 const tileUrl =
@@ -61,8 +65,12 @@ function polygonBounds(
     maxLongitude = Math.max(maxLongitude, point[0]);
     maxLatitude = Math.max(maxLatitude, point[1]);
   }
-  if (minLongitude === maxLongitude || minLatitude === maxLatitude) return undefined;
-  return [[minLongitude, minLatitude], [maxLongitude, maxLatitude]];
+  if (minLongitude === maxLongitude || minLatitude === maxLatitude)
+    return undefined;
+  return [
+    [minLongitude, minLatitude],
+    [maxLongitude, maxLatitude],
+  ];
 }
 
 function setSelectedObject(
@@ -86,7 +94,8 @@ function setSelectedObject(
     properties: {
       id: object.id,
       approximate:
-        object.geometrySource === "estimated" || object.geometrySource === "demo",
+        object.geometrySource === "estimated" ||
+        object.geometrySource === "demo",
     },
     geometry,
   });
@@ -131,6 +140,7 @@ export function InvestmentMap({
   const mapRef = useRef<MapLibreMap | null>(null);
   const popupRef = useRef<Popup | null>(null);
   const polygonRef = useRef<GeoJSON.Polygon | undefined>(undefined);
+  const [mapReady, setMapReady] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [drawingHasShape, setDrawingHasShape] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -202,7 +212,8 @@ export function InvestmentMap({
       )?.setData(collection);
       const boundaries = objectBoundaryFeatures(collection.features);
       (
-        map.getSource("object-boundaries") as unknown as GeoJsonSource | undefined
+        map.getSource("object-boundaries") as unknown as
+          GeoJsonSource | undefined
       )?.setData(boundaries);
       setBoundaryCount(boundaries.features.length);
       onFeaturesRef.current(collection.features);
@@ -463,11 +474,11 @@ export function InvestmentMap({
           });
         setSelectedObject(map, selectedRef.current, false);
         mapIsReadyRef.current = true;
+        setMapReady(true);
         loadRef.current();
       });
       map.on("moveend", () => {
-        if (!drawingRef.current)
-          coordinator.debounce(() => loadRef.current());
+        if (!drawingRef.current) coordinator.debounce(() => loadRef.current());
       });
       map.on("click", "clusters", (event) => {
         const feature = event.features?.[0];
@@ -500,7 +511,9 @@ export function InvestmentMap({
         });
       });
       map.on("click", "object-boundaries-fill", (event) => {
-        const objectId = String(event.features?.[0]?.properties?.objectId || "");
+        const objectId = String(
+          event.features?.[0]?.properties?.objectId || "",
+        );
         const object = objectsByIdRef.current.get(objectId);
         if (object) onSelectRef.current(object);
       });
@@ -541,6 +554,7 @@ export function InvestmentMap({
     return () => {
       disposed = true;
       mapIsReadyRef.current = false;
+      setMapReady(false);
       coordinator.dispose();
       popupRef.current?.remove();
       mapRef.current?.remove();
@@ -581,7 +595,9 @@ export function InvestmentMap({
         geometry: filters.polygon,
         properties: { kind: filters.areaKind || "manual" },
       });
-    const nextBounds = filters.polygon ? polygonBounds(filters.polygon) : undefined;
+    const nextBounds = filters.polygon
+      ? polygonBounds(filters.polygon)
+      : undefined;
     if (nextBounds)
       map?.fitBounds(nextBounds, {
         padding: 72,
@@ -595,7 +611,7 @@ export function InvestmentMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !drawing) return;
+    if (!map || !areaDrawingReady(mapReady, drawing)) return;
     const canvas = map.getCanvas();
     const draft = drawingDraftRef.current;
     const previousTouchAction = canvas.style.touchAction;
@@ -691,7 +707,7 @@ export function InvestmentMap({
       canvas.removeEventListener("pointercancel", cancel, true);
       canvas.removeEventListener("lostpointercapture", lostCapture, true);
     };
-  }, [drawing]);
+  }, [drawing, mapReady]);
 
   const beginDrawing = () => {
     const map = mapRef.current;
@@ -740,6 +756,7 @@ export function InvestmentMap({
             <button
               type="button"
               className="map-draw-button"
+              disabled={!mapReady}
               onClick={beginDrawing}
             >
               <PencilRuler size={15} aria-hidden="true" />

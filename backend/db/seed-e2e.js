@@ -73,6 +73,7 @@ async function seedDemoObjects(database) {
       const [baseLng, baseLat] = locality.center;
       const status = demoStatus(index);
       const slug = `tashkent-invest-${index + 1}`;
+      const fixtureTimestamp = new Date(Date.UTC(2026, 0, 1, 0, 0, index));
       const payload = {
         slug,
         type: types[index % types.length],
@@ -118,12 +119,18 @@ async function seedDemoObjects(database) {
         legalDetails: { status: 'Demo fixture', ownership: 'Demo fixture' },
         constructionDetails: { maxFloors: 3 + (index % 5), coveragePercent: 55 },
         benefits: { support: 'Demo fixture' },
+        createdAt: fixtureTimestamp,
+        updatedAt: fixtureTimestamp,
       };
       const [object] = await database.InvestmentObject.findOrCreate({
         where: { slug },
         defaults: payload,
       });
-      await object.update(payload);
+      await object.update(payload, { silent: true });
+      await database.sequelize.query(
+        'UPDATE investment_objects SET created_at = :timestamp, updated_at = :timestamp WHERE id = :id',
+        { replacements: { id: object.id, timestamp: fixtureTimestamp } },
+      );
       await database.InvestmentObjectTranslation.destroy({
         where: { investmentObjectId: object.id },
       });
