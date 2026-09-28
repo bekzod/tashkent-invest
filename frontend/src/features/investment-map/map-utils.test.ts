@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { buildMapQuery, objectSelectionGeometry, statusColor } from './map-utils';
+import { buildMapQuery, objectBoundaryFeatures, objectSelectionGeometry, objectTooltipElement, safePolygonBounds, statusColor } from './map-utils';
 
 describe('map query', () => {
   test('serializes viewport, filters and polygon', () => {
@@ -27,9 +27,27 @@ describe('map query', () => {
     const geometry = { type: 'Polygon' as const, coordinates: [[[69.2, 41.3], [69.21, 41.3], [69.21, 41.31], [69.2, 41.3]]] };
     expect(objectSelectionGeometry({ siteGeometry: geometry } as never)).toBe(geometry);
   });
-  test('creates a fallback plot outline from object coordinates', () => {
-    const geometry = objectSelectionGeometry({ coordinates: [69.2, 41.3], landAreaHa: 2 } as never);
-    expect(geometry?.coordinates[0]).toHaveLength(5);
-    expect(geometry?.coordinates[0][0]).toEqual(geometry?.coordinates[0][4]);
+  test('does not invent a lot outline from coordinates or declared land area', () => {
+    expect(objectSelectionGeometry({ coordinates: [69.2, 41.3], landAreaHa: 2 } as never)).toBeUndefined();
+  });
+  test('rejects malformed boundaries and computes safe bounds without spreading input', () => {
+    const invalid = { type: 'Polygon' as const, coordinates: [[[69.2, 41.3], [69.21, 41.31], [69.2, 41.31], [69.21, 41.3], [69.2, 41.3]]] };
+    expect(objectSelectionGeometry({ siteGeometry: invalid } as never)).toBeUndefined();
+    expect(safePolygonBounds(invalid)).toBeUndefined();
+  });
+  test('creates public boundary features only when geometry and provenance are valid', () => {
+    const geometry = { type: 'Polygon' as const, coordinates: [[[69.2, 41.3], [69.21, 41.3], [69.21, 41.31], [69.2, 41.3]]] };
+    const features = objectBoundaryFeatures([
+      { id: 'one', type: 'Feature', geometry: { type: 'Point', coordinates: [69.205, 41.302] }, properties: { id: 'one', siteGeometry: geometry, geometrySource: 'cadastral' } as never },
+      { id: 'two', type: 'Feature', geometry: { type: 'Point', coordinates: [69.3, 41.4] }, properties: { id: 'two', landAreaHa: 4 } as never },
+    ]);
+    expect(features.features).toHaveLength(1);
+    expect(features.features[0].properties).toMatchObject({ objectId: 'one', approximate: false });
+  });
+  test('builds tooltip content with text nodes instead of interpreting markup', () => {
+    const tooltip = objectTooltipElement({ title: '<img src=x onerror=alert(1)>', address: '<script>bad()</script>' });
+    expect(tooltip.querySelector('img')).toBeNull();
+    expect(tooltip.querySelector('script')).toBeNull();
+    expect(tooltip.textContent).toContain('<img src=x onerror=alert(1)>');
   });
 });

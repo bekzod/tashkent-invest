@@ -21,6 +21,7 @@ function preview(object, locale) {
     status: object.status,
     coordinates: [Number(object.longitude), Number(object.latitude)],
     siteGeometry: object.siteGeometry,
+    geometrySource: object.geometrySource,
     landAreaHa: object.landAreaHa,
     investmentAmountUsd: object.investmentAmountUsd,
     updatedAt: object.updatedAt instanceof Date ? object.updatedAt.toISOString() : object.updatedAt,

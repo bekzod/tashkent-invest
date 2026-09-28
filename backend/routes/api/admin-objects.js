@@ -19,6 +19,7 @@ const coreFields = [
   'latitude',
   'longitude',
   'siteGeometry',
+  'geometrySource',
   'landAreaHa',
   'buildingAreaSqm',
   'usableAreaSqm',

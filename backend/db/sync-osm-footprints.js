@@ -139,12 +139,15 @@ async function syncOsmFootprints() {
     await object.update({
       longitude: footprint.center[0],
       latitude: footprint.center[1],
-      siteGeometry: footprint.geometry,
+      // A nearby OSM building outline is useful for locating deterministic demo
+      // points, but it is not evidence of the legal lot boundary.
+      siteGeometry: null,
+      geometrySource: null,
     });
   }
 
   console.log(
-    `Synced ${objects.length} mock objects to real OSM multi-vertex building footprints (${uniqueCandidates.length} candidates).`,
+    `Synced ${objects.length} mock object locations from nearby OSM buildings without assigning lot boundaries (${uniqueCandidates.length} candidates).`,
   );
 }
 

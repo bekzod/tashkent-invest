@@ -11,7 +11,10 @@ import { api } from "@/shared/api/client";
 import {
   buildMapQuery,
   emptyFeatures,
+  objectBoundaryFeatures,
   objectSelectionGeometry,
+  objectTooltipElement,
+  safePolygonBounds,
   type MapFilters,
 } from "./map-utils";
 import { MapRequestCoordinator } from "./map-request";
@@ -37,18 +40,28 @@ function bounds(map: MapLibreMap): [number, number, number, number] {
 
 function polygonBounds(
   polygon: GeoJSON.Polygon,
-): [[number, number], [number, number]] {
-  const points = polygon.coordinates[0];
-  return [
-    [
-      Math.min(...points.map(([longitude]) => longitude)),
-      Math.min(...points.map(([, latitude]) => latitude)),
-    ],
-    [
-      Math.max(...points.map(([longitude]) => longitude)),
-      Math.max(...points.map(([, latitude]) => latitude)),
-    ],
-  ];
+): [[number, number], [number, number]] | undefined {
+  const points = polygon?.coordinates?.[0];
+  if (!Array.isArray(points) || points.length < 2) return undefined;
+  let minLongitude = Infinity;
+  let minLatitude = Infinity;
+  let maxLongitude = -Infinity;
+  let maxLatitude = -Infinity;
+  for (const point of points) {
+    if (
+      !Array.isArray(point) ||
+      point.length < 2 ||
+      !Number.isFinite(point[0]) ||
+      !Number.isFinite(point[1])
+    )
+      return undefined;
+    minLongitude = Math.min(minLongitude, point[0]);
+    minLatitude = Math.min(minLatitude, point[1]);
+    maxLongitude = Math.max(maxLongitude, point[0]);
+    maxLatitude = Math.max(maxLatitude, point[1]);
+  }
+  if (minLongitude === maxLongitude || minLatitude === maxLatitude) return undefined;
+  return [[minLongitude, minLatitude], [maxLongitude, maxLatitude]];
 }
 
 function setSelectedObject(
@@ -69,7 +82,11 @@ function setSelectedObject(
   }
   outlineSource.setData({
     type: "Feature",
-    properties: { id: object.id },
+    properties: {
+      id: object.id,
+      approximate:
+        object.geometrySource === "estimated" || object.geometrySource === "demo",
+    },
     geometry,
   });
   const coordinates = object.coordinates || geometry.coordinates[0][0];
@@ -78,8 +95,9 @@ function setSelectedObject(
     properties: { id: object.id },
     geometry: { type: "Point", coordinates },
   });
-  if (animate)
-    map.fitBounds(polygonBounds(geometry), {
+  const nextBounds = safePolygonBounds(geometry);
+  if (animate && nextBounds)
+    map.fitBounds(nextBounds, {
       padding: 84,
       duration: 700,
       maxZoom: 17,
@@ -114,9 +132,11 @@ export function InvestmentMap({
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [boundaryCount, setBoundaryCount] = useState(0);
   const { locale, t } = useLanguage();
   const filtersRef = useRef(filters);
   const selectedRef = useRef(selected);
+  const objectsByIdRef = useRef(new Map<string, InvestmentObject>());
   const drawingRef = useRef(false);
   const showControlsRef = useRef(showControls);
   const onFeaturesRef = useRef(onFeatures);
@@ -168,9 +188,20 @@ export function InvestmentMap({
                 .slice(0, maxVisible),
             }
           : collection;
+      objectsByIdRef.current = new Map(
+        collection.features.map((feature) => [
+          feature.properties.id,
+          { ...feature.properties, coordinates: feature.geometry.coordinates },
+        ]),
+      );
       (
         map.getSource("objects") as unknown as GeoJsonSource | undefined
       )?.setData(visible);
+      const boundaries = objectBoundaryFeatures(visible.features);
+      (
+        map.getSource("object-boundaries") as unknown as GeoJsonSource | undefined
+      )?.setData(boundaries);
+      setBoundaryCount(boundaries.features.length);
       onFeaturesRef.current(collection.features);
       setHasLoaded(true);
     } catch (error) {
@@ -241,6 +272,10 @@ export function InvestmentMap({
           type: "geojson",
           data: emptyGeoJson,
         });
+        map.addSource("object-boundaries", {
+          type: "geojson",
+          data: emptyGeoJson,
+        });
         map.addSource("selection", { type: "geojson", data: emptyGeoJson });
         map.addSource("selected-object", {
           type: "geojson",
@@ -249,6 +284,33 @@ export function InvestmentMap({
         map.addSource("selected-object-center", {
           type: "geojson",
           data: emptyGeoJson,
+        });
+        map.addLayer({
+          id: "object-boundaries-fill",
+          type: "fill",
+          source: "object-boundaries",
+          paint: {
+            "fill-color": "#18a957",
+            "fill-opacity": ["case", ["get", "approximate"], 0.06, 0.13],
+          },
+        });
+        map.addLayer({
+          id: "object-boundaries-line",
+          type: "line",
+          source: "object-boundaries",
+          filter: ["!=", ["get", "approximate"], true],
+          paint: { "line-color": "#0b8043", "line-width": 2 },
+        });
+        map.addLayer({
+          id: "object-boundaries-estimated-line",
+          type: "line",
+          source: "object-boundaries",
+          filter: ["==", ["get", "approximate"], true],
+          paint: {
+            "line-color": "#8b6b16",
+            "line-width": 2,
+            "line-dasharray": [2, 2],
+          },
         });
         map.addLayer({
           id: "clusters",
@@ -343,7 +405,19 @@ export function InvestmentMap({
           id: "selected-object-line",
           type: "line",
           source: "selected-object",
+          filter: ["!=", ["get", "approximate"], true],
           paint: { "line-color": "#075cc5", "line-width": 4 },
+        });
+        map.addLayer({
+          id: "selected-object-estimated-line",
+          type: "line",
+          source: "selected-object",
+          filter: ["==", ["get", "approximate"], true],
+          paint: {
+            "line-color": "#075cc5",
+            "line-width": 4,
+            "line-dasharray": [2, 1.5],
+          },
         });
         map.addLayer({
           id: "selected-object-center",
@@ -373,8 +447,11 @@ export function InvestmentMap({
             geometry: filtersRef.current.polygon,
             properties: { kind: filtersRef.current.areaKind || "manual" },
           });
-        if (filtersRef.current.polygon)
-          map.fitBounds(polygonBounds(filtersRef.current.polygon), {
+        const initialBounds = filtersRef.current.polygon
+          ? polygonBounds(filtersRef.current.polygon)
+          : undefined;
+        if (initialBounds)
+          map.fitBounds(initialBounds, {
             padding: 72,
             duration: 0,
             maxZoom: 13,
@@ -417,6 +494,11 @@ export function InvestmentMap({
           ],
         });
       });
+      map.on("click", "object-boundaries-fill", (event) => {
+        const objectId = String(event.features?.[0]?.properties?.objectId || "");
+        const object = objectsByIdRef.current.get(objectId);
+        if (object) onSelectRef.current(object);
+      });
       map.on("mouseenter", "objects-circle", (event) => {
         map.getCanvas().style.cursor = "pointer";
         const object = event.features?.[0]?.properties as
@@ -429,14 +511,18 @@ export function InvestmentMap({
                 number,
               ],
             )
-            .setHTML(
-              `<strong>${object.title}</strong><br/><small>${object.address}</small>`,
-            )
+            .setDOMContent(objectTooltipElement(object))
             .addTo(map);
       });
       map.on("mouseleave", "objects-circle", () => {
         map.getCanvas().style.cursor = "";
         popupRef.current?.remove();
+      });
+      map.on("mouseenter", "object-boundaries-fill", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "object-boundaries-fill", () => {
+        map.getCanvas().style.cursor = "";
       });
     })();
     return () => {
@@ -482,8 +568,9 @@ export function InvestmentMap({
         geometry: filters.polygon,
         properties: { kind: filters.areaKind || "manual" },
       });
-    if (filters.polygon)
-      map?.fitBounds(polygonBounds(filters.polygon), {
+    const nextBounds = filters.polygon ? polygonBounds(filters.polygon) : undefined;
+    if (nextBounds)
+      map?.fitBounds(nextBounds, {
         padding: 72,
         duration: 650,
         maxZoom: 13,
@@ -566,6 +653,8 @@ export function InvestmentMap({
         className="map-canvas"
         aria-label={t("mapLabel")}
         data-selected-object-id={selected?.id || ""}
+        data-selected-boundary-source={selected?.geometrySource || ""}
+        data-boundary-count={boundaryCount}
       />
       {isLoading && (
         <div className="map-loading-overlay" role="status" aria-live="polite">

@@ -14,6 +14,18 @@ test('public previews expose the database-backed update timestamp', () => {
       district: 'Toshkent',
       longitude: '69.2000000',
       latitude: '41.3000000',
+      siteGeometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [69.19, 41.29],
+            [69.21, 41.29],
+            [69.2, 41.31],
+            [69.19, 41.29],
+          ],
+        ],
+      },
+      geometrySource: 'cadastral',
       updatedAt,
       translations: [{ locale: 'uz', title: 'Tasdiqlangan lot' }],
       media: [],
@@ -22,4 +34,5 @@ test('public previews expose the database-backed update timestamp', () => {
   );
 
   expect(result.updatedAt).toBe('2026-09-24T10:20:30.000Z');
+  expect(result.geometrySource).toBe('cadastral');
 });

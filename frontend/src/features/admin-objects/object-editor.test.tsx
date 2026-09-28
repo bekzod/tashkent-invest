@@ -11,6 +11,7 @@ vi.mock('next/link', () => ({
   default: ({ children, href, ...props }: React.ComponentProps<'a'>) => <a href={href} {...props}>{children}</a>,
 }));
 vi.mock('./location-picker', () => ({ LocationPicker: () => <div data-testid="location-picker" /> }));
+vi.mock('./lot-boundary-editor', () => ({ LotBoundaryEditor: () => <div data-testid="lot-boundary-editor" /> }));
 vi.mock('./api', () => ({
   adminObjectsApi: {
     create: vi.fn(),
@@ -102,5 +103,6 @@ test('requires the coordinate pair and invalidates stale geometry when a point m
     latitude: 41.39,
     longitude: 69.21,
     siteGeometry: null,
+    geometrySource: null,
   });
 });

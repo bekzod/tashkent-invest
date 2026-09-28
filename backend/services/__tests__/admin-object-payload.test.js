@@ -30,6 +30,19 @@ const publishPayload = {
   },
 };
 
+const validLotBoundary = {
+  type: 'Polygon',
+  coordinates: [
+    [
+      [69.2067, 41.4031],
+      [69.2073, 41.4031],
+      [69.2073, 41.4037],
+      [69.2067, 41.4037],
+      [69.2067, 41.4031],
+    ],
+  ],
+};
+
 test('accepts an incomplete draft but requires publishing fields', () => {
   expect(
     normalizeObjectPayload({ status: 'draft', translations: { uz: { title: 'Qoralama' } } })
@@ -106,6 +119,74 @@ test('validates point and polygon coordinates', () => {
       },
     }),
   ).toThrow('closed');
+});
+
+test('requires truthful geometry provenance and keeps Polygon-only semantics explicit', () => {
+  expect(() =>
+    normalizeObjectPayload({
+      ...publishPayload,
+      longitude: 69.20701,
+      latitude: 41.403398,
+      siteGeometry: validLotBoundary,
+    }),
+  ).toThrow('Geometry source');
+  expect(() =>
+    normalizeObjectPayload({
+      ...publishPayload,
+      longitude: 69.20701,
+      latitude: 41.403398,
+      siteGeometry: validLotBoundary,
+      geometrySource: 'guessed',
+    }),
+  ).toThrow('Geometry source');
+  expect(
+    normalizeObjectPayload({
+      ...publishPayload,
+      longitude: 69.20701,
+      latitude: 41.403398,
+      siteGeometry: validLotBoundary,
+      geometrySource: 'admin_drawn',
+    }),
+  ).toMatchObject({ siteGeometry: validLotBoundary, geometrySource: 'admin_drawn' });
+  expect(() =>
+    normalizeObjectPayload({
+      ...publishPayload,
+      siteGeometry: { type: 'MultiPolygon', coordinates: [] },
+      geometrySource: 'admin_drawn',
+    }),
+  ).toThrow('Polygon without holes');
+});
+
+test('requires a point inside a district-bounded lot polygon', () => {
+  expect(() =>
+    normalizeObjectPayload({
+      status: 'draft',
+      siteGeometry: validLotBoundary,
+      geometrySource: 'admin_drawn',
+    }),
+  ).toThrow('location is required');
+  expect(() =>
+    normalizeObjectPayload({
+      ...publishPayload,
+      longitude: 69.231469,
+      latitude: 41.407415,
+      siteGeometry: validLotBoundary,
+      geometrySource: 'admin_drawn',
+    }),
+  ).toThrow('inside its polygon');
+});
+
+test('clears provenance when the boundary is explicitly cleared', () => {
+  expect(
+    normalizeObjectPayload({
+      status: 'draft',
+      siteGeometry: null,
+      geometrySource: 'surveyed',
+    }),
+  ).toMatchObject({ siteGeometry: null, geometrySource: null });
+  expect(() => normalizeObjectPayload({ status: 'draft', geometrySource: 'admin_drawn' })).toThrow(
+    'without site geometry',
+  );
 });
 
 test('keeps coordinate clearing explicit and requires the pair together', () => {

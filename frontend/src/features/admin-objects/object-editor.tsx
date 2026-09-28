@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { adminObjectsApi } from "./api";
 import { LocationPicker } from "./location-picker";
+import { LotBoundaryEditor } from "./lot-boundary-editor";
 import type {
   AdminObject,
   AdminObjectPayload,
@@ -78,6 +79,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
   const steps = stepKeys.map(t);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [boundaryEditing, setBoundaryEditing] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState(() => ({
     status: object?.status || "draft",
@@ -87,6 +89,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
     latitude: object?.latitude?.toString() || "",
     longitude: object?.longitude?.toString() || "",
     siteGeometry: object?.siteGeometry ?? null,
+    geometrySource: object?.geometrySource ?? null,
     landAreaHa: object?.landAreaHa?.toString() || "",
     buildingAreaSqm: object?.buildingAreaSqm?.toString() || "",
     usableAreaSqm: object?.usableAreaSqm?.toString() || "",
@@ -154,14 +157,20 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
         current.latitude === latitude && current.longitude === longitude
           ? current.siteGeometry
           : null,
+      geometrySource:
+        current.latitude === latitude && current.longitude === longitude
+          ? current.geometrySource
+          : null,
     }));
   const setLocationCoordinate = (key: "latitude" | "longitude", value: string) =>
     setForm((current) => ({
       ...current,
       [key]: value,
       siteGeometry: current[key] === value ? current.siteGeometry : null,
+      geometrySource: current[key] === value ? current.geometrySource : null,
     }));
   const submit = async (publish = false) => {
+    if (boundaryEditing) return;
     if (locationValidation.code) {
       setError(locationError);
       return;
@@ -178,6 +187,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
       latitude: parseOptionalCoordinate(form.latitude) ?? null,
       longitude: parseOptionalCoordinate(form.longitude) ?? null,
       siteGeometry: form.siteGeometry,
+      geometrySource: form.geometrySource,
       landAreaHa: Number(form.landAreaHa) || undefined,
       buildingAreaSqm: Number(form.buildingAreaSqm) || undefined,
       usableAreaSqm: Number(form.usableAreaSqm) || undefined,
@@ -209,7 +219,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
         <Link className="admin-back" href="/dashboard/projects">
           <ChevronLeft size={16} /> {t("objectsBack")}
         </Link>
-        <button className="admin-outline" type="submit" disabled={saving}>
+        <button className="admin-outline" type="submit" disabled={saving || boundaryEditing}>
           <Save size={16} /> {t("saveDraft")}
         </button>
       </header>
@@ -338,6 +348,20 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
               onChange={({ latitude, longitude }) =>
                 setLocation(latitude, longitude)
               }
+            />
+            <LotBoundaryEditor
+              geometry={form.siteGeometry}
+              source={form.geometrySource}
+              latitude={form.latitude}
+              longitude={form.longitude}
+              onChange={({ geometry, source }) =>
+                setForm((current) => ({
+                  ...current,
+                  siteGeometry: geometry,
+                  geometrySource: source,
+                }))
+              }
+              onEditingChange={setBoundaryEditing}
             />
             <div className="admin-form-grid">
               <Field label={t("latitude")}>
@@ -494,7 +518,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
           <button
             type="button"
             className="admin-primary"
-            disabled={saving || publishIssues.length > 0}
+            disabled={saving || boundaryEditing || publishIssues.length > 0}
             onClick={() => void submit(true)}
           >
             <Send size={16} /> {t("publish")}

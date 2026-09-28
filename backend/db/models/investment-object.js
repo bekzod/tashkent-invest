@@ -28,6 +28,11 @@ module.exports = (sequelize, DataTypes) => {
       latitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
       longitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
       siteGeometry: { type: DataTypes.JSONB, allowNull: true, field: 'site_geometry' },
+      geometrySource: {
+        type: DataTypes.ENUM('surveyed', 'cadastral', 'admin_drawn', 'estimated', 'demo'),
+        allowNull: true,
+        field: 'geometry_source',
+      },
       landAreaHa: { type: DataTypes.DECIMAL(10, 2), allowNull: true, field: 'land_area_ha' },
       buildingAreaSqm: {
         type: DataTypes.DECIMAL(12, 2),

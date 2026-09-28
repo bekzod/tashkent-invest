@@ -1,8 +1,12 @@
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import { expect, type Page } from "@playwright/test";
 
-const mapTilePath = resolve(__dirname, "../fixtures/map-tile.svg");
+// MapLibre raster sources decode through ImageBitmap in Chromium, which does
+// not reliably accept SVG responses. This tiny valid PNG keeps map screenshots
+// deterministic while still allowing WebGL boundary layers to be asserted.
+const mapTile = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+  "base64",
+);
 
 const disabledMotionCss = `
   *, *::before, *::after {
@@ -17,7 +21,6 @@ const disabledMotionCss = `
 `;
 
 export async function installDeterministicMapTiles(page: Page) {
-  const tile = await readFile(mapTilePath);
   await page.route(
     (url) =>
       /(?:openstreetmap|maptiler|mapbox|\.tile\.|\/tiles?\/)/i.test(url.href) &&
@@ -25,9 +28,9 @@ export async function installDeterministicMapTiles(page: Page) {
     async (route) => {
       await route.fulfill({
         status: 200,
-        contentType: "image/svg+xml",
+        contentType: "image/png",
         headers: { "access-control-allow-origin": "*", "cache-control": "no-store" },
-        body: tile,
+        body: mapTile,
       });
     },
   );

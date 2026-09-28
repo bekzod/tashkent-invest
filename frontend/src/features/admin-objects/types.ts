@@ -10,6 +10,12 @@ export type AdminTranslation = {
   address: string;
   permittedBusinesses: string[];
 };
+export type GeometrySource =
+  | "surveyed"
+  | "cadastral"
+  | "admin_drawn"
+  | "estimated"
+  | "demo";
 export type AdminObject = {
   id: string;
   slug?: string;
@@ -20,6 +26,7 @@ export type AdminObject = {
   latitude?: number;
   longitude?: number;
   siteGeometry?: GeoJSON.Polygon | null;
+  geometrySource?: GeometrySource | null;
   landAreaHa?: number;
   buildingAreaSqm?: number;
   usableAreaSqm?: number;

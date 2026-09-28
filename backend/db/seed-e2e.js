@@ -64,7 +64,22 @@ async function seedDemoObjects(database) {
         cadastralNumber: `10:0${(index % 9) + 1}:0${(index % 7) + 1}:00${index + 11}`,
         latitude: baseLat + ((index % 5) - 2) * 0.00115,
         longitude: baseLng + ((index % 7) - 3) * 0.00135,
-        siteGeometry: null,
+        siteGeometry:
+          index === 0
+            ? {
+                type: 'Polygon',
+                coordinates: [
+                  [
+                    [69.20276, 41.400898],
+                    [69.20316, 41.400898],
+                    [69.20316, 41.401298],
+                    [69.20276, 41.401298],
+                    [69.20276, 41.400898],
+                  ],
+                ],
+              }
+            : null,
+        geometrySource: index === 0 ? 'demo' : null,
         landAreaHa: (index % 12) + 1.5,
         buildingAreaSqm: 1200 + index * 175,
         usableAreaSqm: 900 + index * 110,

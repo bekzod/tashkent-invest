@@ -2,12 +2,13 @@
 
 const { URL } = require('node:url');
 const { districtBoundary } = require('../db/data/tashkent-district-geodata');
-const { pointInPolygon } = require('../utils/geo');
+const { normalizeLotPolygon, pointInPolygon } = require('../utils/geo');
 
 const objectTypes = new Set(['land', 'building', 'proposal']);
 const objectStatuses = new Set(['draft', 'available', 'auction', 'upcoming', 'archived']);
 const publicStatuses = new Set(['available', 'auction', 'upcoming']);
 const mediaKinds = new Set(['image', 'video', 'virtual_tour', 'document']);
+const geometrySources = new Set(['surveyed', 'cadastral', 'admin_drawn', 'estimated', 'demo']);
 
 function validation(message) {
   throw Object.assign(new Error(message), { statusCode: 400 });
@@ -38,27 +39,24 @@ function coordinateField(body, field, min, max, label) {
   return coordinate(body[field], min, max, label);
 }
 
-function normalizeGeometry(value) {
+function normalizeGeometry(value, point) {
   if (value === undefined) return undefined;
   if (value === null) return null;
-  if (
-    value.type !== 'Polygon' ||
-    !Array.isArray(value.coordinates) ||
-    value.coordinates.length !== 1
-  )
-    validation('Site geometry must be a Polygon');
-  const ring = value.coordinates[0];
-  if (!Array.isArray(ring) || ring.length < 4)
-    validation('Polygon needs at least four coordinates');
-  const normalized = ring.map((pair) => {
-    if (!Array.isArray(pair) || pair.length !== 2) validation('Polygon coordinate is invalid');
-    const longitude = coordinate(pair[0], -180, 180, 'Longitude');
-    const latitude = coordinate(pair[1], -90, 90, 'Latitude');
-    return [longitude, latitude];
-  });
-  if (normalized[0][0] !== normalized.at(-1)[0] || normalized[0][1] !== normalized.at(-1)[1])
-    validation('Polygon must be closed');
-  return { type: 'Polygon', coordinates: [normalized] };
+  if (!point) validation('Object location is required before adding a lot boundary');
+  return normalizeLotPolygon(value, {
+    districtRing: districtBoundary.coordinates[0],
+    point,
+  }).geometry;
+}
+
+function normalizeGeometrySource(value, geometry) {
+  if (geometry === undefined) {
+    if (value === undefined) return undefined;
+    validation('Geometry source cannot be stored without site geometry');
+  }
+  if (geometry === null) return null;
+  if (!geometrySources.has(value)) validation('Geometry source is required and must be recognised');
+  return value;
 }
 
 function normalizeMedia(value) {
@@ -126,6 +124,10 @@ function normalizeObjectPayload(body = {}) {
   const longitude = coordinateField(body, 'longitude', -180, 180, 'Longitude');
   if ((latitude == null) !== (longitude == null))
     validation('Latitude and longitude must be provided together');
+  const point =
+    typeof latitude === 'number' && typeof longitude === 'number' ? [longitude, latitude] : null;
+  const siteGeometry = normalizeGeometry(body.siteGeometry, point);
+  const geometrySource = normalizeGeometrySource(body.geometrySource, siteGeometry);
   const normalized = {
     slug: text(body.slug),
     type,
@@ -134,7 +136,8 @@ function normalizeObjectPayload(body = {}) {
     cadastralNumber: text(body.cadastralNumber),
     latitude,
     longitude,
-    siteGeometry: normalizeGeometry(body.siteGeometry),
+    siteGeometry,
+    geometrySource,
     landAreaHa: optionalNumber(body.landAreaHa, 'Land area'),
     buildingAreaSqm: optionalNumber(body.buildingAreaSqm, 'Building area'),
     usableAreaSqm: optionalNumber(body.usableAreaSqm, 'Usable area'),
@@ -195,7 +198,7 @@ function applyLocationGeometryPolicy(existing, requestBody = {}, payload = {}) {
         ? [payload.longitude, payload.latitude]
         : null;
     if (ring && point && pointInPolygon(point, ring)) return payload;
-    return { ...payload, siteGeometry: null };
+    return { ...payload, siteGeometry: null, geometrySource: null };
   }
   return payload;
 }
@@ -206,4 +209,5 @@ module.exports = {
   objectStatuses,
   publicStatuses,
   objectTypes,
+  geometrySources,
 };

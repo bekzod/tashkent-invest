@@ -1,4 +1,5 @@
 import type { FeatureCollection, InvestmentObject } from '@/entities/investment-object/types';
+import { lotBoundaryBounds, validateLotBoundary } from '@/shared/lib/lot-boundary';
 
 export type MapFilters = {
   q: string;
@@ -25,26 +26,50 @@ export function buildMapQuery(bbox: [number, number, number, number], filters: M
 }
 
 export function objectSelectionGeometry(object: InvestmentObject): GeoJSON.Polygon | undefined {
-  if (object.siteGeometry?.type === 'Polygon' && object.siteGeometry.coordinates[0]?.length >= 4)
-    return object.siteGeometry;
-  if (!object.coordinates) return undefined;
+  const validation = validateLotBoundary(object.siteGeometry, {
+    point: object.coordinates,
+  });
+  return validation.geometry;
+}
 
-  const [longitude, latitude] = object.coordinates;
-  const areaSqm = Math.max(Number(object.landAreaHa || 0.25) * 10000, 2500);
-  const halfSideMeters = Math.sqrt(areaSqm) / 2;
-  const longitudeScale = 111320 * Math.cos((latitude * Math.PI) / 180);
-  const longitudeOffset = halfSideMeters / longitudeScale;
-  const latitudeOffset = halfSideMeters / 111320;
+export function objectBoundaryFeatures(
+  features: FeatureCollection['features'],
+): GeoJSON.FeatureCollection<GeoJSON.Polygon> {
   return {
-    type: 'Polygon',
-    coordinates: [[
-      [longitude - longitudeOffset, latitude - latitudeOffset],
-      [longitude + longitudeOffset, latitude - latitudeOffset],
-      [longitude + longitudeOffset, latitude + latitudeOffset],
-      [longitude - longitudeOffset, latitude + latitudeOffset],
-      [longitude - longitudeOffset, latitude - latitudeOffset],
-    ]],
+    type: 'FeatureCollection',
+    features: features.flatMap((feature) => {
+      const object = feature.properties;
+      const geometry = objectSelectionGeometry({
+        ...object,
+        coordinates: feature.geometry.coordinates,
+      });
+      if (!geometry || !object.geometrySource) return [];
+      return [{
+        type: 'Feature' as const,
+        id: `boundary-${object.id}`,
+        geometry,
+        properties: {
+          objectId: object.id,
+          geometrySource: object.geometrySource,
+          approximate: object.geometrySource === 'estimated' || object.geometrySource === 'demo',
+        },
+      }];
+    }),
   };
+}
+
+export function safePolygonBounds(polygon?: GeoJSON.Polygon | null) {
+  return lotBoundaryBounds(polygon);
+}
+
+export function objectTooltipElement(object: Pick<InvestmentObject, 'title' | 'address'>) {
+  const container = document.createElement('div');
+  const title = document.createElement('strong');
+  const address = document.createElement('small');
+  title.textContent = object.title || '';
+  address.textContent = object.address || '';
+  container.append(title, document.createElement('br'), address);
+  return container;
 }
 export function statusColor(object: InvestmentObject) { if (object.status === 'auction') return '#e94145'; if (object.status === 'upcoming') return '#9653ee'; if (object.type === 'land') return '#18a957'; if (object.type === 'building') return '#1976dc'; return '#e4a72d'; }
 export const emptyFeatures: FeatureCollection = { type: 'FeatureCollection', features: [] };
