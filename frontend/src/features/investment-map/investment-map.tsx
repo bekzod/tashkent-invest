@@ -19,6 +19,7 @@ import {
 } from "./map-utils";
 import { MapRequestCoordinator } from "./map-request";
 import { PencilRuler } from "lucide-react";
+import { mapTileUrls } from "@/shared/lib/map-tiles";
 import {
   areaDrawingReady,
   FreehandPolygonDraft,
@@ -26,9 +27,7 @@ import {
 } from "./map-mobile";
 
 const TASHKENT_DISTRICT: [number, number] = [69.220651, 41.391335];
-const tileUrl =
-  process.env.NEXT_PUBLIC_MAP_TILE_URL ||
-  "https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png";
+const tileUrls = mapTileUrls();
 const emptyGeoJson: GeoJSON.FeatureCollection = {
   type: "FeatureCollection",
   features: [],
@@ -245,7 +244,7 @@ export function InvestmentMap({
           sources: {
             osm: {
               type: "raster",
-              tiles: [tileUrl],
+              tiles: tileUrls,
               tileSize: 256,
               attribution: "© OpenStreetMap contributors",
             },

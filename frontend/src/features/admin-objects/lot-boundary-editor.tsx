@@ -6,6 +6,7 @@ import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibr
 import { api } from "@/shared/api/client";
 import { useLanguage } from "@/shared/i18n/language-provider";
 import type { MessageKey } from "@/shared/i18n/messages";
+import { mapTileAttribution, mapTileUrls } from "@/shared/lib/map-tiles";
 import {
   lotBoundaryAreaSqm,
   lotBoundaryBounds,
@@ -24,11 +25,7 @@ type BoundaryChange = {
   source: GeometrySource | null;
 };
 
-const tileUrl =
-  process.env.NEXT_PUBLIC_MAP_TILE_URL ||
-  "https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png";
-const tileAttribution =
-  process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION || "© OpenStreetMap contributors";
+const tileUrls = mapTileUrls();
 const emptyCollection: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
 const errorKeys: Record<LotBoundaryValidationCode, MessageKey> = {
@@ -146,9 +143,9 @@ export function LotBoundaryEditor({
         sources: {
           base: {
             type: "raster",
-            tiles: [tileUrl],
+            tiles: tileUrls,
             tileSize: 256,
-            attribution: tileAttribution,
+            attribution: mapTileAttribution,
           },
         },
         layers: [{ id: "base", type: "raster", source: "base" }],

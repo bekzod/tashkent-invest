@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Globe2, LogIn, MapPinned, Menu, UserPlus, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, ChevronDown, Globe2, LogIn, MapPinned, Menu, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import {
   readSession,
   sessionEventName,
@@ -50,6 +50,8 @@ export function PublicHeader({ pathname }: { pathname: string }) {
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [localeOpen, setLocaleOpen] = useState(false);
+  const localeMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const sync = () => setSession(readSession());
@@ -57,13 +59,32 @@ export function PublicHeader({ pathname }: { pathname: string }) {
     window.addEventListener(sessionEventName, sync);
     return () => window.removeEventListener(sessionEventName, sync);
   }, []);
+  useEffect(() => {
+    if (!localeOpen) return;
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!localeMenuRef.current?.contains(event.target as Node)) {
+        setLocaleOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLocaleOpen(false);
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [localeOpen]);
   const loginHref = session
     ? session.user.role === "admin"
       ? "/dashboard"
       : "/dashboard/profile"
     : localizedPath(locale, "/login");
-  const registerHref = localizedPath(locale, "/register");
   const switchLocale = (nextLocale: Locale) => {
+    setLocaleOpen(false);
     setLocale(nextLocale);
     router.push(
       switchPathLocale(
@@ -87,33 +108,43 @@ export function PublicHeader({ pathname }: { pathname: string }) {
         <PublicLinks locale={locale} />
       </nav>
       <div className="header-actions">
-        <label className="locale-select">
-          <Globe2 size={14} />
-          <select
+        <div className="locale-select" ref={localeMenuRef}>
+          <button
+            type="button"
+            className="locale-trigger"
             aria-label={t("language")}
-            value={locale}
-            onChange={(event) => switchLocale(event.target.value as Locale)}
+            aria-haspopup="listbox"
+            aria-expanded={localeOpen}
+            onClick={() => setLocaleOpen((open) => !open)}
           >
-            <option value="uz">O‘z</option>
-            <option value="ru">RU</option>
-          </select>
-        </label>
-        {!session && (
-          <Link className="button ghost login-button" href={loginHref}>
-            {t("login")}
-            <LogIn size={17} aria-hidden="true" />
-          </Link>
-        )}
+            <Globe2 size={16} aria-hidden="true" />
+            <span>{locale === "uz" ? "O‘z" : "RU"}</span>
+            <ChevronDown size={16} aria-hidden="true" />
+          </button>
+          {localeOpen && (
+            <div className="locale-menu" role="listbox" aria-label={t("language")}>
+              {(["uz", "ru"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className="locale-option"
+                  role="option"
+                  aria-selected={locale === option}
+                  onClick={() => switchLocale(option)}
+                >
+                  <span>{option === "uz" ? "O‘z" : "RU"}</span>
+                  {locale === option && <Check size={16} aria-hidden="true" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <Link
           className="button primary register-button"
-          href={session ? loginHref : registerHref}
+          href={loginHref}
         >
-          {session ? t("cabinet") : t("register")}
-          {session ? (
-            <LogIn size={17} aria-hidden="true" />
-          ) : (
-            <UserPlus size={17} aria-hidden="true" />
-          )}
+          {session ? t("cabinet") : t("login")}
+          <LogIn size={17} aria-hidden="true" />
         </Link>
       </div>
       <button
@@ -135,16 +166,8 @@ export function PublicHeader({ pathname }: { pathname: string }) {
           <PublicLinks locale={locale} close={() => setMenuOpen(false)} />
         </nav>
         <div className="mobile-auth-actions">
-          {!session && (
-            <Link className="button ghost" href={loginHref}>
-              {t("login")}
-            </Link>
-          )}
-          <Link
-            className="button primary"
-            href={session ? loginHref : registerHref}
-          >
-            {session ? t("cabinet") : t("register")}
+          <Link className="button primary" href={loginHref}>
+            {session ? t("cabinet") : t("login")}
           </Link>
         </div>
       </div>

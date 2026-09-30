@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { LanguageProvider } from "@/shared/i18n/language-provider";
@@ -64,9 +65,30 @@ test("uses the active locale for every public navigation link", () => {
     "href",
     "/ru/login",
   );
-  expect(screen.getByRole("link", { name: /Регистрация/ })).toHaveAttribute(
+  expect(
+    screen.queryByRole("link", { name: /Регистрация/ }),
+  ).not.toBeInTheDocument();
+  expect(screen.getAllByRole("link", { name: /Войти/ })).toHaveLength(1);
+});
+
+test("shows a single guest auth action in the mobile menu", () => {
+  render(
+    <LanguageProvider initialLocale="uz">
+      <PublicHeader pathname="/uz" />
+    </LanguageProvider>,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Menyuni ochish" }));
+
+  const mobilePanel = document.getElementById("mobile-public-navigation");
+  expect(mobilePanel).not.toBeNull();
+  const loginLinks = within(mobilePanel as HTMLElement).getAllByRole("link", {
+    name: /Kirish/,
+  });
+  expect(loginLinks).toHaveLength(1);
+  expect(loginLinks[0]).toHaveAttribute(
     "href",
-    "/ru/register",
+    "/uz/login",
   );
 });
 
@@ -77,14 +99,14 @@ test("switches to the equivalent localized URL and persists the choice", () => {
     </LanguageProvider>,
   );
 
-  fireEvent.change(screen.getByRole("combobox", { name: "Язык" }), {
-    target: { value: "uz" },
-  });
+  fireEvent.click(screen.getByRole("button", { name: "Язык" }));
+  fireEvent.click(screen.getByRole("option", { name: "O‘z" }));
 
   expect(pushMock).toHaveBeenCalledWith(
     "/uz/objects/demo?from=map#application",
   );
   expect(window.localStorage.getItem("tashkent-invest.locale")).toBe("uz");
+  expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
 });
 
 test("keeps an authenticated dashboard destination unprefixed", async () => {
