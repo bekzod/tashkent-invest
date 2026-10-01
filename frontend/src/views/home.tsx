@@ -9,6 +9,7 @@ import {
   Factory,
   Landmark,
   Map,
+  MapPinned,
   Search,
   SlidersHorizontal,
   Store,
@@ -206,7 +207,10 @@ export default function HomePage({
             </fieldset>
             <label className="reference-select"><span>{t('direction')}</span><select value={selectedSector} onChange={(event) => setSelectedSector(event.target.value)}><option value="">{t('allDirections')}</option><option value="manufacturing">{t('industry')}</option><option value="logistics">{t('logistics')}</option><option value="tourism">{t('tourism')}</option><option value="trade">{t('trade')}</option><option value="it">IT</option><option value="agriculture">{t('agriculture')}</option><option value="construction">{t('constructionSector')}</option><option value="energy">{t('energy')}</option></select></label>
             <label className="reference-range"><span>{t('area')}, {t('hectare')}</span><input type="range" min="0" max="100" value={area} onChange={(event) => setArea(Number(event.target.value))} /><small>0 <b>{area}+</b> 100+</small></label>
-            <Link className="button primary filter-submit" href={mapSearchHref()}>{t('showObjects')}</Link>
+            <Link className="button primary filter-submit" href={mapSearchHref()}>
+              {t('showObjects')}
+              <MapPinned size={17} aria-hidden="true" />
+            </Link>
           </div>
         </aside>
       </div>

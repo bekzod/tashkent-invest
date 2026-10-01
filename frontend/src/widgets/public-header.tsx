@@ -168,6 +168,7 @@ export function PublicHeader({ pathname }: { pathname: string }) {
         <div className="mobile-auth-actions">
           <Link className="button primary" href={loginHref}>
             {session ? t("cabinet") : t("login")}
+            <LogIn size={17} aria-hidden="true" />
           </Link>
         </div>
       </div>

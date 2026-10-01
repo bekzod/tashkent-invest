@@ -90,6 +90,7 @@ test("shows a single guest auth action in the mobile menu", () => {
     "href",
     "/uz/login",
   );
+  expect(loginLinks[0].querySelector("svg")).toBeTruthy();
 });
 
 test("switches to the equivalent localized URL and persists the choice", () => {
@@ -151,4 +152,19 @@ test("opens an accessible mobile navigation menu", () => {
     screen.getByRole("button", { name: "Menyuni yopish" }),
   ).toHaveAttribute("aria-expanded", "true");
   expect(screen.getAllByRole("link", { name: "Xarita" })).toHaveLength(2);
+});
+
+test("keeps the compact public header controls on their intended surfaces", () => {
+  render(
+    <LanguageProvider initialLocale="uz">
+      <PublicHeader pathname="/uz" />
+    </LanguageProvider>,
+  );
+
+  expect(screen.getByRole("button", { name: "Til" })).toHaveClass(
+    "locale-trigger",
+  );
+  expect(screen.getByRole("button", { name: "Menyuni ochish" })).toHaveClass(
+    "mobile-menu",
+  );
 });

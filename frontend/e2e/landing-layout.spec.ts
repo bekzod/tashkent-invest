@@ -74,3 +74,38 @@ test('landing renders unique popular cards without React duplicate-key warnings'
   expect(new Set(objectIds).size).toBe(objectIds.length);
   expect(duplicateKeyWarnings).toEqual([]);
 });
+
+test('compact header and category labels stay visually contained', async ({ page }) => {
+  await page.setViewportSize({ width: 1156, height: 961 });
+  await page.goto('/uz');
+
+  const category = page.locator('.category-card').filter({ hasText: 'IT va texnologiyalar' }).first();
+  await expect(category).toBeVisible();
+
+  const measurements = await page.evaluate(() => {
+    const locale = document.querySelector<HTMLElement>('.site-header .locale-trigger')!;
+    const actions = document.querySelector<HTMLElement>('.site-header .header-actions')!;
+    const menu = document.querySelector<HTMLElement>('.site-header .mobile-menu')!;
+    const card = [...document.querySelectorAll<HTMLElement>('.category-card')].find(
+      (element) => element.textContent?.includes('IT va texnologiyalar'),
+    )!;
+    const title = card.querySelector<HTMLElement>('strong')!;
+    const localeStyle = getComputedStyle(locale);
+    const actionsBox = actions.getBoundingClientRect();
+    const menuBox = menu.getBoundingClientRect();
+    const titleBox = title.getBoundingClientRect();
+    const cardBox = card.getBoundingClientRect();
+
+    return {
+      localeHasBorder: localeStyle.borderTopWidth !== '0px',
+      verticalCenterDelta: Math.abs(
+        actionsBox.top + actionsBox.height / 2 - (menuBox.top + menuBox.height / 2),
+      ),
+      titleInsideCard: titleBox.right <= cardBox.right + 0.5 && titleBox.bottom <= cardBox.bottom + 0.5,
+    };
+  });
+
+  expect(measurements.localeHasBorder).toBe(false);
+  expect(measurements.verticalCenterDelta).toBeLessThanOrEqual(1);
+  expect(measurements.titleInsideCard).toBe(true);
+});

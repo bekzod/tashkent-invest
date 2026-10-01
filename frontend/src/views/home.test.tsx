@@ -136,6 +136,7 @@ test('synchronizes every discovery filter with the embedded map and map link', (
     'href',
     '/uz/map?q=E2E+markaz&types=land&statuses=auction&sectors=logistics&areaMin=12',
   );
+  expect(screen.getByRole('link', { name: 'Obyektlarni ko‘rsatish' }).querySelector('svg')).toBeTruthy();
   expect(mapPropsMock.mock.calls.at(-1)?.[0]).toMatchObject({
     controlledFilters: {
       q: 'E2E markaz',
