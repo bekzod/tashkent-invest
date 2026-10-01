@@ -219,6 +219,7 @@ export function MapPageClient({
   const [selectedFilterKey, setSelectedFilterKey] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [resultPage, setResultPage] = useState(1);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const effectiveFilters = useMemo(
     () =>
       controlledFilters
@@ -246,6 +247,17 @@ export function MapPageClient({
   });
   const currentSelected =
     selectedFilterKey === filterSelectionKey ? selected : null;
+
+  useEffect(() => {
+    const handleDashboardSearchFocus = () => {
+      setFiltersOpen(true);
+      searchInputRef.current?.focus();
+      searchInputRef.current?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+    };
+    window.addEventListener("dashboard-search-focus", handleDashboardSearchFocus);
+    return () => window.removeEventListener("dashboard-search-focus", handleDashboardSearchFocus);
+  }, []);
+
   const selectObject = useCallback(
     (object: InvestmentObject | null) => {
       setSelected(object);
@@ -436,6 +448,7 @@ export function MapPageClient({
             <label className="map-search-field">
               <span>{t("searchLabel")}</span>
               <input
+                ref={searchInputRef}
                 value={filters.q}
                 onChange={(event) => updateQuery(event.target.value)}
                 placeholder={t("search")}

@@ -3221,6 +3221,25 @@ body {
 .dashboard-notification {
   position: relative;
 }
+.dashboard-notification-wrap {
+  position: relative;
+  display: grid;
+}
+.dashboard-notification-wrap > .dashboard-notification {
+  display: grid;
+  width: var(--admin-topbar-control-height);
+  height: var(--admin-topbar-control-height);
+  place-items: center;
+  color: #64748a;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+}
+.dashboard-notification-wrap > .dashboard-notification:hover,
+.dashboard-notification-wrap > .dashboard-notification[aria-expanded='true'] {
+  color: var(--dash-primary);
+  background: #f0f6ff;
+}
 .dashboard-notification i {
   position: absolute;
   top: 7px;
@@ -3230,6 +3249,67 @@ body {
   border: 1px solid #fff;
   border-radius: 50%;
   background: #ea4c4c;
+}
+.dashboard-notification i.is-read {
+  display: none;
+}
+.dashboard-notification-panel {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 10px);
+  right: -8px;
+  width: min(320px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid var(--dash-line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 35px rgba(26, 49, 77, 0.14);
+}
+.dashboard-notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--dash-line);
+}
+.dashboard-notification-header h2 {
+  margin: 0;
+  color: #24334b;
+  font-size: 14px;
+}
+.dashboard-notification-header button {
+  padding: 2px 0;
+  color: var(--dash-primary);
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+}
+.dashboard-notification-empty {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  padding: 28px 20px 30px;
+  color: #8290a2;
+  text-align: center;
+}
+.dashboard-notification-empty > svg {
+  color: var(--dash-primary);
+}
+.dashboard-notification-empty p,
+.dashboard-notification-empty small {
+  margin: 0;
+}
+.dashboard-notification-empty p {
+  color: #53647a;
+  font-size: 13px;
+  font-weight: 700;
+}
+.dashboard-notification-empty small {
+  max-width: 230px;
+  font-size: 11px;
+  line-height: 1.45;
 }
 .dashboard-divider {
   width: 1px;

@@ -39,6 +39,24 @@ vi.mock("./investment-map", () => ({
 afterEach(cleanup);
 
 describe("MapPageClient mobile controls", () => {
+  test("focuses the map search when the dashboard search action is triggered", async () => {
+    render(
+      <LanguageProvider initialLocale="uz">
+        <MapPageClient />
+      </LanguageProvider>,
+    );
+
+    const input = screen.getByRole("textbox", { name: "Qidiruv" });
+    expect(document.querySelector("#map-filter-panel")).not.toHaveClass("is-open");
+
+    window.dispatchEvent(new CustomEvent("dashboard-search-focus"));
+
+    expect(input).toHaveFocus();
+    await waitFor(() =>
+      expect(document.querySelector("#map-filter-panel")).toHaveClass("is-open"),
+    );
+  });
+
   test("keeps filters collapsible and bounds rendered results with pagination", async () => {
     render(
       <LanguageProvider initialLocale="uz">
