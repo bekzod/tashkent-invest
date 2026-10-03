@@ -6,6 +6,7 @@ import { LanguageProvider } from '@/shared/i18n/language-provider';
 import { defaultLocale, isLocale } from '@/shared/i18n/routing';
 import { seoCatalog, site } from '@/shared/lib/seo';
 import { AppFrame } from '@/widgets/app-frame';
+import { Toaster } from '@/components/ui/sonner';
 
 const manrope = Manrope({ subsets: ['latin', 'cyrillic'], display: 'swap', variable: '--font-manrope' });
 export const metadata: Metadata = {
@@ -44,6 +45,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body className={manrope.variable} suppressHydrationWarning>
         <LanguageProvider initialLocale={locale}>
           <AppFrame>{children}</AppFrame>
+          <Toaster />
         </LanguageProvider>
       </body>
     </html>

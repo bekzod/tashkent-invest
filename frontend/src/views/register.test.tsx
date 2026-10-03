@@ -10,9 +10,11 @@ import { ApiError } from "@/shared/api/client";
 import { LanguageProvider } from "@/shared/i18n/language-provider";
 import { RegisterView } from "./register";
 
-const { apiMock, replaceMock } = vi.hoisted(() => ({
+const { apiMock, replaceMock, notifyErrorMock, notifySuccessMock } = vi.hoisted(() => ({
   apiMock: vi.fn(),
   replaceMock: vi.fn(),
+  notifyErrorMock: vi.fn(),
+  notifySuccessMock: vi.fn(),
 }));
 
 vi.mock("@/shared/api/client", async (importOriginal) => {
@@ -21,6 +23,9 @@ vi.mock("@/shared/api/client", async (importOriginal) => {
 });
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock }),
+}));
+vi.mock("@/shared/ui/feedback", () => ({
+  notify: { error: notifyErrorMock, success: notifySuccessMock },
 }));
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }: React.ComponentProps<"a">) => (
@@ -33,6 +38,8 @@ vi.mock("next/link", () => ({
 beforeEach(() => {
   apiMock.mockReset();
   replaceMock.mockReset();
+  notifyErrorMock.mockReset();
+  notifySuccessMock.mockReset();
   window.localStorage.clear();
 });
 
@@ -118,9 +125,10 @@ describe("RegisterView", () => {
     expect(window.localStorage.getItem("tashkent-invest.session")).toContain(
       "investor-1",
     );
+    expect(notifySuccessMock).toHaveBeenCalledWith("Hisob muvaffaqiyatli yaratildi.");
   });
 
-  test("renders a localized duplicate-account error and preserves returnTo in login link", async () => {
+  test("shows a localized duplicate-account toast and preserves returnTo in login link", async () => {
     apiMock.mockRejectedValue(new ApiError("failed", 409, "ACCOUNT_EXISTS"));
     render(
       <LanguageProvider initialLocale="ru">
@@ -143,8 +151,10 @@ describe("RegisterView", () => {
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.submit(screen.getByTestId("register-form"));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Аккаунт с этим email уже существует.",
+    await waitFor(() =>
+      expect(notifyErrorMock).toHaveBeenCalledWith(
+        "Аккаунт с этим email уже существует.",
+      ),
     );
     expect(screen.getByRole("link", { name: "Войти" })).toHaveAttribute(
       "href",

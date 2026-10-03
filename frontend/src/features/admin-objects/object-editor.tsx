@@ -11,6 +11,12 @@ import {
   Save,
   Send,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { adminObjectsApi } from "./api";
 import { LocationPicker } from "./location-picker";
 import { LotBoundaryEditor } from "./lot-boundary-editor";
@@ -27,6 +33,7 @@ import {
   parseOptionalCoordinate,
   validateLocation,
 } from "./location-validation";
+import { notify } from "@/shared/ui/feedback";
 
 const stepKeys: MessageKey[] = ["stepMain", "stepLocation", "stepTerms", "stepMedia", "stepReview"];
 const sectors = [
@@ -73,14 +80,21 @@ function hasTranslationContent(value: AdminTranslation) {
   );
 }
 
-export function ObjectEditor({ object }: { object?: AdminObject }) {
+type ObjectEditorService = Pick<typeof adminObjectsApi, "create" | "update">;
+
+export function ObjectEditor({
+  object,
+  service = adminObjectsApi,
+}: {
+  object?: AdminObject;
+  service?: ObjectEditorService;
+}) {
   const router = useRouter();
   const { t } = useLanguage();
   const steps = stepKeys.map(t);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [boundaryEditing, setBoundaryEditing] = useState(false);
-  const [error, setError] = useState("");
   const [form, setForm] = useState(() => ({
     status: object?.status || "draft",
     type: object?.type || "land",
@@ -172,11 +186,10 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
   const submit = async (publish = false) => {
     if (boundaryEditing) return;
     if (locationValidation.code) {
-      setError(locationError);
+      notify.warning(locationError);
       return;
     }
     setSaving(true);
-    setError("");
     const payload: AdminObjectPayload = {
       ...form,
       status: publish
@@ -200,11 +213,12 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
     };
     try {
       const saved = object
-        ? await adminObjectsApi.update(object.id, payload)
-        : await adminObjectsApi.create(payload);
+        ? await service.update(object.id, payload)
+        : await service.create(payload);
+      notify.success(t("saveSuccess"));
       router.replace(`/dashboard/projects/${saved.id}/edit`);
     } catch {
-      setError(t("saveFailed"));
+      notify.error(t("saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -216,12 +230,10 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
   return (
     <form className="admin-editor" onSubmit={onSubmit}>
       <header className="admin-page-header">
-        <Link className="admin-back" href="/dashboard/projects">
-          <ChevronLeft size={16} /> {t("objectsBack")}
-        </Link>
-        <button className="admin-outline" type="submit" disabled={saving || boundaryEditing}>
+        <Button asChild variant="ghost" className="admin-back"><Link href="/dashboard/projects"><ChevronLeft size={16} /> {t("objectsBack")}</Link></Button>
+        <Button variant="outline" className="admin-outline" type="submit" disabled={saving || boundaryEditing}>
           <Save size={16} /> {t("saveDraft")}
-        </button>
+        </Button>
       </header>
       <ol className="admin-steps">
         {steps.map((label, index) => (
@@ -229,39 +241,34 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
             className={index === step ? "active" : index < step ? "done" : ""}
             key={label}
           >
-            <button type="button" onClick={() => setStep(index)}>
+            <Button variant="ghost" onClick={() => setStep(index)}>
               <span>{index < step ? <Check size={14} /> : index + 1}</span>
               {label}
-            </button>
+            </Button>
           </li>
         ))}
       </ol>
-      {error && <p className="admin-error">{error}</p>}
       <section className="admin-form-card">
         {step === 0 && (
           <div className="admin-form-grid">
             <Field label={t("objectType")}>
-              <select
-                value={form.type}
-                onChange={(event) => set("type", event.target.value)}
-              >
+              <Select value={form.type} onValueChange={(value) => set("type", value)}>
+                <SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                 {["land", "building", "proposal"].map((item) => (
-                  <option key={item} value={item}>{t(item as "land" | "building" | "proposal")}</option>
+                  <SelectItem key={item} value={item}>{t(item as "land" | "building" | "proposal")}</SelectItem>
                 ))}
-              </select>
+                </SelectContent></Select>
             </Field>
             <Field label={t("status")}>
-              <select
-                value={form.status}
-                onChange={(event) => set("status", event.target.value)}
-              >
+              <Select value={form.status} onValueChange={(value) => set("status", value)}>
+                <SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                 {["draft", "available", "auction", "upcoming"].map((item) => (
-                  <option key={item} value={item}>{statusMessageKey(item) ? t(statusMessageKey(item)!) : item}</option>
+                  <SelectItem key={item} value={item}>{statusMessageKey(item) ? t(statusMessageKey(item)!) : item}</SelectItem>
                 ))}
-              </select>
+                </SelectContent></Select>
             </Field>
             <Field label={t("uzbekName")}>
-              <input
+              <Input
                 value={form.uz.title}
                 onChange={(event) =>
                   setTranslation("uz", "title", event.target.value)
@@ -269,7 +276,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
               />
             </Field>
             <Field label={t("russianNameOptional")}>
-              <input
+              <Input
                 value={form.ru.title}
                 onChange={(event) =>
                   setTranslation("ru", "title", event.target.value)
@@ -277,7 +284,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
               />
             </Field>
             <Field label={t("uzbekAddress")}>
-              <input
+              <Input
                 value={form.uz.address}
                 onChange={(event) =>
                   setTranslation("uz", "address", event.target.value)
@@ -285,7 +292,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
               />
             </Field>
             <Field label={t("russianAddress")}>
-              <input
+              <Input
                 value={form.ru.address}
                 onChange={(event) =>
                   setTranslation("ru", "address", event.target.value)
@@ -293,13 +300,13 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
               />
             </Field>
             <Field label={t("district")}>
-              <input
+              <Input
                 value={form.district}
                 onChange={(event) => set("district", event.target.value)}
               />
             </Field>
             <Field wide label={t("shortDescription")}>
-              <textarea
+              <Textarea
                 value={form.uz.shortDescription}
                 onChange={(event) =>
                   setTranslation("uz", "shortDescription", event.target.value)
@@ -307,7 +314,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
               />
             </Field>
             <Field wide label={t("russianShortDescription")}>
-              <textarea
+              <Textarea
                 value={form.ru.shortDescription}
                 onChange={(event) =>
                   setTranslation("ru", "shortDescription", event.target.value)
@@ -315,7 +322,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
               />
             </Field>
             <Field wide label={t("detailedDescription")}>
-              <textarea
+              <Textarea
                 value={form.uz.description}
                 onChange={(event) =>
                   setTranslation("uz", "description", event.target.value)
@@ -323,7 +330,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
               />
             </Field>
             <Field wide label={t("russianDetailedDescription")}>
-              <textarea
+              <Textarea
                 value={form.ru.description}
                 onChange={(event) =>
                   setTranslation("ru", "description", event.target.value)
@@ -365,7 +372,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
             />
             <div className="admin-form-grid">
               <Field label={t("latitude")}>
-                <input
+                <Input
                   type="number"
                   step="any"
                   min="-90"
@@ -378,7 +385,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                 />
               </Field>
               <Field label={t("longitude")}>
-                <input
+                <Input
                   type="number"
                   step="any"
                   min="-180"
@@ -396,7 +403,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                 </p>
               ) : null}
               <Field wide label={t("cadastralNumber")}>
-                <input
+                <Input
                   value={form.cadastralNumber}
                   onChange={(event) =>
                     set("cadastralNumber", event.target.value)
@@ -409,7 +416,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
         {step === 2 && (
           <div className="admin-form-grid">
             <Field label={t("landArea")}>
-              <input
+              <Input
                 type="number"
                 min="0"
                 value={form.landAreaHa}
@@ -417,7 +424,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
               />
             </Field>
             <Field label={t("buildingArea")}>
-              <input
+              <Input
                 type="number"
                 min="0"
                 value={form.buildingAreaSqm}
@@ -425,7 +432,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
               />
             </Field>
             <Field label={t("investmentUsd")}>
-              <input
+              <Input
                 type="number"
                 min="0"
                 value={form.investmentAmountUsd}
@@ -435,7 +442,7 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
               />
             </Field>
             <Field label={t("workplace")}>
-              <input
+              <Input
                 type="number"
                 min="0"
                 value={form.jobsPlanned}
@@ -445,9 +452,8 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
             <Field wide label={t("sector")}>
               <div className="admin-sector-list">
                 {sectors.map((sector) => (
-                  <label key={sector}>
-                    <input
-                      type="checkbox"
+                  <Label key={sector}>
+                    <Checkbox
                       checked={form.sectors.includes(sector)}
                       onChange={() =>
                         set(
@@ -459,13 +465,13 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
                       }
                     />
                     {t(sectorMessageKeys[sector])}
-                  </label>
+                  </Label>
                 ))}
               </div>
             </Field>
             {form.status === "auction" && (
               <Field wide label={t("auctionLink")}>
-                <input
+                <Input
                   type="url"
                   value={form.auctionUrl}
                   onChange={(event) => set("auctionUrl", event.target.value)}
@@ -498,31 +504,29 @@ export function ObjectEditor({ object }: { object?: AdminObject }) {
         )}
       </section>
       <footer className="admin-editor-actions">
-        <button
-          type="button"
+        <Button
+          variant="outline"
           className="admin-outline"
           disabled={!step}
           onClick={() => setStep((value) => value - 1)}
         >
           <ChevronLeft size={16} /> {t("previous")}
-        </button>
+        </Button>
         {step < steps.length - 1 ? (
-          <button
-            type="button"
+          <Button
             className="admin-primary"
             onClick={() => setStep((value) => value + 1)}
           >
             {t("next")} <ChevronRight size={16} />
-          </button>
+          </Button>
         ) : (
-          <button
-            type="button"
+          <Button
             className="admin-primary"
             disabled={saving || boundaryEditing || publishIssues.length > 0}
             onClick={() => void submit(true)}
           >
             <Send size={16} /> {t("publish")}
-          </button>
+          </Button>
         )}
       </footer>
     </form>
@@ -538,10 +542,10 @@ function Field({
   wide?: boolean;
 }) {
   return (
-    <label className={wide ? "wide" : ""}>
+    <Label className={wide ? "wide" : ""}>
       <span>{label}</span>
       {children}
-    </label>
+    </Label>
   );
 }
 function MediaStep({
@@ -561,27 +565,30 @@ function MediaStep({
       </div>
       {media.map((item, index) => (
         <div className="admin-media-row" key={index}>
-          <select
+          <Select
             value={item.kind}
-            onChange={(event) =>
+            onValueChange={(nextKind) =>
               onChange(
                 media.map((value, position) =>
                   position === index
                     ? {
                         ...value,
-                        kind: event.target.value as AdminMedia["kind"],
+                        kind: nextKind as AdminMedia["kind"],
                       }
                     : value,
                 ),
               )
             }
           >
-            <option value="image">{t("photo")}</option>
-            <option value="video">{t("video")}</option>
-            <option value="document">{t("document")}</option>
-            <option value="virtual_tour">{t("virtualTour")}</option>
-          </select>
-          <input
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="image">{t("photo")}</SelectItem>
+              <SelectItem value="video">{t("video")}</SelectItem>
+              <SelectItem value="document">{t("document")}</SelectItem>
+              <SelectItem value="virtual_tour">{t("virtualTour")}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
             type="url"
             placeholder="https://…"
             value={item.url}
@@ -595,19 +602,19 @@ function MediaStep({
               )
             }
           />
-          <button
-            type="button"
+          <Button
+            variant="ghost"
             onClick={() =>
               onChange(media.filter((_, position) => position !== index))
             }
           >
             {t("remove")}
-          </button>
+          </Button>
         </div>
       ))}
-      <button type="button" className="admin-outline" onClick={add}>
+      <Button variant="outline" className="admin-outline" onClick={add}>
         + {t("addMedia")}
-      </button>
+      </Button>
     </div>
   );
 }

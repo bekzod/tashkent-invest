@@ -8,6 +8,7 @@ import { useLanguage } from "@/shared/i18n/language-provider";
 import { localizedPath } from "@/shared/i18n/routing";
 import { withReturnTo } from "@/shared/auth/return-to";
 import type { MessageKey } from "@/shared/i18n/messages";
+import { notify } from "@/shared/ui/feedback";
 
 export function applicationErrorMessageKey(
   code?: string,
@@ -31,8 +32,6 @@ export function ApplicationForm({
 }) {
   const { locale, t } = useLanguage();
   const [done, setDone] = useState(false);
-  const [duplicate, setDuplicate] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   useEffect(() => {
@@ -74,7 +73,6 @@ export function ApplicationForm({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
-    setError(null);
     const data = new FormData(event.currentTarget);
     try {
       const response = await api<{ duplicate?: boolean }>(
@@ -97,9 +95,11 @@ export function ApplicationForm({
         locale,
       );
       setDone(true);
-      setDuplicate(Boolean(response.duplicate));
+      notify.success(
+        response.duplicate ? t("applicationAlreadyExists") : t("applicationDone"),
+      );
     } catch (caught) {
-      setError(errorMessage(caught));
+      notify.error(errorMessage(caught));
     } finally {
       setSubmitting(false);
     }
@@ -107,16 +107,6 @@ export function ApplicationForm({
   return (
     <form id="application" className="application-form" onSubmit={submit}>
       <h2>{t("application")}</h2>
-      {done && (
-        <p className="success" role="status">
-          {duplicate ? t("applicationAlreadyExists") : t("applicationDone")}
-        </p>
-      )}
-      {error && (
-        <p className="error" role="alert">
-          {error}
-        </p>
-      )}
       <fieldset disabled={submitting || done}>
         <label>
           {t("name")}

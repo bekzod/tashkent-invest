@@ -21,6 +21,7 @@ test('GET /api/filters reports application processing time', async () => {
 });
 
 for (const origin of [
+  'http://127.0.0.1:3000',
   'https://tashkent-invest.vercel.app',
   'https://toshkent-tuman-invest.uz',
   'https://www.toshkent-tuman-invest.uz',

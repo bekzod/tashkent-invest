@@ -7,8 +7,16 @@ import { LoginView } from "@/views/login";
 
 type LocalizedLoginPageProps = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ returnTo?: string | string[] }>;
+  searchParams: Promise<{
+    returnTo?: string | string[];
+    email?: string | string[];
+    password?: string | string[];
+  }>;
 };
+
+function firstSearchValue(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 export async function generateMetadata({
   params,
@@ -25,9 +33,21 @@ export default async function LocalizedLoginPage({
 }: LocalizedLoginPageProps) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const rawReturnTo = (await searchParams).returnTo;
-  const candidate = Array.isArray(rawReturnTo) ? rawReturnTo[0] : rawReturnTo;
+  const query = await searchParams;
+  const candidate = firstSearchValue(query.returnTo);
   const returnTo = safeReturnTo(candidate, "") || undefined;
+  const initialCredentials =
+    process.env.NODE_ENV === "production"
+      ? undefined
+      : {
+          email: firstSearchValue(query.email),
+          password: firstSearchValue(query.password),
+        };
 
-  return <LoginView returnTo={returnTo} />;
+  return (
+    <LoginView
+      returnTo={returnTo}
+      initialCredentials={initialCredentials}
+    />
+  );
 }

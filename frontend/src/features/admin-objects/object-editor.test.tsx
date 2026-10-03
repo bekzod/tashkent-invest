@@ -1,39 +1,63 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { LanguageProvider } from '@/shared/i18n/language-provider';
-import { adminObjectsApi } from './api';
 import { ObjectEditor } from './object-editor';
 
-const { replaceMock } = vi.hoisted(() => ({ replaceMock: vi.fn() }));
+const { createMock, replaceMock, updateMock } = vi.hoisted(() => ({
+  createMock: vi.fn(),
+  replaceMock: vi.fn(),
+  updateMock: vi.fn(),
+}));
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: replaceMock }) }));
 vi.mock('next/link', () => ({
   default: ({ children, href, ...props }: React.ComponentProps<'a'>) => <a href={href} {...props}>{children}</a>,
 }));
-vi.mock('./location-picker', () => ({ LocationPicker: () => <div data-testid="location-picker" /> }));
-vi.mock('./lot-boundary-editor', () => ({ LotBoundaryEditor: () => <div data-testid="lot-boundary-editor" /> }));
-vi.mock('./api', () => ({
-  adminObjectsApi: {
-    create: vi.fn(),
-    update: vi.fn(),
-  },
-}));
+vi.mock('maplibre-gl', () => {
+  class MockMap {
+    sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>();
+    addControl = vi.fn();
+    addLayer = vi.fn();
+    flyTo = vi.fn();
+    fitBounds = vi.fn();
+    getZoom = vi.fn(() => 11);
+    jumpTo = vi.fn();
+    remove = vi.fn();
+    addSource(name: string) { this.sources.set(name, { setData: vi.fn() }); }
+    getSource(name: string) { return this.sources.get(name); }
+    on(name: string, handler: () => void) { if (name === 'load') handler(); }
+  }
+  class MockMarker {
+    addTo = vi.fn(() => this);
+    getLngLat = vi.fn(() => ({ lng: 69.22, lat: 41.39 }));
+    on = vi.fn(() => this);
+    remove = vi.fn();
+    setLngLat = vi.fn(() => this);
+  }
+  return { default: { Map: MockMap, Marker: MockMarker, NavigationControl: class {} } };
+});
+
+const service = { create: createMock, update: updateMock };
 
 beforeEach(() => {
   vi.clearAllMocks();
   replaceMock.mockReset();
-  vi.mocked(adminObjectsApi.create).mockResolvedValue({
+  createMock.mockResolvedValue({
     id: 'draft-1',
     status: 'draft',
     translations: [],
     media: [],
+  });
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: vi.fn(() => ({ matches: true })),
   });
 });
 
 afterEach(cleanup);
 
 test('submits every Russian admin translation field in the draft payload', async () => {
-  render(<LanguageProvider><ObjectEditor /></LanguageProvider>);
+  render(<LanguageProvider><ObjectEditor service={service} /></LanguageProvider>);
 
   fireEvent.change(screen.getByLabelText('O‘zbekcha nom'), { target: { value: 'Sanoat maydoni' } });
   fireEvent.change(screen.getByLabelText('O‘zbekcha manzil'), { target: { value: 'Chinobod' } });
@@ -45,8 +69,8 @@ test('submits every Russian admin translation field in the draft payload', async
   fireEvent.change(screen.getByLabelText('Ruscha batafsil tavsif'), { target: { value: 'Подробное описание' } });
   fireEvent.click(screen.getByRole('button', { name: /Qoralama saqlash/ }));
 
-  await waitFor(() => expect(adminObjectsApi.create).toHaveBeenCalledTimes(1));
-  expect(vi.mocked(adminObjectsApi.create).mock.calls[0][0].translations).toEqual({
+  await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1));
+  expect(createMock.mock.calls[0][0].translations).toEqual({
     uz: expect.objectContaining({
       title: 'Sanoat maydoni',
       address: 'Chinobod',
@@ -64,11 +88,11 @@ test('submits every Russian admin translation field in the draft payload', async
 });
 
 test('keeps blank coordinates null instead of submitting the Gulf of Guinea', async () => {
-  render(<LanguageProvider><ObjectEditor /></LanguageProvider>);
+  render(<LanguageProvider><ObjectEditor service={service} /></LanguageProvider>);
   fireEvent.click(screen.getByRole('button', { name: /Qoralama saqlash/ }));
 
-  await waitFor(() => expect(adminObjectsApi.create).toHaveBeenCalledTimes(1));
-  expect(vi.mocked(adminObjectsApi.create).mock.calls[0][0]).toMatchObject({
+  await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1));
+  expect(createMock.mock.calls[0][0]).toMatchObject({
     latitude: null,
     longitude: null,
   });
@@ -88,18 +112,18 @@ test('requires the coordinate pair and invalidates stale geometry when a point m
     translations: [],
     media: [],
   };
-  vi.mocked(adminObjectsApi.update).mockResolvedValue(object);
-  render(<LanguageProvider><ObjectEditor object={object} /></LanguageProvider>);
+  updateMock.mockResolvedValue(object);
+  render(<LanguageProvider><ObjectEditor object={object} service={service} /></LanguageProvider>);
   fireEvent.click(screen.getByRole('button', { name: /Joylashuv/ }));
   fireEvent.change(screen.getByLabelText('Kenglik'), { target: { value: '' } });
   fireEvent.click(screen.getByRole('button', { name: /Qoralama saqlash/ }));
-  expect(await screen.findByRole('alert')).toHaveTextContent(/birga kiriting/i);
-  expect(adminObjectsApi.update).not.toHaveBeenCalled();
+  expect((await screen.findAllByRole('alert'))[0]).toHaveTextContent(/birga kiriting/i);
+  expect(updateMock).not.toHaveBeenCalled();
 
   fireEvent.change(screen.getByLabelText('Kenglik'), { target: { value: '41.39' } });
   fireEvent.click(screen.getByRole('button', { name: /Qoralama saqlash/ }));
-  await waitFor(() => expect(adminObjectsApi.update).toHaveBeenCalledTimes(1));
-  expect(vi.mocked(adminObjectsApi.update).mock.calls[0][1]).toMatchObject({
+  await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(1));
+  expect(updateMock.mock.calls[0][1]).toMatchObject({
     latitude: 41.39,
     longitude: 69.21,
     siteGeometry: null,

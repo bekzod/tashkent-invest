@@ -5,6 +5,8 @@ import { LanguageProvider, useLanguage } from '@/shared/i18n/language-provider';
 import { api } from '@/shared/api/client';
 import { DashboardView } from './dashboard';
 
+const { notifyWarningMock } = vi.hoisted(() => ({ notifyWarningMock: vi.fn() }));
+
 vi.mock('next/link', () => ({
   default: ({ children, href, ...props }: React.ComponentProps<'a'>) => <a href={href} {...props}>{children}</a>,
 }));
@@ -20,6 +22,7 @@ vi.mock('@/features/investment-map/map-page-client', () => ({ MapPageClient: () 
 vi.mock('@/features/admin-objects/admin-objects-list', () => ({ AdminObjectsList: () => <div /> }));
 vi.mock('@/features/admin-objects/admin-overview', () => ({ AdminOverview: () => <div /> }));
 vi.mock('@/features/admin-applications/admin-applications', () => ({ AdminApplications: () => <div /> }));
+vi.mock('@/shared/ui/feedback', () => ({ notify: { warning: notifyWarningMock } }));
 
 const apiMock = vi.mocked(api);
 
@@ -49,6 +52,7 @@ const object = (title: string): InvestmentObject => ({
 
 beforeEach(() => {
   apiMock.mockReset();
+  notifyWarningMock.mockReset();
   window.localStorage.clear();
 });
 
@@ -109,5 +113,5 @@ test('keeps successful dashboard data when one independent request fails', async
   render(<LanguageProvider><DashboardView activeSection="projects" /></LanguageProvider>);
 
   expect(await screen.findByText('Saqlangan loyiha')).toBeVisible();
-  expect(screen.getByRole('alert')).toHaveTextContent('Ayrim ma’lumotlar yuklanmadi');
+  expect(notifyWarningMock).toHaveBeenCalledWith('Ayrim ma’lumotlar yuklanmadi. Qayta urinib ko‘ring.');
 });

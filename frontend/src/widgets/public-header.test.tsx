@@ -168,3 +168,22 @@ test("keeps the compact public header controls on their intended surfaces", () =
     "mobile-menu",
   );
 });
+
+test("keeps the public header visually pinned while the page is scrolled", async () => {
+  render(
+    <LanguageProvider initialLocale="uz">
+      <PublicHeader pathname="/uz" />
+    </LanguageProvider>,
+  );
+
+  const header = document.querySelector(".site-header");
+  expect(header).not.toHaveClass("is-scrolled");
+
+  Object.defineProperty(window, "scrollY", {
+    configurable: true,
+    value: 120,
+  });
+  window.dispatchEvent(new Event("scroll"));
+
+  await waitFor(() => expect(header).toHaveClass("is-scrolled"));
+});

@@ -18,6 +18,7 @@ import { DashboardShell } from '@/widgets/dashboard-shell';
 import { AdminObjectsList } from '@/features/admin-objects/admin-objects-list';
 import { AdminOverview } from '@/features/admin-objects/admin-overview';
 import { AdminApplications } from '@/features/admin-applications/admin-applications';
+import { notify } from '@/shared/ui/feedback';
 
 type Statistics = { objects: number; auctions: number; upcoming: number; investmentAmountUsd: number };
 type ObjectResponse = { items: InvestmentObject[]; meta: { total: number } };
@@ -37,7 +38,6 @@ export function DashboardView({ activeSection = 'overview' }: { activeSection?: 
   const [applications, setApplications] = useState<Application[]>([]);
   const [favorites, setFavorites] = useState<InvestmentObject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [partialError, setPartialError] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -75,7 +75,9 @@ export function DashboardView({ activeSection = 'overview' }: { activeSection?: 
       if (objectsResult.status === 'fulfilled') setProjects(objectsResult.value.items);
       if (applicationsResult.status === 'fulfilled') setApplications(applicationsResult.value.items);
       if (favoritesResult.status === 'fulfilled') setFavorites(favoritesResult.value.items);
-      setPartialError(results.some((result) => result.status === 'rejected'));
+      if (results.some((result) => result.status === 'rejected')) {
+        notify.warning(t('loadPartialWarning'));
+      }
     }).finally(() => {
       if (active) setLoading(false);
     });
@@ -83,7 +85,7 @@ export function DashboardView({ activeSection = 'overview' }: { activeSection?: 
       active = false;
       controller.abort();
     };
-  }, [locale]);
+  }, [locale, t]);
 
   const metricCards = useMemo(() => [
     { icon: Building2, label: t('availableObjects'), value: stats?.objects ?? '—', tone: 'blue' },
@@ -105,7 +107,6 @@ export function DashboardView({ activeSection = 'overview' }: { activeSection?: 
 
   const userName = session.user.name || t('investorDefaultName');
   return <DashboardShell activeSection={activeSection} role="investor" session={session}>
-        {partialError ? <p className="dashboard-load-warning" role="alert">{t('loadPartialWarning')}</p> : null}
         {activeSection === 'map' ? <DashboardMapContent /> : null}
         {activeSection === 'projects' ? <DashboardProjectsContent projects={projects} loading={loading} /> : null}
         {activeSection === 'applications' ? <DashboardApplicationsContent applications={applications} locale={locale} /> : null}

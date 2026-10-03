@@ -17,7 +17,7 @@ import type {
 import { ObjectCard } from "@/entities/investment-object/object-card";
 import { useLanguage } from "@/shared/i18n/language-provider";
 import { localizedPath } from "@/shared/i18n/routing";
-import { InvestmentMap } from "./investment-map";
+import { InvestmentMap } from "@/features/investment-map/investment-map";
 import type { MapFilters } from "./map-utils";
 import {
   findGeographicArea,
@@ -60,12 +60,14 @@ function CompactMapResults({
   objects,
   selected,
   ready,
+  showEmpty,
   onSelect,
   onClear,
 }: {
   objects: InvestmentObject[];
   selected: InvestmentObject | null;
   ready: boolean;
+  showEmpty: boolean;
   onSelect: (object: InvestmentObject) => void;
   onClear: () => void;
 }) {
@@ -93,11 +95,11 @@ function CompactMapResults({
       </aside>
     );
 
+  if (!ready || (!objects.length && !showEmpty)) return null;
+
   return (
     <aside className="compact-map-results" aria-label={t("mapLabel")} aria-live="polite">
-      {!ready ? (
-        <p>{t("mapUpdating")}</p>
-      ) : objects.length ? (
+      {objects.length ? (
         <div>
           {objects.slice(0, 4).map((object) => (
             <button
@@ -115,6 +117,31 @@ function CompactMapResults({
         <p>{t("noResults")}</p>
       )}
     </aside>
+  );
+}
+
+function CompactMapPlaceholder() {
+  return (
+    <div
+      className="compact-map-placeholder"
+      data-testid="home-map-placeholder"
+      aria-hidden="true"
+    >
+      <div className="compact-map-placeholder-region compact-map-placeholder-region-one" />
+      <div className="compact-map-placeholder-region compact-map-placeholder-region-two" />
+      <div className="compact-map-placeholder-region compact-map-placeholder-region-three" />
+      <span className="compact-map-placeholder-road compact-map-placeholder-road-one" />
+      <span className="compact-map-placeholder-road compact-map-placeholder-road-two" />
+      <span className="compact-map-placeholder-road compact-map-placeholder-road-three" />
+      <span className="compact-map-placeholder-pin compact-map-placeholder-pin-one" />
+      <span className="compact-map-placeholder-pin compact-map-placeholder-pin-two" />
+      <span className="compact-map-placeholder-pin compact-map-placeholder-pin-three" />
+      <div className="compact-map-placeholder-results">
+        <span />
+        <span />
+        <span />
+      </div>
+    </div>
   );
 }
 
@@ -519,12 +546,15 @@ export function MapPageClient({
         maxVisible={compact ? 20 : 800}
         showControls={showMapControls}
         animateAreaChanges={!compact}
+        suppressLoadError={compact}
       />
+      {compact && !featuresReady && <CompactMapPlaceholder />}
       {compact && (
         <CompactMapResults
           objects={objects}
           selected={currentSelected}
           ready={featuresReady}
+          showEmpty={activeFilterCount > 0}
           onSelect={selectObject}
           onClear={() => selectObject(null)}
         />

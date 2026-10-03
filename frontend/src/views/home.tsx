@@ -31,6 +31,7 @@ import { api } from '@/shared/api/client';
 import { useLanguage } from '@/shared/i18n/language-provider';
 import { localizedPath } from '@/shared/i18n/routing';
 import { pluralMessageKey } from '@/shared/lib/dashboard';
+import { notify } from '@/shared/ui/feedback';
 
 type Statistics = { objects: number; auctions: number; upcoming: number; investmentAmountUsd: number };
 type ObjectResponse = { items: InvestmentObject[] };
@@ -64,7 +65,6 @@ export default function HomePage({
   const hasInitialData = initialObjects.length > 0 || initialStats !== null;
   const [loadedLocale, setLoadedLocale] = useState(hasInitialData ? initialLocale : '');
   const [isLoading, setIsLoading] = useState(!hasInitialData);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
@@ -79,7 +79,6 @@ export default function HomePage({
     queueMicrotask(() => {
       if (cancelled) return;
       setIsLoading(true);
-      setLoadError(null);
       Promise.all([
         api<Statistics>('/statistics', {}, locale),
         api<ObjectResponse>('/objects?limit=1&types=land&statuses=auction', {}, locale),
@@ -93,7 +92,14 @@ export default function HomePage({
         setLoadedLocale(locale);
         setRetryCount(0);
       }).catch(() => {
-        if (!cancelled) setLoadError(t('dataLoadFailed'));
+        if (!cancelled) {
+          notify.error(t('dataLoadFailed'), {
+            action: {
+              label: t('retry'),
+              onClick: () => setRetryCount((count) => count + 1),
+            },
+          });
+        }
       }).finally(() => {
         if (!cancelled) setIsLoading(false);
       });
@@ -223,10 +229,6 @@ export default function HomePage({
           {objects.map((object) => <ObjectCard object={object} key={object.id} />)}
           {isLoading && objects.length === 0 && Array.from({ length: 4 }, (_, index) => <ContentPlaceholder key={index} />)}
         </div>
-        {loadError && <div className="reference-load-error" role="alert">
-          <p>{loadError}</p>
-          <button type="button" onClick={() => setRetryCount((count) => count + 1)} disabled={isLoading}>{t('retry')}</button>
-        </div>}
         <section className="reference-categories"><h2>{t('categories')}</h2><div>{categories.map(({ icon: Icon, label, count, sector }) => <Link href={localizedPath(locale, `/map?sectors=${sector}`)} className="category-card" key={label}><Icon size={21} /><span><strong>{label}</strong><small>{count} {t(pluralMessageKey(count, locale, 'object'))}</small></span></Link>)}</div></section>
       </div>
       <aside className="reference-process" id="about">

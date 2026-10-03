@@ -85,9 +85,9 @@ test("registration shows localized validation and duplicate errors", async ({
   );
   await fillRegistration(page, "ru");
   await page.getByRole("button", { name: "Создать аккаунт" }).click();
-  await expect(page.locator(".auth-status[role=alert]")).toContainText(
-    "Аккаунт с этим email уже существует.",
-  );
+  await expect(
+    page.getByText("Аккаунт с этим email уже существует."),
+  ).toBeVisible();
 });
 
 test("registration refuses an external returnTo destination", async ({

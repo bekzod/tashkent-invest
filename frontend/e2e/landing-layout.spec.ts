@@ -109,3 +109,30 @@ test('compact header and category labels stay visually contained', async ({ page
   expect(measurements.verticalCenterDelta).toBeLessThanOrEqual(1);
   expect(measurements.titleInsideCard).toBe(true);
 });
+
+test('desktop public header keeps navigation centered without the mobile menu', async ({ page }) => {
+  await page.setViewportSize({ width: 1305, height: 961 });
+  await page.goto('/uz');
+
+  const measurements = await page.evaluate(() => {
+    const header = document.querySelector<HTMLElement>('.site-header')!.getBoundingClientRect();
+    const nav = document.querySelector<HTMLElement>('.site-header .public-navigation')!.getBoundingClientRect();
+    const brand = document.querySelector<HTMLElement>('.site-header .brand')!.getBoundingClientRect();
+    const actions = document.querySelector<HTMLElement>('.site-header .header-actions')!.getBoundingClientRect();
+    const menu = document.querySelector<HTMLElement>('.site-header .mobile-menu')!;
+    const navCenter = nav.left + nav.width / 2;
+    const headerCenter = header.left + header.width / 2;
+
+    return {
+      mobileMenuHidden: getComputedStyle(menu).display === 'none',
+      navCentered: Math.abs(navCenter - headerCenter),
+      brandCentered: Math.abs(brand.top + brand.height / 2 - (header.top + header.height / 2)),
+      actionsCentered: Math.abs(actions.top + actions.height / 2 - (header.top + header.height / 2)),
+    };
+  });
+
+  expect(measurements.mobileMenuHidden).toBe(true);
+  expect(measurements.navCentered).toBeLessThanOrEqual(1);
+  expect(measurements.brandCentered).toBeLessThanOrEqual(1);
+  expect(measurements.actionsCentered).toBeLessThanOrEqual(1);
+});

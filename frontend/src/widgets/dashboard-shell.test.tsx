@@ -35,13 +35,58 @@ test('localizes authenticated dashboard navigation when the locale changes', () 
     </LanguageProvider>,
   );
 
-  fireEvent.change(screen.getByRole('combobox', { name: 'Til' }), { target: { value: 'ru' } });
+  const languageSelect = screen.getByRole('combobox', { name: 'Til' });
+  expect(languageSelect).toHaveClass('dashboard-locale-select');
+  fireEvent.click(languageSelect);
+  fireEvent.click(screen.getByRole('option', { name: 'RU' }));
 
   expect(screen.getByRole('navigation').closest('aside')).toHaveAttribute('aria-label', 'Навигация кабинета');
   expect(screen.getByRole('link', { name: /Invest Tuman/ })).toHaveAttribute('href', '/ru');
   expect(screen.getByRole('link', { name: 'Объекты' })).toHaveAttribute('href', '/dashboard/projects');
   expect(screen.getAllByText('Панель управления').length).toBeGreaterThan(0);
   expect(screen.getByText('Центр помощи')).toBeVisible();
+});
+
+test('does not render the user profile control in the sidebar', () => {
+  render(
+    <LanguageProvider>
+      <DashboardShell activeSection="overview" role="admin" session={session}>
+        <p>Content</p>
+      </DashboardShell>
+    </LanguageProvider>,
+  );
+
+  expect(document.querySelector('.dashboard-sidebar .dashboard-profile-side')).not.toBeInTheDocument();
+});
+
+test('collapses and expands the sidebar without losing the menu control', () => {
+  render(
+    <LanguageProvider>
+      <DashboardShell activeSection="projects" role="admin" session={session}>
+        <p>Content</p>
+      </DashboardShell>
+    </LanguageProvider>,
+  );
+
+  const dashboard = document.querySelector('.invest-dashboard');
+  const sidebar = screen.getByRole('navigation').closest('aside');
+  const collapseButton = screen.getByRole('button', { name: 'Menyuni yig‘ish' });
+
+  expect(sidebar).toHaveAttribute('id', 'dashboard-sidebar');
+  expect(collapseButton).toHaveAttribute('aria-controls', 'dashboard-sidebar');
+  expect(collapseButton).toHaveAttribute('aria-expanded', 'true');
+  expect(dashboard).not.toHaveClass('is-collapsed');
+
+  fireEvent.click(collapseButton);
+
+  const expandButton = screen.getByRole('button', { name: 'Menyuni ochish' });
+  expect(dashboard).toHaveClass('is-collapsed');
+  expect(expandButton).toHaveAttribute('aria-expanded', 'false');
+
+  fireEvent.click(expandButton);
+
+  expect(screen.getByRole('button', { name: 'Menyuni yig‘ish' })).toHaveAttribute('aria-expanded', 'true');
+  expect(dashboard).not.toHaveClass('is-collapsed');
 });
 
 test('opens the map search when the search action is clicked', () => {
@@ -92,9 +137,12 @@ test('opens and closes the notifications panel from the top bar', () => {
 
   expect(notificationsButton).toHaveAttribute('aria-expanded', 'true');
   expect(screen.getByRole('dialog')).toHaveTextContent('Yangi xabarnomalar yo‘q');
-  expect(screen.getByRole('button', { name: 'Yopish' })).toBeVisible();
+  const closeButton = screen.getByRole('button', { name: 'Yopish' });
+  expect(closeButton).toHaveClass('dashboard-notification-close');
+  expect(closeButton).toHaveAttribute('title', 'Yopish');
+  expect(closeButton).toHaveTextContent('');
 
-  fireEvent.click(screen.getByRole('button', { name: 'Yopish' }));
+  fireEvent.click(closeButton);
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(notificationsButton).toHaveAttribute('aria-expanded', 'false');
 });

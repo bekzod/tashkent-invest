@@ -51,6 +51,7 @@ export function PublicHeader({ pathname }: { pathname: string }) {
   const [session, setSession] = useState<Session | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [localeOpen, setLocaleOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const localeMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -78,6 +79,12 @@ export function PublicHeader({ pathname }: { pathname: string }) {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [localeOpen]);
+  useEffect(() => {
+    const syncScrollState = () => setIsScrolled(window.scrollY > 4);
+    syncScrollState();
+    window.addEventListener("scroll", syncScrollState, { passive: true });
+    return () => window.removeEventListener("scroll", syncScrollState);
+  }, []);
   const loginHref = session
     ? session.user.role === "admin"
       ? "/dashboard"
@@ -95,7 +102,7 @@ export function PublicHeader({ pathname }: { pathname: string }) {
   };
 
   return (
-    <header className="site-header">
+    <header className={`site-header${isScrolled ? " is-scrolled" : ""}`}>
       <Link href={localizedPath(locale, "/")} className="brand">
         <span className="brand-mark">
           <MapPinned size={23} />

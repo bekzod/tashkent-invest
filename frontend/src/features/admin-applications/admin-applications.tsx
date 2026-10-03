@@ -2,9 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Clock3, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/shared/api/client";
 import { useLanguage } from "@/shared/i18n/language-provider";
 import { statusMessageKey } from "@/shared/lib/dashboard";
+import { notify } from "@/shared/ui/feedback";
 
 type Status = "received" | "in_review" | "approved" | "rejected";
 type AdminApplication = {
@@ -39,8 +44,6 @@ export function AdminApplications() {
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -51,7 +54,6 @@ export function AdminApplications() {
         {},
         locale,
       );
-      setError(null);
       setItems(response.items);
       setTotalPages(response.meta.totalPages);
       setSelected((current) =>
@@ -60,7 +62,7 @@ export function AdminApplications() {
           : null,
       );
     } catch {
-      setError(t("dataLoadFailed"));
+      notify.error(t("dataLoadFailed"));
     } finally {
       setLoading(false);
     }
@@ -73,7 +75,6 @@ export function AdminApplications() {
     api<Response>(`/admin/applications?${query}`, {}, locale)
       .then((response) => {
         if (!active) return;
-        setError(null);
         setItems(response.items);
         setTotalPages(response.meta.totalPages);
         setSelected((current) =>
@@ -83,7 +84,7 @@ export function AdminApplications() {
         );
       })
       .catch(() => {
-        if (active) setError(t("dataLoadFailed"));
+        if (active) notify.error(t("dataLoadFailed"));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -96,8 +97,6 @@ export function AdminApplications() {
   async function transition(nextStatus: Exclude<Status, "received">) {
     if (!selected) return;
     setSaving(true);
-    setMessage(null);
-    setError(null);
     try {
       const updated = await api<AdminApplication>(
         `/admin/applications/${selected.id}/status`,
@@ -106,10 +105,10 @@ export function AdminApplications() {
       );
       setSelected(updated);
       setNote(updated.reviewNote ?? "");
-      setMessage(t("applicationReviewSaved"));
+      notify.success(t("applicationReviewSaved"));
       await load();
     } catch {
-      setError(t("applicationReviewFailed"));
+      notify.error(t("applicationReviewFailed"));
     } finally {
       setSaving(false);
     }
@@ -127,46 +126,35 @@ export function AdminApplications() {
           <p>{t("adminApplications").toUpperCase()}</p>
           <h1>{t("applicationInbox")}</h1>
         </div>
-        <label>
+        <Label>
           <span>{t("status")}</span>
-          <select
-            value={status}
-            onChange={(event) => {
+          <Select value={status || "all"} onValueChange={(value) => {
               setLoading(true);
-              setStatus(event.target.value as Status | "");
+              setStatus(value === "all" ? "" : value as Status);
               setPage(1);
-            }}
-          >
-            <option value="">{t("allStatuses")}</option>
-            <option value="received">{t("received")}</option>
-            <option value="in_review">{t("inReview")}</option>
-            <option value="approved">{t("approved")}</option>
-            <option value="rejected">{t("rejected")}</option>
-          </select>
-        </label>
+            }}>
+            <SelectTrigger aria-label={t("status")}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("allStatuses")}</SelectItem>
+              <SelectItem value="received">{t("received")}</SelectItem>
+              <SelectItem value="in_review">{t("inReview")}</SelectItem>
+              <SelectItem value="approved">{t("approved")}</SelectItem>
+              <SelectItem value="rejected">{t("rejected")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </Label>
       </header>
 
-      {error ? (
-        <p className="error" role="alert">
-          {error}
-        </p>
-      ) : null}
-      {message ? (
-        <p className="success" role="status">
-          {message}
-        </p>
-      ) : null}
       <div className="admin-application-layout">
         <div className="admin-application-list" aria-busy={loading}>
           {items.map((application) => (
-            <button
-              type="button"
+            <Button
               key={application.id}
+              variant="ghost"
               className={selected?.id === application.id ? "is-selected" : ""}
               onClick={() => {
                 setSelected(application);
                 setNote(application.reviewNote ?? "");
-                setMessage(null);
               }}
               aria-pressed={selected?.id === application.id}
             >
@@ -185,7 +173,7 @@ export function AdminApplications() {
               <em className={`application-status ${application.status}`}>
                 {statusLabel(application.status)}
               </em>
-            </button>
+            </Button>
           ))}
           {!loading && !items.length ? (
             <p className="dashboard-empty">{t("noAdminApplications")}</p>
@@ -258,15 +246,15 @@ export function AdminApplications() {
             ) : null}
             {selected.status === "received" ||
             selected.status === "in_review" ? (
-              <label className="admin-review-note">
+              <Label className="admin-review-note">
                 <span>{t("applicationReviewNote")}</span>
-                <textarea
+                <Textarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   maxLength={2000}
                   rows={4}
                 />
-              </label>
+              </Label>
             ) : selected.reviewNote ? (
               <div className="admin-application-copy">
                 <b>{t("applicationReviewNote")}</b>
@@ -275,36 +263,34 @@ export function AdminApplications() {
             ) : null}
             <div className="admin-review-actions">
               {selected.status === "received" ? (
-                <button
-                  type="button"
+                <Button
                   className="admin-primary"
                   disabled={saving}
                   onClick={() => void transition("in_review")}
                 >
                   <Clock3 size={17} />
                   {t("applicationStartReview")}
-                </button>
+                </Button>
               ) : null}
               {selected.status === "in_review" ? (
                 <>
-                  <button
-                    type="button"
+                  <Button
                     className="admin-primary"
                     disabled={saving}
                     onClick={() => void transition("approved")}
                   >
                     <Check size={17} />
                     {t("applicationApprove")}
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    variant="destructive"
                     className="admin-danger"
                     disabled={saving}
                     onClick={() => void transition("rejected")}
                   >
                     <X size={17} />
                     {t("applicationReject")}
-                  </button>
+                  </Button>
                 </>
               ) : null}
             </div>
@@ -313,8 +299,9 @@ export function AdminApplications() {
       </div>
 
       <nav className="server-pagination" aria-label={t("resultsPagination")}>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           disabled={page <= 1}
           onClick={() => {
             setLoading(true);
@@ -323,12 +310,13 @@ export function AdminApplications() {
           aria-label={t("previousPage")}
         >
           <ChevronLeft size={18} />
-        </button>
+        </Button>
         <span>
           {page} / {totalPages}
         </span>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           disabled={page >= totalPages}
           onClick={() => {
             setLoading(true);
@@ -337,7 +325,7 @@ export function AdminApplications() {
           aria-label={t("nextPage")}
         >
           <ChevronRight size={18} />
-        </button>
+        </Button>
       </nav>
     </section>
   );

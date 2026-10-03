@@ -10,3 +10,10 @@ Object.defineProperty(window, 'localStorage', {
     clear: () => values.clear(),
   },
 });
+
+if (!window.URL.createObjectURL) {
+  Object.defineProperty(window.URL, 'createObjectURL', {
+    configurable: true,
+    value: () => 'blob:vitest-map-worker',
+  });
+}

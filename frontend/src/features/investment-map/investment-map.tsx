@@ -25,6 +25,7 @@ import {
   FreehandPolygonDraft,
   mapLibreControlLocale,
 } from "./map-mobile";
+import { notify } from "@/shared/ui/feedback";
 
 const TASHKENT_DISTRICT: [number, number] = [69.220651, 41.391335];
 const tileUrls = mapTileUrls();
@@ -124,6 +125,7 @@ export function InvestmentMap({
   maxVisible,
   showControls = true,
   animateAreaChanges = true,
+  suppressLoadError = false,
 }: {
   filters: MapFilters;
   selected?: InvestmentObject | null;
@@ -134,6 +136,7 @@ export function InvestmentMap({
   maxVisible?: number;
   showControls?: boolean;
   animateAreaChanges?: boolean;
+  suppressLoadError?: boolean;
 }) {
   const holder = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -143,8 +146,6 @@ export function InvestmentMap({
   const [drawing, setDrawing] = useState(false);
   const [drawingHasShape, setDrawingHasShape] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [hasLoaded, setHasLoaded] = useState(false);
   const [boundaryCount, setBoundaryCount] = useState(0);
   const { locale, t } = useLanguage();
   const filtersRef = useRef(filters);
@@ -192,7 +193,6 @@ export function InvestmentMap({
     if (!map || !mapIsReadyRef.current) return;
     const request = coordinator.begin();
     setIsLoading(true);
-    setLoadError(null);
     try {
       const collection = await api<FeatureCollection>(
         `/objects/map?${buildMapQuery(bounds(map), filtersRef.current, maxVisible)}`,
@@ -216,15 +216,21 @@ export function InvestmentMap({
       )?.setData(boundaries);
       setBoundaryCount(boundaries.features.length);
       onFeaturesRef.current(collection.features);
-      setHasLoaded(true);
     } catch (error) {
       if (!coordinator.isCurrent(request.id)) return;
       if (error instanceof Error && error.name === "AbortError") return;
-      setLoadError(t("mapLoadFailed"));
+      if (!suppressLoadError) {
+        notify.error(t("mapLoadFailed"), {
+          action: {
+            label: t("retry"),
+            onClick: () => loadRef.current(),
+          },
+        });
+      }
     } finally {
       if (coordinator.isCurrent(request.id)) setIsLoading(false);
     }
-  }, [coordinator, locale, maxVisible, t]);
+  }, [coordinator, locale, maxVisible, suppressLoadError, t]);
 
   useEffect(() => {
     loadRef.current = () => {
@@ -735,18 +741,6 @@ export function InvestmentMap({
       {isLoading && (
         <div className="map-loading-overlay" role="status" aria-live="polite">
           {t("mapUpdating")}
-        </div>
-      )}
-      {loadError && (
-        <div
-          className="map-load-error"
-          role="alert"
-          data-initial-error={!hasLoaded || undefined}
-        >
-          <span>{loadError}</span>
-          <button type="button" onClick={() => void load()}>
-            {t("retry")}
-          </button>
         </div>
       )}
       {showControls && (

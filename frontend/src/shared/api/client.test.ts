@@ -7,6 +7,19 @@ afterEach(() => {
 });
 
 describe("API errors", () => {
+  test("normalizes network failures into a localized API error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+
+    const error = await api("/admin/objects", {}, "ru").catch((value: unknown) => value);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({
+      message: "Не удалось выполнить запрос.",
+      status: 0,
+      code: "NETWORK_ERROR",
+    });
+  });
+
   test("keeps stable server codes while exposing only a localized message", async () => {
     vi.stubGlobal(
       "fetch",

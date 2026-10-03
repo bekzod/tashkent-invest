@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Crosshair, LocateFixed, MapPinOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import maplibregl, {
   type GeoJSONSource,
   type Map as MapLibreMap,
@@ -247,22 +248,22 @@ export function LocationPicker({
         aria-label={t("mapPickerInteractiveLabel")}
       />
       <div className="admin-location-picker-toolbar">
-        <button type="button" onClick={useCurrentLocation} disabled={locating}>
+        <Button variant="outline" onClick={useCurrentLocation} disabled={locating}>
           <LocateFixed size={17} aria-hidden="true" />
           {t("mapPickerCurrentLocation")}
-        </button>
-        <button type="button" onClick={resetView}>
+        </Button>
+        <Button variant="outline" onClick={resetView}>
           <Crosshair size={17} aria-hidden="true" />
           {t("mapPickerReset")}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="outline"
           onClick={() => onChangeRef.current({ latitude: "", longitude: "" })}
           disabled={!latitude && !longitude}
         >
           <MapPinOff size={17} aria-hidden="true" />
           {t("mapPickerClear")}
-        </button>
+        </Button>
       </div>
       <p className="admin-location-picker-help">{t("mapPickerHelp")}</p>
       <p className="admin-location-picker-status" aria-live="polite" role="status">

@@ -9,6 +9,11 @@ import { writeSession, type Session } from "@/shared/auth/session";
 import { useLanguage } from "@/shared/i18n/language-provider";
 import { localizedPath } from "@/shared/i18n/routing";
 import type { MessageKey } from "@/shared/i18n/messages";
+import { notify } from "@/shared/ui/feedback";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type RegistrationResponse = Session & { emailVerification: "not_configured" };
 type RegistrationField =
@@ -63,7 +68,6 @@ export function RegisterView({ returnTo }: { returnTo?: string }) {
   const [pending, setPending] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<RegistrationErrors>({});
-  const [formError, setFormError] = useState<MessageKey | null>(null);
 
   useEffect(() => {
     queueMicrotask(() => setHydrated(true));
@@ -83,7 +87,6 @@ export function RegisterView({ returnTo }: { returnTo?: string }) {
     };
     const validationErrors = validateRegistration(values);
     setFieldErrors(validationErrors);
-    setFormError(null);
     if (Object.keys(validationErrors).length) return;
 
     submittingRef.current = true;
@@ -104,10 +107,11 @@ export function RegisterView({ returnTo }: { returnTo?: string }) {
         locale,
       );
       writeSession(session);
+      notify.success(t("registrationSuccess"));
       router.replace(safeReturnTo(returnTo, "/dashboard/profile"));
     } catch (error) {
       if (error instanceof ApiError && error.code === "ACCOUNT_EXISTS") {
-        setFormError("accountExists");
+        notify.error(t("accountExists"));
       } else if (error instanceof ApiError && error.fieldErrors) {
         setFieldErrors(
           Object.fromEntries(
@@ -118,9 +122,9 @@ export function RegisterView({ returnTo }: { returnTo?: string }) {
               ),
           ) as RegistrationErrors,
         );
-        setFormError("registrationInvalid");
+        notify.error(t("registrationInvalid"));
       } else {
-        setFormError("registrationFailed");
+        notify.error(t("registrationFailed"));
       }
     } finally {
       submittingRef.current = false;
@@ -145,14 +149,9 @@ export function RegisterView({ returnTo }: { returnTo?: string }) {
           <h1>{t("registerTitle")}</h1>
           <p>{t("registerIntro")}</p>
         </div>
-        {formError && (
-          <p className="error auth-status" role="alert">
-            {t(formError)}
-          </p>
-        )}
-        <label>
+        <Label className="auth-label">
           {t("name")}
-          <input
+          <Input
             name="name"
             autoComplete="name"
             minLength={2}
@@ -168,10 +167,10 @@ export function RegisterView({ returnTo }: { returnTo?: string }) {
               {errorFor("name")}
             </span>
           )}
-        </label>
-        <label>
+        </Label>
+        <Label className="auth-label">
           {t("email")}
-          <input
+          <Input
             name="email"
             type="email"
             inputMode="email"
@@ -188,10 +187,10 @@ export function RegisterView({ returnTo }: { returnTo?: string }) {
               {errorFor("email")}
             </span>
           )}
-        </label>
+        </Label>
         <div className="auth-field">
-          <label htmlFor="register-password">{t("password")}</label>
-          <input
+          <Label htmlFor="register-password">{t("password")}</Label>
+          <Input
             id="register-password"
             name="password"
             type="password"
@@ -209,9 +208,9 @@ export function RegisterView({ returnTo }: { returnTo?: string }) {
             </span>
           )}
         </div>
-        <label>
+        <Label className="auth-label">
           {t("confirmPassword")}
-          <input
+          <Input
             name="confirmPassword"
             type="password"
             autoComplete="new-password"
@@ -226,11 +225,10 @@ export function RegisterView({ returnTo }: { returnTo?: string }) {
               {errorFor("confirmPassword")}
             </span>
           )}
-        </label>
-        <label className="consent-control">
-          <input
+        </Label>
+        <Label className="consent-control">
+          <Checkbox
             name="consent"
-            type="checkbox"
             required
             aria-invalid={Boolean(fieldErrors.consent)}
             aria-describedby={
@@ -238,20 +236,21 @@ export function RegisterView({ returnTo }: { returnTo?: string }) {
             }
           />
           <span>{t("consentText")}</span>
-        </label>
+        </Label>
         {fieldErrors.consent && (
           <span id="register-consent-error" className="field-error">
             {errorFor("consent")}
           </span>
         )}
         <p className="verification-note">{t("emailVerificationUnavailable")}</p>
-        <button
-          className="button primary"
+        <Button
+          className="w-full"
+          type="submit"
           disabled={pending || !hydrated}
           aria-busy={pending}
         >
           {pending ? t("registering") : t("createAccount")}
-        </button>
+        </Button>
         <p className="auth-switch">
           {t("alreadyHaveAccount")} <Link href={loginHref}>{t("login")}</Link>
         </p>

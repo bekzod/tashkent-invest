@@ -1,9 +1,12 @@
 import { useEffect } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import type { FeatureCollection } from "@/entities/investment-object/types";
 import { LanguageProvider } from "@/shared/i18n/language-provider";
-import { MapPageClient } from "./map-page-client";
+
+const mocks = vi.hoisted(() => ({ investmentMapProps: vi.fn() }));
+
+let MapPageClient: typeof import("./map-page-client").MapPageClient;
 
 const features: FeatureCollection["features"] = Array.from(
   { length: 30 },
@@ -28,17 +31,85 @@ const features: FeatureCollection["features"] = Array.from(
   }),
 );
 
+let mapFeatures = features;
+
 vi.mock("@/shared/api/client", () => ({ api: vi.fn().mockResolvedValue([]) }));
-vi.mock("./investment-map", () => ({
-  InvestmentMap: ({ filters, onFeatures }: { filters: unknown; onFeatures: (items: typeof features) => void }) => {
-    useEffect(() => onFeatures(features), [filters, onFeatures]);
+vi.mock("@/features/investment-map/investment-map", () => ({
+  InvestmentMap: ({
+    filters,
+    onFeatures,
+    ...props
+  }: {
+    filters: unknown;
+    onFeatures: (items: typeof features) => void;
+    suppressLoadError?: boolean;
+  }) => {
+    mocks.investmentMapProps(props);
+    useEffect(() => onFeatures(mapFeatures), [filters, onFeatures]);
     return <div data-testid="mock-map" />;
   },
 }));
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  mocks.investmentMapProps.mockClear();
+});
+
+beforeEach(() => {
+  mapFeatures = features;
+});
+
+beforeAll(async () => {
+  ({ MapPageClient } = await import("./map-page-client"));
+});
+
+afterAll(() => vi.resetModules());
 
 describe("MapPageClient mobile controls", () => {
+  test("uses a placeholder-only failure state for the compact homepage map", async () => {
+    render(
+      <LanguageProvider initialLocale="uz">
+        <MapPageClient compact showToolbar={false} showMapControls={false} />
+      </LanguageProvider>,
+    );
+
+    await waitFor(() =>
+      expect(mocks.investmentMapProps).toHaveBeenLastCalledWith(
+        expect.objectContaining({ suppressLoadError: true }),
+      ),
+    );
+  });
+
+  test("hides the empty result message before a homepage filter is applied", async () => {
+    mapFeatures = [];
+    render(
+      <LanguageProvider initialLocale="uz">
+        <MapPageClient compact showToolbar={false} showMapControls={false} />
+      </LanguageProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByTestId("home-map-placeholder")).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByText("Sizning shartlaringizga mos obyekt topilmadi.")).not.toBeInTheDocument();
+  });
+
+  test("shows the empty result message after homepage filters return no objects", async () => {
+    mapFeatures = [];
+    render(
+      <LanguageProvider initialLocale="uz">
+        <MapPageClient
+          compact
+          showToolbar={false}
+          showMapControls={false}
+          controlledFilters={{ types: ["land"] }}
+        />
+      </LanguageProvider>,
+    );
+
+    expect(await screen.findByText("Sizning shartlaringizga mos obyekt topilmadi.")).toBeVisible();
+  });
+
   test("focuses the map search when the dashboard search action is triggered", async () => {
     render(
       <LanguageProvider initialLocale="uz">

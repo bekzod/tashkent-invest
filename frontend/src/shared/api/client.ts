@@ -20,16 +20,21 @@ export async function api<T>(
   locale: Locale = "uz",
 ): Promise<T> {
   const session = typeof window === "undefined" ? null : readSession();
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      "Accept-Language": locale,
-      ...(session ? { Authorization: `Bearer ${session.token}` } : {}),
-      ...options.headers,
-    },
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "Accept-Language": locale,
+        ...(session ? { Authorization: `Bearer ${session.token}` } : {}),
+        ...options.headers,
+      },
+      cache: "no-store",
+    });
+  } catch {
+    throw new ApiError(messages[locale].requestFailed, 0, "NETWORK_ERROR");
+  }
   if (response.status === 401 && typeof window !== "undefined") clearSession();
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as {

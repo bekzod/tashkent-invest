@@ -8,6 +8,7 @@ const db = require('./db/models');
 
 const defaultAllowedOrigins = [
   'http://localhost:3000',
+  'http://127.0.0.1:3000',
   'https://tashkent-invest.vercel.app',
   'https://toshkent-tuman-invest.uz',
   'https://www.toshkent-tuman-invest.uz',

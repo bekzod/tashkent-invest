@@ -5,8 +5,9 @@ import { LanguageProvider, useLanguage } from '@/shared/i18n/language-provider';
 import { api } from '@/shared/api/client';
 import HomePage from './home';
 
-const { mapPropsMock, pushMock } = vi.hoisted(() => ({
+const { mapPropsMock, notifyErrorMock, pushMock } = vi.hoisted(() => ({
   mapPropsMock: vi.fn(),
+  notifyErrorMock: vi.fn(),
   pushMock: vi.fn(),
 }));
 
@@ -14,6 +15,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: pushMock }) }));
 vi.mock('next/link', () => ({ default: ({ children, href, ...props }: React.ComponentProps<'a'>) => <a href={href} {...props}>{children}</a> }));
 vi.mock('@/features/investment-map/map-page-client', () => ({ MapPageClient: (props: unknown) => { mapPropsMock(props); return <div data-testid="home-map" />; } }));
 vi.mock('@/shared/api/client', () => ({ api: vi.fn() }));
+vi.mock('@/shared/ui/feedback', () => ({ notify: { error: notifyErrorMock } }));
 
 const apiMock = vi.mocked(api);
 const object: InvestmentObject = {
@@ -34,6 +36,7 @@ beforeEach(() => {
   apiMock.mockReset();
   pushMock.mockReset();
   mapPropsMock.mockReset();
+  notifyErrorMock.mockReset();
 });
 afterEach(cleanup);
 
@@ -57,12 +60,14 @@ test('keeps server-rendered object cards visible while a locale refresh is pendi
   expect(screen.queryAllByTestId('content-placeholder')).toHaveLength(0);
 });
 
-test('shows an error and retries the landing request', async () => {
+test('shows an error toast and retries the landing request', async () => {
   apiMock.mockRejectedValue(new Error('Network error'));
   renderHome();
 
-  expect(await screen.findByRole('alert')).toHaveTextContent('Ma’lumotlarni yuklab bo‘lmadi');
-  expect(screen.getByRole('button', { name: 'Qayta urinish' })).toBeVisible();
+  await waitFor(() => expect(notifyErrorMock).toHaveBeenCalledWith(
+    'Ma’lumotlarni yuklab bo‘lmadi. Qayta urinib ko‘ring.',
+    expect.objectContaining({ action: expect.objectContaining({ label: 'Qayta urinish' }) }),
+  ));
 
   apiMock.mockReset();
   apiMock
@@ -71,7 +76,10 @@ test('shows an error and retries the landing request', async () => {
     .mockResolvedValueOnce({ items: [object] })
     .mockResolvedValueOnce({ items: [object] })
     .mockResolvedValueOnce({ items: [object] });
-  fireEvent.click(screen.getByRole('button', { name: 'Qayta urinish' }));
+  const options = notifyErrorMock.mock.calls[0][1] as {
+    action: { onClick: () => void };
+  };
+  options.action.onClick();
 
   await waitFor(() => expect(screen.getByText('Test object')).toBeVisible());
   expect(screen.queryAllByTestId('content-placeholder')).toHaveLength(0);

@@ -3,16 +3,30 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/shared/api/client";
+import { ApiError, api } from "@/shared/api/client";
 import { writeSession, type Session } from "@/shared/auth/session";
 import { safeReturnTo, withReturnTo } from "@/shared/auth/return-to";
 import { useLanguage } from "@/shared/i18n/language-provider";
 import { localizedPath } from "@/shared/i18n/routing";
+import { notify } from "@/shared/ui/feedback";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-export function LoginView({ returnTo }: { returnTo?: string }) {
+type LoginCredentials = {
+  email?: string;
+  password?: string;
+};
+
+export function LoginView({
+  returnTo,
+  initialCredentials,
+}: {
+  returnTo?: string;
+  initialCredentials?: LoginCredentials;
+}) {
   const { locale, t } = useLanguage();
   const router = useRouter();
-  const [error, setError] = useState(false);
   const [pending, setPending] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
@@ -22,15 +36,14 @@ export function LoginView({ returnTo }: { returnTo?: string }) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     setPending(true);
-    setError(false);
     try {
       const session = await api<Session>(
         "/auth/login",
         {
           method: "POST",
           body: JSON.stringify({
-            email: data.get("email"),
-            password: data.get("password"),
+            email: String(data.get("email") || "").trim().toLowerCase(),
+            password: String(data.get("password") || ""),
           }),
         },
         locale,
@@ -42,8 +55,12 @@ export function LoginView({ returnTo }: { returnTo?: string }) {
           session.user.role === "admin" ? "/dashboard" : "/dashboard/profile",
         ),
       );
-    } catch {
-      setError(true);
+    } catch (error) {
+      notify.error(
+        error instanceof ApiError && error.status === 401
+          ? t("loginFailed")
+          : t("requestFailed"),
+      );
     } finally {
       setPending(false);
     }
@@ -64,31 +81,34 @@ export function LoginView({ returnTo }: { returnTo?: string }) {
             {t("adminDefaultName")}: admin@demo.uz / invest2026
           </p>
         )}
-        {error && (
-          <p className="error auth-status" role="alert">
-            {t("loginFailed")}
-          </p>
-        )}
-        <label>
+        <Label className="auth-label">
           {t("email")}
-          <input name="email" type="email" required autoComplete="email" />
-        </label>
-        <label>
+          <Input
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            defaultValue={initialCredentials?.email || ""}
+          />
+        </Label>
+        <Label className="auth-label">
           {t("password")}
-          <input
+          <Input
             name="password"
             type="password"
             required
             autoComplete="current-password"
+            defaultValue={initialCredentials?.password || ""}
           />
-        </label>
-        <button
-          className="button primary"
+        </Label>
+        <Button
+          className="w-full"
+          type="submit"
           disabled={pending}
           aria-busy={pending}
         >
           {pending ? t("loggingIn") : t("login")}
-        </button>
+        </Button>
         <p className="auth-switch">
           {t("noAccountYet")}{" "}
           <Link

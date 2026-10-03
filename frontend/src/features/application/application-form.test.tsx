@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { LanguageProvider } from "@/shared/i18n/language-provider";
 import {
@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => {
       super(message);
     }
   }
-  return { api: vi.fn(), MockApiError };
+  return { api: vi.fn(), MockApiError, notifySuccess: vi.fn() };
 });
 
 vi.mock("next/link", () => ({
@@ -41,8 +41,14 @@ vi.mock("@/shared/auth/session", () => ({
     },
   }),
 }));
+vi.mock("@/shared/ui/feedback", () => ({
+  notify: { success: mocks.notifySuccess, error: vi.fn() },
+}));
 
-beforeEach(() => mocks.api.mockReset());
+beforeEach(() => {
+  mocks.api.mockReset();
+  mocks.notifySuccess.mockReset();
+});
 afterEach(cleanup);
 
 test("prefills identity and locks the application after a successful submission", async () => {
@@ -64,8 +70,8 @@ test("prefills identity and locks the application after a successful submission"
   });
   fireEvent.click(screen.getByRole("button", { name: "Yuborish" }));
 
-  expect(await screen.findByRole("status")).toHaveTextContent(
-    "Arizangiz qabul qilindi",
+  await waitFor(() =>
+    expect(mocks.notifySuccess).toHaveBeenCalledWith("Arizangiz qabul qilindi."),
   );
   expect(screen.getByRole("button", { name: "Yuborildi" })).toBeDisabled();
   expect(mocks.api).toHaveBeenCalledWith(

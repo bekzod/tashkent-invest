@@ -43,7 +43,9 @@ test("registration duplicate state", async ({ page }, testInfo) => {
   await page.getByLabel("Parolni tasdiqlang").fill("E2E-invest-2026!");
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Hisob yaratish" }).click();
-  await expect(page.locator(".auth-status[role=alert]")).toBeVisible();
+  await expect(
+    page.getByText("Bu email bilan hisob allaqachon mavjud."),
+  ).toBeVisible();
   await expectVisualSnapshot(
     page,
     `registration-duplicate-${testInfo.project.name}.png`,

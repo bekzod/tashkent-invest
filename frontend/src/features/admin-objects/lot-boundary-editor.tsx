@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, PencilRuler, RotateCcw, Trash2, Undo2, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
 import { api } from "@/shared/api/client";
 import { useLanguage } from "@/shared/i18n/language-provider";
@@ -292,50 +295,50 @@ export function LotBoundaryEditor({
       </div>
       {editing ? (
         <div className="lot-boundary-keyboard">
-          <label>
+          <Label>
             <span>{t("lotBoundaryVertexLongitude")}</span>
-            <input type="number" step="any" value={manualLongitude} onChange={(event) => setManualLongitude(event.target.value)} />
-          </label>
-          <label>
+            <Input type="number" step="any" value={manualLongitude} onChange={(event) => setManualLongitude(event.target.value)} />
+          </Label>
+          <Label>
             <span>{t("lotBoundaryVertexLatitude")}</span>
-            <input type="number" step="any" value={manualLatitude} onChange={(event) => setManualLatitude(event.target.value)} />
-          </label>
-          <button type="button" className="admin-outline" onClick={addManualVertex}>
+            <Input type="number" step="any" value={manualLatitude} onChange={(event) => setManualLatitude(event.target.value)} />
+          </Label>
+          <Button variant="outline" className="admin-outline" onClick={addManualVertex}>
             + {t("lotBoundaryAddVertex")}
-          </button>
+          </Button>
         </div>
       ) : null}
       {error ? <p className="lot-boundary-error" role="alert">{error}</p> : null}
       <div className="lot-boundary-actions">
         {!editing ? (
-          <button type="button" className="admin-outline" onClick={startEditing}>
+          <Button variant="outline" className="admin-outline" onClick={startEditing}>
             <PencilRuler size={16} /> {geometry ? t("lotBoundaryEdit") : t("lotBoundaryStart")}
-          </button>
+          </Button>
         ) : (
           <>
-            <button type="button" className="admin-primary" onClick={closeBoundary} disabled={vertices.length < 3}>
+            <Button className="admin-primary" onClick={closeBoundary} disabled={vertices.length < 3}>
               <Check size={16} /> {t("lotBoundaryClose")}
-            </button>
-            <button type="button" className="admin-outline" onClick={() => setVertices((current) => current.slice(0, -1))} disabled={!vertices.length}>
+            </Button>
+            <Button variant="outline" className="admin-outline" onClick={() => setVertices((current) => current.slice(0, -1))} disabled={!vertices.length}>
               <Undo2 size={16} /> {t("lotBoundaryUndo")}
-            </button>
-            <button type="button" className="admin-outline" onClick={cancel}>
+            </Button>
+            <Button variant="outline" className="admin-outline" onClick={cancel}>
               <X size={16} /> {t("lotBoundaryCancel")}
-            </button>
+            </Button>
           </>
         )}
         {geometry || vertices.length ? (
-          <button type="button" className="lot-boundary-clear" onClick={clearBoundary}>
+          <Button variant="destructive" className="lot-boundary-clear" onClick={clearBoundary}>
             <Trash2 size={16} /> {t("lotBoundaryClear")}
-          </button>
+          </Button>
         ) : null}
         {!editing && geometry ? (
-          <button type="button" className="lot-boundary-reset" onClick={() => {
+          <Button variant="ghost" className="lot-boundary-reset" onClick={() => {
             const nextBounds = lotBoundaryBounds(geometry);
             if (nextBounds) mapRef.current?.fitBounds(nextBounds, { padding: 52, duration: 0, maxZoom: 18 });
           }}>
             <RotateCcw size={16} /> {t("mapPickerReset")}
-          </button>
+          </Button>
         ) : null}
       </div>
     </section>

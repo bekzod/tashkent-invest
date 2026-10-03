@@ -1,6 +1,8 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from "@/shared/i18n/language-provider";
 
 export function ServerPagination({
@@ -34,33 +36,36 @@ export function ServerPagination({
         <span>
           {from}-{to} / {totalItems}
         </span>
-        <label>
+        <div>
           <span>{t("rows")}</span>
-          <select value={pageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
+          <Select value={String(pageSize)} onValueChange={(value) => onPageSizeChange(Number(value))}>
+            <SelectTrigger aria-label={t("rows")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
             {pageSizeOptions.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
+              <SelectItem key={size} value={String(size)}>{size}</SelectItem>
             ))}
-          </select>
-        </label>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div className="server-pagination-actions">
-        <button type="button" onClick={() => onPageChange(1)} disabled={!canPrev} aria-label={t("firstPage")}>
+        <Button variant="ghost" size="icon" onClick={() => onPageChange(1)} disabled={!canPrev} aria-label={t("firstPage")}>
           <ChevronsLeft size={16} />
-        </button>
-        <button type="button" onClick={() => onPageChange(safePage - 1)} disabled={!canPrev} aria-label={t("previousPage")}>
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => onPageChange(safePage - 1)} disabled={!canPrev} aria-label={t("previousPage")}>
           <ChevronLeft size={16} />
-        </button>
+        </Button>
         <span>
           {safePage} / {safeTotalPages}
         </span>
-        <button type="button" onClick={() => onPageChange(safePage + 1)} disabled={!canNext} aria-label={t("nextPage")}>
+        <Button variant="ghost" size="icon" onClick={() => onPageChange(safePage + 1)} disabled={!canNext} aria-label={t("nextPage")}>
           <ChevronRight size={16} />
-        </button>
-        <button type="button" onClick={() => onPageChange(safeTotalPages)} disabled={!canNext} aria-label={t("lastPage")}>
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => onPageChange(safeTotalPages)} disabled={!canNext} aria-label={t("lastPage")}>
           <ChevronsRight size={16} />
-        </button>
+        </Button>
       </div>
     </div>
   );
