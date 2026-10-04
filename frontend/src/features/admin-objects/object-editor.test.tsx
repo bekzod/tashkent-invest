@@ -98,6 +98,29 @@ test('keeps blank coordinates null instead of submitting the Gulf of Guinea', as
   });
 });
 
+test('shows and submits the e-auksion link for auction objects', async () => {
+  const object = {
+    id: 'auction-1',
+    status: 'auction' as const,
+    translations: [],
+    media: [],
+  };
+  updateMock.mockResolvedValue(object);
+  render(<LanguageProvider><ObjectEditor object={object} service={service} /></LanguageProvider>);
+
+  const auctionLink = screen.getByLabelText('E-auksion havolasi');
+  expect(auctionLink).toHaveAttribute('placeholder', 'https://e-auksion.uz/lot-view?...');
+  fireEvent.change(auctionLink, {
+    target: { value: 'https://e-auksion.uz/lot-view?lot_id=123' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: /Qoralama saqlash/ }));
+
+  await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(1));
+  expect(updateMock.mock.calls[0][1]).toMatchObject({
+    auctionUrl: 'https://e-auksion.uz/lot-view?lot_id=123',
+  });
+});
+
 test('requires the coordinate pair and invalidates stale geometry when a point moves', async () => {
   const geometry: GeoJSON.Polygon = {
     type: 'Polygon',

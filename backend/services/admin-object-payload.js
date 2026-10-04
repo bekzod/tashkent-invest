@@ -25,6 +25,22 @@ function optionalNumber(value, label) {
   return number;
 }
 
+function normalizeAuctionUrl(value) {
+  const auctionUrl = text(value);
+  if (!auctionUrl) return undefined;
+  try {
+    const parsed = new URL(auctionUrl);
+    const hostname = parsed.hostname.toLowerCase();
+    const isEAuctionHost = hostname === 'e-auksion.uz' || hostname.endsWith('.e-auksion.uz');
+    if (parsed.protocol !== 'https:' || !isEAuctionHost)
+      validation('Auction URL must use https://e-auksion.uz');
+    return parsed.toString();
+  } catch (error) {
+    if (error?.statusCode === 400) throw error;
+    validation('Auction URL must use https://e-auksion.uz');
+  }
+}
+
 function coordinate(value, min, max, label) {
   if (value === undefined || value === null || value === '') validation(`${label} is out of range`);
   const number = Number(value);
@@ -143,7 +159,7 @@ function normalizeObjectPayload(body = {}) {
     usableAreaSqm: optionalNumber(body.usableAreaSqm, 'Usable area'),
     investmentAmountUsd: optionalNumber(body.investmentAmountUsd, 'Investment amount'),
     jobsPlanned: optionalNumber(body.jobsPlanned, 'Jobs planned'),
-    auctionUrl: text(body.auctionUrl),
+    auctionUrl: normalizeAuctionUrl(body.auctionUrl),
     auctionStartsAt: body.auctionStartsAt ? new Date(body.auctionStartsAt) : undefined,
     sectors,
     utilities: body.utilities && typeof body.utilities === 'object' ? body.utilities : {},

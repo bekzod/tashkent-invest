@@ -82,6 +82,20 @@ function hasTranslationContent(value: AdminTranslation) {
   );
 }
 
+function isEAuctionUrl(value: string) {
+  if (!value.trim()) return false;
+  try {
+    const parsed = new URL(value);
+    const hostname = parsed.hostname.toLowerCase();
+    return (
+      parsed.protocol === "https:" &&
+      (hostname === "e-auksion.uz" || hostname.endsWith(".e-auksion.uz"))
+    );
+  } catch {
+    return false;
+  }
+}
+
 type ObjectEditorService = Pick<typeof adminObjectsApi, "create" | "update">;
 
 export function ObjectEditor({
@@ -131,6 +145,7 @@ export function ObjectEditor({
         }[locationValidation.code] as MessageKey,
       )
     : "";
+  const auctionUrlInvalid = Boolean(form.auctionUrl) && !isEAuctionUrl(form.auctionUrl);
   const publishIssues = useMemo(
     () => {
       const russianStarted = hasTranslationContent(form.ru);
@@ -149,9 +164,11 @@ export function ObjectEditor({
         locationValidation.code && locationError,
         !form.investmentAmountUsd && t("requiredInvestment"),
         !form.sectors.length && t("requiredSector"),
+        form.status === "auction" && !form.auctionUrl.trim() && t("auctionLink"),
+        form.status === "auction" && auctionUrlInvalid && t("auctionLinkInvalid"),
       ].filter(Boolean);
     },
-    [form, locationError, locationValidation.code, locationValidation.point, t],
+    [auctionUrlInvalid, form, locationError, locationValidation.code, locationValidation.point, t],
   );
   const set = (key: string, value: string | string[]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -271,6 +288,26 @@ export function ObjectEditor({
                 ))}
                 </SelectContent></Select>
             </Field>
+            {form.status === "auction" ? (
+              <Field wide label={t("auctionLink")}>
+                <Input
+                  type="url"
+                  required
+                  placeholder="https://e-auksion.uz/lot-view?..."
+                  value={form.auctionUrl}
+                  aria-label={t("auctionLink")}
+                  aria-invalid={auctionUrlInvalid}
+                  aria-describedby="auction-link-help"
+                  onChange={(event) => set("auctionUrl", event.target.value)}
+                />
+                <span
+                  className={auctionUrlInvalid ? "text-xs font-normal text-destructive" : "text-xs font-normal text-muted-foreground"}
+                  id="auction-link-help"
+                >
+                  {auctionUrlInvalid ? t("auctionLinkInvalid") : t("auctionLinkHelp")}
+                </span>
+              </Field>
+            ) : null}
             <Field label={t("uzbekName")}>
               <Input
                 value={form.uz.title}
@@ -473,15 +510,6 @@ export function ObjectEditor({
                 ))}
               </div>
             </Field>
-            {form.status === "auction" && (
-              <Field wide label={t("auctionLink")}>
-                <Input
-                  type="url"
-                  value={form.auctionUrl}
-                  onChange={(event) => set("auctionUrl", event.target.value)}
-                />
-              </Field>
-            )}
           </div>
         )}
         {step === 3 && (

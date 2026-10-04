@@ -53,6 +53,24 @@ test('accepts an incomplete draft but requires publishing fields', () => {
   ).toThrow('sector');
 });
 
+test('requires a secure e-auksion link for auction objects', () => {
+  const normalized = normalizeObjectPayload({
+    ...publishPayload,
+    status: 'auction',
+    auctionUrl: 'https://e-auksion.uz/lot-view?lot_id=123',
+  });
+  expect(normalized.auctionUrl).toBe('https://e-auksion.uz/lot-view?lot_id=123');
+  expect(() =>
+    normalizeObjectPayload({ ...publishPayload, status: 'auction', auctionUrl: '' }),
+  ).toThrow('Auction URL is required');
+  expect(() =>
+    normalizeObjectPayload({ status: 'draft', auctionUrl: 'https://example.com/lot/123' }),
+  ).toThrow('https://e-auksion.uz');
+  expect(() =>
+    normalizeObjectPayload({ status: 'draft', auctionUrl: 'http://e-auksion.uz/lot/123' }),
+  ).toThrow('https://e-auksion.uz');
+});
+
 test('preserves complete Russian admin fields and rejects a partial published translation', () => {
   const normalized = normalizeObjectPayload(publishPayload);
 
