@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { LanguageProvider } from '@/shared/i18n/language-provider';
 import { ObjectEditor } from './object-editor';
@@ -119,6 +119,52 @@ test('shows and submits the e-auksion link for auction objects', async () => {
   expect(updateMock.mock.calls[0][1]).toMatchObject({
     auctionUrl: 'https://e-auksion.uz/lot-view?lot_id=123',
   });
+});
+
+test('renders media removal as an accessible icon action', () => {
+  const mediaUrl = 'https://example.com/object.jpg';
+  const object = {
+    id: 'media-1',
+    status: 'draft' as const,
+    translations: [],
+    media: [{ kind: 'image' as const, url: mediaUrl, title: '' }],
+  };
+
+  render(<LanguageProvider><ObjectEditor object={object} service={service} /></LanguageProvider>);
+  fireEvent.click(screen.getByRole('button', { name: /Media$/ }));
+
+  const remove = screen.getByRole('button', { name: 'Olib tashlash' });
+  expect(remove).toHaveAttribute('data-icon-action');
+  expect(remove).not.toHaveTextContent('Olib tashlash');
+
+  fireEvent.click(remove);
+  expect(screen.queryByDisplayValue(mediaUrl)).not.toBeInTheDocument();
+});
+
+test('groups media type, URL, and removal with local URL validation', () => {
+  const mediaUrl = 'https://example.com/object.jpg';
+  const object = {
+    id: 'media-group-1',
+    status: 'draft' as const,
+    translations: [],
+    media: [{ kind: 'image' as const, url: mediaUrl, title: '' }],
+  };
+
+  render(<LanguageProvider><ObjectEditor object={object} service={service} /></LanguageProvider>);
+  fireEvent.click(screen.getByRole('button', { name: /Media$/ }));
+
+  const url = screen.getByRole('textbox', { name: 'Media havolasi 1' });
+  const group = url.closest('[data-slot="input-group"]');
+  expect(group).not.toBeNull();
+  expect(within(group as HTMLElement).getByRole('combobox')).toBeVisible();
+  expect(within(group as HTMLElement).getByRole('button', { name: 'Olib tashlash' })).toBeVisible();
+
+  fireEvent.change(url, { target: { value: 'http://example.com/insecure.jpg' } });
+  expect(group).toHaveAttribute('aria-invalid', 'true');
+  expect(screen.getByRole('alert')).toHaveTextContent(/HTTPS media havolasini/i);
+
+  fireEvent.click(screen.getByRole('button', { name: /Media qo‘shish/i }));
+  expect(document.querySelectorAll('[data-slot="input-group"]')).toHaveLength(2);
 });
 
 test('requires the coordinate pair and invalidates stale geometry when a point moves', async () => {

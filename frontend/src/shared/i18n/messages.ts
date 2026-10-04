@@ -310,6 +310,9 @@ export const messages = {
     mediaLinks: "Media havolalari",
     mediaHelp:
       "Foto, video, PDF yoki 2:1 equirectangular 360° panorama uchun HTTPS havola kiriting.",
+    mediaType: "Media turi",
+    mediaUrl: "Media havolasi",
+    mediaUrlInvalid: "To‘liq HTTPS media havolasini kiriting.",
     photo: "Foto",
     video: "Video",
     document: "Hujjat",
@@ -336,11 +339,24 @@ export const messages = {
     lotBoundaryHelp:
       "Chegara faqat ishonchli ma’lumot asosida chizilsin. Xaritada kamida uchta nuqta belgilang va shaklni yoping.",
     lotBoundaryMapLabel: "Lot chegarasini chizish xaritasi",
+    lotBoundaryMapLoading: "Lot xaritasi yuklanmoqda…",
+    lotBoundaryMapError: "Lot xaritasini yuklab bo‘lmadi.",
+    lotBoundaryRetry: "Qayta urinish",
+    lotBoundaryDistrictUnavailable:
+      "Tuman chegarasi yuklanmadi. Saqlash vaqtida server chegarani tekshiradi.",
+    lotBoundaryDrawProgress: "nuqta belgilandi. Xaritaga bosib davom eting.",
+    lotBoundaryDrawReady: "Shakl tayyor. Nuqtani sudrab aniqlashtiring yoki yakunlang.",
+    lotBoundaryLocationMissing:
+      "Avval obyekt joylashuvini tanlang, so‘ng lot chegarasini chizing.",
+    lotBoundaryCoordinateEntry: "Aniq koordinata kiritish",
+    lotBoundaryClearConfirmation:
+      "Chegaraning barcha nuqtalari o‘chiriladi. Bu amalni keyin qaytarib bo‘lmaydi.",
     lotBoundaryStart: "Chegarani chizish",
     lotBoundaryEdit: "Chegarani tahrirlash",
-    lotBoundaryClose: "Shaklni yopish",
+    lotBoundaryClose: "Chegarani yakunlash",
     lotBoundaryUndo: "Oxirgi nuqtani bekor qilish",
     lotBoundaryClear: "Chegarani tozalash",
+    lotBoundaryClearSuccess: "Lot chegarasi tozalandi.",
     lotBoundaryCancel: "Bekor qilish",
     lotBoundaryAddVertex: "Nuqta qo‘shish",
     lotBoundaryVertexLongitude: "Yangi nuqta uzunligi",
@@ -692,6 +708,9 @@ export const messages = {
     mediaLinks: "Ссылки на медиа",
     mediaHelp:
       "Укажите HTTPS-ссылку на фото, видео, PDF или эквидистантную панораму 360° в формате 2:1.",
+    mediaType: "Тип медиа",
+    mediaUrl: "Ссылка на медиа",
+    mediaUrlInvalid: "Укажите полную HTTPS-ссылку на медиа.",
     photo: "Фото",
     video: "Видео",
     document: "Документ",
@@ -718,11 +737,24 @@ export const messages = {
     lotBoundaryHelp:
       "Рисуйте границу только по достоверным данным. Отметьте на карте минимум три точки и замкните фигуру.",
     lotBoundaryMapLabel: "Карта рисования границы лота",
+    lotBoundaryMapLoading: "Карта участка загружается…",
+    lotBoundaryMapError: "Не удалось загрузить карту участка.",
+    lotBoundaryRetry: "Повторить",
+    lotBoundaryDistrictUnavailable:
+      "Граница района не загрузилась. Сервер проверит границу при сохранении.",
+    lotBoundaryDrawProgress: "точка отмечена. Продолжайте, нажимая на карту.",
+    lotBoundaryDrawReady: "Фигура готова. Уточните точки перетаскиванием или завершите.",
+    lotBoundaryLocationMissing:
+      "Сначала выберите расположение объекта, затем нарисуйте границу участка.",
+    lotBoundaryCoordinateEntry: "Ввести точные координаты",
+    lotBoundaryClearConfirmation:
+      "Все точки границы будут удалены. Это действие нельзя отменить.",
     lotBoundaryStart: "Нарисовать границу",
     lotBoundaryEdit: "Изменить границу",
-    lotBoundaryClose: "Замкнуть фигуру",
+    lotBoundaryClose: "Завершить границу",
     lotBoundaryUndo: "Отменить последнюю точку",
     lotBoundaryClear: "Очистить границу",
+    lotBoundaryClearSuccess: "Граница участка очищена.",
     lotBoundaryCancel: "Отмена",
     lotBoundaryAddVertex: "Добавить точку",
     lotBoundaryVertexLongitude: "Долгота новой точки",

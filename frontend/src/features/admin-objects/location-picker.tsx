@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Crosshair, LocateFixed, MapPinOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import maplibregl, {
   type GeoJSONSource,
   type Map as MapLibreMap,
@@ -22,6 +21,7 @@ import {
   type LocationValidationCode,
   validateLocation,
 } from "./location-validation";
+import { ActionIconButton } from "@/shared/ui/action-icon-button";
 
 type LocationPoint = { latitude: string; longitude: string };
 type MapStatus = "loading" | "ready" | "error";
@@ -248,22 +248,20 @@ export function LocationPicker({
         aria-label={t("mapPickerInteractiveLabel")}
       />
       <div className="admin-location-picker-toolbar">
-        <Button variant="outline" onClick={useCurrentLocation} disabled={locating}>
+        <ActionIconButton label={t("mapPickerCurrentLocation")} variant="outline" onClick={useCurrentLocation} disabled={locating}>
           <LocateFixed size={17} aria-hidden="true" />
-          {t("mapPickerCurrentLocation")}
-        </Button>
-        <Button variant="outline" onClick={resetView}>
+        </ActionIconButton>
+        <ActionIconButton label={t("mapPickerReset")} variant="outline" onClick={resetView}>
           <Crosshair size={17} aria-hidden="true" />
-          {t("mapPickerReset")}
-        </Button>
-        <Button
+        </ActionIconButton>
+        <ActionIconButton
+          label={t("mapPickerClear")}
           variant="outline"
           onClick={() => onChangeRef.current({ latitude: "", longitude: "" })}
           disabled={!latitude && !longitude}
         >
           <MapPinOff size={17} aria-hidden="true" />
-          {t("mapPickerClear")}
-        </Button>
+        </ActionIconButton>
       </div>
       <p className="admin-location-picker-help">{t("mapPickerHelp")}</p>
       <p className="admin-location-picker-status" aria-live="polite" role="status">

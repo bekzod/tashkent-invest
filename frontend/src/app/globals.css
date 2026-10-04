@@ -5806,9 +5806,7 @@ body {
 }
 .admin-form-grid input,
 .admin-form-grid select,
-.admin-form-grid textarea,
-.admin-media-row input,
-.admin-media-row select {
+.admin-form-grid textarea {
   width: 100%;
   min-height: 40px;
   padding: 9px 11px;
@@ -5826,9 +5824,7 @@ body {
 }
 .admin-form-grid input:focus,
 .admin-form-grid select:focus,
-.admin-form-grid textarea:focus,
-.admin-media-row input:focus,
-.admin-media-row select:focus {
+.admin-form-grid textarea:focus {
   border-color: #0b5ec8;
   box-shadow: 0 0 0 3px rgb(98 59 255 / 0.12);
 }
@@ -5875,15 +5871,41 @@ body {
 }
 .admin-media-row {
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr) auto;
-  gap: 8px;
+  min-width: 0;
+  gap: 6px;
 }
-.admin-media-row button {
-  padding: 0 10px;
-  color: #ad4949;
+.admin-media-group {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 44px;
+}
+.admin-media-group > :not(:first-child) {
+  border-left: 1px solid var(--line);
+}
+.admin-media-kind {
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 44px;
   border: 0;
+  border-radius: 0;
   background: transparent;
-  font-weight: 700;
+  box-shadow: none;
+}
+.admin-media-kind:focus-visible,
+.admin-media-remove:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--blue);
+}
+.admin-media-remove {
+  width: 44px;
+  height: auto;
+  min-height: 44px;
+  border-radius: 0;
+}
+.admin-media-error {
+  margin: 0;
+  color: var(--color-destructive);
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 .admin-review {
   padding: 8px;
@@ -5996,8 +6018,8 @@ body {
   min-height: 44px;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 0 12px;
+  gap: 0;
+  padding: 0;
   color: #0b5ec8;
   border: 1px solid #d9d2f8;
   border-radius: 8px;
@@ -6092,13 +6114,70 @@ body {
   border-color: #dfbd67;
   background: #fff8df;
 }
+.lot-boundary-map-shell {
+  position: relative;
+  min-height: 330px;
+  overflow: hidden;
+  background: #eef1f5;
+}
 .lot-boundary-map {
   width: 100%;
   height: 330px;
-  background: #eef1f5;
 }
 .lot-boundary-map[data-editing] {
   cursor: crosshair;
+}
+.lot-boundary-map-overlay {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #43536a;
+  background: rgb(248 250 252 / 0.72);
+  font-size: 0.8rem;
+  font-weight: 700;
+  pointer-events: none;
+}
+.lot-boundary-map-overlay svg {
+  animation: lot-boundary-spin 900ms linear infinite;
+}
+.lot-boundary-map-overlay-error {
+  flex-direction: column;
+  color: #8c2929;
+  background: rgb(255 247 247 / 0.92);
+  pointer-events: auto;
+}
+.lot-boundary-map-overlay-error button {
+  min-height: 36px;
+}
+.lot-boundary-map-overlay-error svg {
+  animation: none;
+}
+.lot-boundary-map-guidance {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  max-width: min(360px, calc(100% - 24px));
+  padding: 9px 11px;
+  color: #10213a;
+  border: 1px solid rgb(11 94 200 / 0.26);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.94);
+  box-shadow: 0 8px 18px rgb(16 33 58 / 0.12);
+  font-size: 0.75rem;
+  font-weight: 700;
+  pointer-events: none;
+}
+.lot-boundary-map-guidance-location {
+  top: auto;
+  bottom: 12px;
+  color: #76550b;
+  border-color: #f2d7a0;
+}
+@keyframes lot-boundary-spin {
+  to { transform: rotate(360deg); }
 }
 .lot-boundary-status {
   display: flex;
@@ -6128,6 +6207,17 @@ body {
   align-items: end;
   gap: 10px;
   padding: 12px 14px;
+  border-top: 1px solid #edf0f4;
+}
+.lot-boundary-coordinate-entry {
+  border-top: 1px solid #edf0f4;
+}
+.lot-boundary-coordinate-toggle {
+  min-height: 42px;
+  margin: 8px 14px;
+  color: #0b5ec8;
+}
+.lot-boundary-coordinate-entry .lot-boundary-keyboard {
   border-top: 1px solid #edf0f4;
 }
 .lot-boundary-keyboard label {
@@ -6168,8 +6258,8 @@ body {
   min-height: 44px;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 0 12px;
+  gap: 0;
+  padding: 0;
   border-radius: 8px;
   background: #fff;
   font-size: 0.75rem;
@@ -6189,6 +6279,14 @@ body {
   color: #9f2727;
   border-top: 1px solid #facaca;
   background: #fff3f3;
+  font-size: 0.78rem;
+}
+.lot-boundary-warning {
+  margin: 0;
+  padding: 10px 14px;
+  color: #76550b;
+  border-top: 1px solid #f2d7a0;
+  background: #fff8df;
   font-size: 0.78rem;
 }
 .panorama-viewer {
@@ -6470,11 +6568,26 @@ body {
     height: 280px;
   }
   .admin-location-picker-toolbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
   }
   .admin-location-picker-toolbar button {
-    width: 100%;
+    width: 44px;
+  }
+  .admin-media-group {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+  .admin-media-kind {
+    grid-column: 1 / -1;
+    border-bottom: 1px solid var(--line);
+  }
+  .admin-media-group > .admin-media-kind {
+    border-left: 0;
+  }
+  .admin-media-group > [data-slot="input-group-control"]:not(.admin-media-kind) {
+    grid-column: 1;
+  }
+  .admin-media-remove {
+    grid-column: 2;
   }
   .lot-boundary-heading {
     flex-direction: column;
@@ -6482,12 +6595,18 @@ body {
   .lot-boundary-map {
     height: 290px;
   }
+  .lot-boundary-map-shell {
+    min-height: 290px;
+  }
   .lot-boundary-keyboard {
     grid-template-columns: minmax(0, 1fr);
   }
   .lot-boundary-keyboard button,
   .lot-boundary-actions button {
     width: 100%;
+  }
+  .lot-boundary-actions [data-icon-action] {
+    width: 44px;
   }
 }
 

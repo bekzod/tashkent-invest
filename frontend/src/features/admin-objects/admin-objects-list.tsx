@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Search, PencilLine, Archive } from "lucide-react";
+import { Plus, Search, PencilLine, Archive, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import { FilterToolbar } from "@/shared/ui/filter-toolbar";
 import { PageHeader } from "@/shared/ui/page-header";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { StatusBadge, type StatusTone } from "@/shared/ui/status-badge";
+import { ActionIconButton } from "@/shared/ui/action-icon-button";
 
 const statuses = ["draft", "available", "auction", "upcoming", "archived"];
 const initialMeta: AdminObjectsMeta = { page: 1, limit: 10, total: 0, totalPages: 1 };
@@ -116,9 +117,9 @@ export function AdminObjectsList() {
         align: "right",
         cell: (item) => (
           <div className="admin-table-actions">
-            <Button asChild variant="ghost" size="icon"><Link aria-label={t("edit")} href={`/dashboard/projects/${item.id}/edit`}><PencilLine size={17} /></Link></Button>
+            <ActionIconButton asChild label={t("edit")} variant="ghost"><Link href={`/dashboard/projects/${item.id}/edit`}><PencilLine size={17} aria-hidden="true" /></Link></ActionIconButton>
             {item.status !== "archived" && (
-              <Button aria-label={t("archive")} variant="ghost" size="icon" onClick={() => setArchiveTarget(item.id)}><Archive size={17} /></Button>
+              <ActionIconButton label={t("archive")} variant="ghost" onClick={() => setArchiveTarget(item.id)}><Archive size={17} aria-hidden="true" /></ActionIconButton>
             )}
           </div>
         ),
@@ -163,7 +164,7 @@ export function AdminObjectsList() {
             </SelectContent>
           </Select>
           <Button type="submit">{t("showObjects")}</Button>
-          {query || status ? <Button type="button" variant="ghost" onClick={clearFilters}>{t("clear")}</Button> : null}
+          {query || status ? <ActionIconButton type="button" label={t("clear")} variant="ghost" onClick={clearFilters}><RotateCcw size={17} aria-hidden="true" /></ActionIconButton> : null}
         </FilterToolbar>
       </form>
       {loadError ? <ErrorState title={t("dataLoadFailed")} action={<Button variant="outline" onClick={() => void loadObjects()}>{t("retry")}</Button>} /> : <ListTable

@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import { prepareVisualTest } from "./helpers/visual";
 
+const title = "Sanoat uchun yer uchastkasi 127";
+
 async function loginAndOpen(page: Page) {
   await page.goto("/uz/login");
   await expect(page.getByTestId("login-form")).toHaveAttribute(
@@ -14,9 +16,10 @@ async function loginAndOpen(page: Page) {
   await page.goto("/dashboard/projects");
   await page
     .getByPlaceholder(/Nomi, tuman yoki kadastr/i)
-    .fill("10:01:01:0011");
+    .fill(title);
+  await page.getByRole("button", { name: /Obyektlarni ko‘rsatish/ }).click();
   const row = page.getByRole("row").filter({
-    has: page.getByText("Sanoat uchun yer uchastkasi 1", { exact: true }),
+    has: page.getByText(title, { exact: true }),
   });
   await row.getByRole("link", { name: /tahrirlash/i }).click();
   await page.getByRole("button", { name: /Joylashuv/ }).click();
@@ -31,7 +34,7 @@ async function loginAndOpen(page: Page) {
     await source.getAttribute("class").then((value) => value?.includes("demo"))
   ) {
     await page.getByRole("button", { name: /Chegarani tahrirlash/ }).click();
-    await page.getByRole("button", { name: /Shaklni yopish/ }).click();
+    await page.getByRole("button", { name: /Chegarani yakunlash/ }).click();
   }
   await expect(source).toContainText(/Administrator chizgan/);
   await page.addStyleTag({
@@ -62,10 +65,10 @@ test.describe("lot boundary visuals", () => {
     });
     const openFilters = page.getByRole("button", { name: "Filtrlarni ochish" });
     if (await openFilters.isVisible()) await openFilters.click();
-    await page.getByLabel("Qidiruv").fill("10:01:01:0011");
+    await page.getByLabel("Qidiruv").fill(title);
     const card = page.getByTestId("map-result-card").filter({
       has: page.getByRole("heading", {
-        name: "Sanoat uchun yer uchastkasi 1",
+        name: title,
         exact: true,
       }),
     });

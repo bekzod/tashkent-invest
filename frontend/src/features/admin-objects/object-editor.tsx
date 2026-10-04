@@ -8,12 +8,15 @@ import {
   ChevronLeft,
   ChevronRight,
   MapPin,
+  Plus,
   Save,
   Send,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,6 +39,7 @@ import {
 import { notify } from "@/shared/ui/feedback";
 import { FormSection } from "@/shared/ui/form-section";
 import { PageHeader } from "@/shared/ui/page-header";
+import { ActionIconButton } from "@/shared/ui/action-icon-button";
 
 const stepKeys: MessageKey[] = ["stepMain", "stepLocation", "stepTerms", "stepMedia", "stepReview"];
 const sectors = [
@@ -96,6 +100,15 @@ function isEAuctionUrl(value: string) {
   }
 }
 
+function isHttpsUrl(value: string) {
+  if (!value.trim()) return false;
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 type ObjectEditorService = Pick<typeof adminObjectsApi, "create" | "update">;
 
 export function ObjectEditor({
@@ -146,6 +159,7 @@ export function ObjectEditor({
       )
     : "";
   const auctionUrlInvalid = Boolean(form.auctionUrl) && !isEAuctionUrl(form.auctionUrl);
+  const mediaUrlInvalid = form.media.some((item) => !isHttpsUrl(item.url));
   const publishIssues = useMemo(
     () => {
       const russianStarted = hasTranslationContent(form.ru);
@@ -166,9 +180,10 @@ export function ObjectEditor({
         !form.sectors.length && t("requiredSector"),
         form.status === "auction" && !form.auctionUrl.trim() && t("auctionLink"),
         form.status === "auction" && auctionUrlInvalid && t("auctionLinkInvalid"),
+        mediaUrlInvalid && t("mediaUrlInvalid"),
       ].filter(Boolean);
     },
-    [auctionUrlInvalid, form, locationError, locationValidation.code, locationValidation.point, t],
+    [auctionUrlInvalid, form, locationError, locationValidation.code, locationValidation.point, mediaUrlInvalid, t],
   );
   const set = (key: string, value: string | string[]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -206,6 +221,11 @@ export function ObjectEditor({
     if (boundaryEditing) return;
     if (locationValidation.code) {
       notify.warning(locationError);
+      return;
+    }
+    if (mediaUrlInvalid) {
+      setStep(3);
+      notify.warning(t("mediaUrlInvalid"));
       return;
     }
     setSaving(true);
@@ -592,57 +612,84 @@ function MediaStep({
         <h2>{t("mediaLinks")}</h2>
         <p>{t("mediaHelp")}</p>
       </div>
-      {media.map((item, index) => (
-        <div className="admin-media-row" key={index}>
-          <Select
-            value={item.kind}
-            onValueChange={(nextKind) =>
-              onChange(
-                media.map((value, position) =>
-                  position === index
-                    ? {
-                        ...value,
-                        kind: nextKind as AdminMedia["kind"],
-                      }
-                    : value,
-                ),
-              )
-            }
-          >
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="image">{t("photo")}</SelectItem>
-              <SelectItem value="video">{t("video")}</SelectItem>
-              <SelectItem value="document">{t("document")}</SelectItem>
-              <SelectItem value="virtual_tour">{t("virtualTour")}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Input
-            type="url"
-            placeholder="https://…"
-            value={item.url}
-            onChange={(event) =>
-              onChange(
-                media.map((value, position) =>
-                  position === index
-                    ? { ...value, url: event.target.value }
-                    : value,
-                ),
-              )
-            }
-          />
-          <Button
-            variant="ghost"
-            onClick={() =>
-              onChange(media.filter((_, position) => position !== index))
-            }
-          >
-            {t("remove")}
-          </Button>
-        </div>
-      ))}
+      {media.map((item, index) => {
+        const invalid = !isHttpsUrl(item.url);
+        const errorId = `media-url-error-${index}`;
+        return (
+          <div className="admin-media-row" key={index}>
+            <InputGroup
+              className="admin-media-group"
+              aria-label={`${t("mediaLinks")} ${index + 1}`}
+              aria-invalid={invalid || undefined}
+            >
+              <Select
+                value={item.kind}
+                onValueChange={(nextKind) =>
+                  onChange(
+                    media.map((value, position) =>
+                      position === index
+                        ? {
+                            ...value,
+                            kind: nextKind as AdminMedia["kind"],
+                          }
+                        : value,
+                    ),
+                  )
+                }
+              >
+                <SelectTrigger
+                  aria-label={`${t("mediaType")} ${index + 1}`}
+                  className="admin-media-kind"
+                  data-slot="input-group-control"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="image">{t("photo")}</SelectItem>
+                  <SelectItem value="video">{t("video")}</SelectItem>
+                  <SelectItem value="document">{t("document")}</SelectItem>
+                  <SelectItem value="virtual_tour">{t("virtualTour")}</SelectItem>
+                </SelectContent>
+              </Select>
+              <InputGroupInput
+                type="url"
+                placeholder="https://…"
+                aria-label={`${t("mediaUrl")} ${index + 1}`}
+                aria-invalid={invalid || undefined}
+                aria-describedby={invalid ? errorId : undefined}
+                value={item.url}
+                onChange={(event) =>
+                  onChange(
+                    media.map((value, position) =>
+                      position === index
+                        ? { ...value, url: event.target.value }
+                        : value,
+                    ),
+                  )
+                }
+              />
+              <ActionIconButton
+                label={t("remove")}
+                variant="ghost"
+                data-slot="input-group-button"
+                className="admin-media-remove text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() =>
+                  onChange(media.filter((_, position) => position !== index))
+                }
+              >
+                <Trash2 size={18} aria-hidden="true" />
+              </ActionIconButton>
+            </InputGroup>
+            {invalid ? (
+              <p className="admin-media-error" id={errorId} role="alert">
+                {t("mediaUrlInvalid")}
+              </p>
+            ) : null}
+          </div>
+        );
+      })}
       <Button variant="outline" onClick={add}>
-        + {t("addMedia")}
+        <Plus size={17} aria-hidden="true" /> {t("addMedia")}
       </Button>
     </div>
   );
