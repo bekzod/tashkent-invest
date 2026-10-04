@@ -30,7 +30,8 @@ ALLOW_E2E_SEED=true bun run db:seed:e2e
 ```
 
 Lokal demo investor: `investor@demo.uz` / `invest2026`. Demo obyektlarda `is_demo=true`
-bo‘ladi va `INCLUDE_DEMO_DATA=true` bo‘lmagan public API, statistika hamda sitemapga kirmaydi.
+bo‘ladi. Lokal `.env.example` ularni public API va statistikada ko‘rsatish uchun
+`INCLUDE_DEMO_DATA=true` qiymatini beradi; production muhitida bu o‘zgaruvchi berilmasligi kerak.
 
 ## Render (backend)
 

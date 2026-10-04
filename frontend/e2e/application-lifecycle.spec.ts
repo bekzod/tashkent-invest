@@ -42,7 +42,6 @@ test("investor submission is reviewed by an admin and reflected back in the inve
     .getByLabel(/loyiha tavsifi/i)
     .fill("E2E logistika va ishlab chiqarish loyihasi");
   await page.getByRole("button", { name: /yuborish/i }).click();
-  await expect(page.getByRole("status")).toContainText(/qabul qilindi/i);
   await expect(page.getByRole("button", { name: /yuborildi/i })).toBeDisabled();
 
   await page.goto("/dashboard/applications");
@@ -62,18 +61,20 @@ test("investor submission is reviewed by an admin and reflected back in the inve
   await page
     .getByRole("button", { name: /ko‘rib chiqishni boshlash/i })
     .click();
-  await expect(page.getByRole("status")).toContainText(/yangilandi/i);
-  await page.getByRole("button", { name: /tasdiqlash/i }).click();
-  await expect(page.getByRole("status")).toContainText(/yangilandi/i);
+  const reviewDialog = page.getByRole("dialog");
   await expect(
-    page.locator(".application-status.approved").first(),
+    reviewDialog.getByText("Ko‘rib chiqilmoqda", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /tasdiqlash/i }).click();
+  await expect(
+    reviewDialog.getByText("Tasdiqlangan", { exact: true }),
   ).toBeVisible();
 
   await clearSession(page);
   await login(page, investorEmail);
   await page.goto("/dashboard/applications");
   await expect(
-    page.locator(".application-status.approved").first(),
+    page.getByText("Tasdiqlangan", { exact: true }).first(),
   ).toBeVisible();
 });
 

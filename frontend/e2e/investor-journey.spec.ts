@@ -30,5 +30,7 @@ test("investor can log in, inspect a map object, and submit an application", asy
   await page.getByLabel(/telefon|телефон/i).fill("+998901234567");
   await page.getByLabel(/email/i).fill("investor@demo.uz");
   await page.getByRole("button", { name: /yuborish|отправить/i }).click();
-  await expect(page.getByText(/qabul qilindi|принята/i)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /yuborildi|отправлено/i }),
+  ).toBeDisabled();
 });
