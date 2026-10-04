@@ -3278,6 +3278,10 @@ body {
   border-bottom: 1px solid var(--dash-line);
   background: #fff;
 }
+.dashboard-mobile-menu,
+.dashboard-mobile-title {
+  display: none;
+}
 .dashboard-breadcrumb {
   margin: 0;
   color: #98a5b5;
@@ -6352,12 +6356,11 @@ body {
   .invest-dashboard.is-collapsed {
     width: 100%;
     min-width: 0;
-    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     overflow-x: hidden;
   }
-  .dashboard-sidebar {
-    display: flex;
-    width: 72px;
+  .dashboard-sidebar--desktop {
+    display: none;
   }
   .dashboard-stage,
   .dashboard-content {
@@ -6367,6 +6370,36 @@ body {
   .dashboard-topbar {
     height: 64px;
     padding-inline: 12px;
+  }
+  .dashboard-mobile-menu {
+    display: inline-flex;
+    flex: 0 0 auto;
+  }
+  .dashboard-mobile-title {
+    display: block;
+    max-width: 36vw;
+    overflow: hidden;
+    color: var(--dash-text);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .dashboard-mobile-sheet .dashboard-nav {
+    padding: 10px;
+  }
+  .dashboard-mobile-sheet .dashboard-nav p,
+  .dashboard-mobile-sheet .dashboard-nav span,
+  .dashboard-mobile-sheet .dashboard-create span,
+  .dashboard-mobile-sheet .dashboard-help span {
+    display: inline;
+  }
+  .dashboard-mobile-sheet .dashboard-nav-link,
+  .dashboard-mobile-sheet .dashboard-help {
+    justify-content: flex-start;
+    padding-inline: 12px;
+  }
+  .dashboard-mobile-sheet .dashboard-create {
+    margin: 12px 10px 4px;
   }
   .dashboard-breadcrumb,
   .dashboard-divider {

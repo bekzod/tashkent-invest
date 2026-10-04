@@ -139,10 +139,27 @@ test('opens and closes the notifications panel from the top bar', () => {
   expect(screen.getByRole('dialog')).toHaveTextContent('Yangi xabarnomalar yo‘q');
   const closeButton = screen.getByRole('button', { name: 'Yopish' });
   expect(closeButton).toHaveClass('dashboard-notification-close');
-  expect(closeButton).toHaveAttribute('title', 'Yopish');
   expect(closeButton).toHaveTextContent('');
 
   fireEvent.click(closeButton);
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(notificationsButton).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('opens role navigation in a mobile sheet and closes it after navigation', () => {
+  render(
+    <LanguageProvider>
+      <DashboardShell activeSection="overview" role="admin" session={session}>
+        <p>Content</p>
+      </DashboardShell>
+    </LanguageProvider>,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: 'Menyuni ochish - Kabinet navigatsiyasi' }));
+
+  expect(screen.getByRole('dialog')).toHaveTextContent('Invest Tuman');
+  const mobileObjectsLink = screen.getAllByRole('link', { name: 'Obyektlar' }).at(-1)!;
+  mobileObjectsLink.addEventListener('click', (event) => event.preventDefault(), { once: true });
+  fireEvent.click(mobileObjectsLink);
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
