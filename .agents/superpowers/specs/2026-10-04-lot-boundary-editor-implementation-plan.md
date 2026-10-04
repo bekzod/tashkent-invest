@@ -2,9 +2,9 @@
 
 > **For AGENTS:** REQUIRED SUB-SKILL: Use executing-plans skill to implement this plan task-by-task.
 
-**Goal:** Make lot-boundary drawing reliable, clear, and usable with a mouse or touch while preserving the existing GeoJSON and backend validation contract.
+**Goal:** Make lot-boundary drawing reliable, clear, and usable with a mouse or touch, and present every media selector, URL, and remove action as one accessible input group.
 
-**Architecture:** Keep LotBoundaryEditor as the MapLibre lifecycle owner, extract deterministic draft-geometry operations into a small helper, and make map focus reactive to current form coordinates. Render the district, object marker, draft line/fill, and numbered draggable vertices as named MapLibre layers. Use existing shadcn-style primitives and the existing Dialog primitive for destructive confirmation.
+**Architecture:** Keep LotBoundaryEditor as the MapLibre lifecycle owner, extract deterministic draft-geometry operations into a small helper, and make map focus reactive to current form coordinates. Render the district, object marker, draft line/fill, and numbered draggable vertices as named MapLibre layers. Add a reusable shadcn-style InputGroup primitive for the media type, URL, and remove action; use existing primitives and Dialog for the remaining controls.
 
 **Tech Stack:** Next.js 16, React 19, TypeScript, MapLibre GL, Tailwind CSS 4, Radix Dialog, Vitest, React Testing Library, Playwright.
 
@@ -204,7 +204,91 @@ git add frontend/e2e/lot-boundary.spec.ts frontend/e2e/lot-boundary-mobile.spec.
 git commit -m "test: cover lot boundary drawing journeys"
 ~~~
 
-### Task 6: Run all quality gates and perform a human-path check
+### Task 6: Build the reusable media input group
+
+**Files:**
+- Create: frontend/src/components/ui/input-group.tsx
+- Create: frontend/src/components/ui/input-group.test.tsx
+- Modify: frontend/src/features/admin-objects/object-editor.tsx:583-652
+- Modify: frontend/src/features/admin-objects/object-editor.test.tsx
+- Modify: frontend/src/app/globals.css:5807-5885
+- Modify: frontend/e2e/object-editor.visual.spec.ts if it exists; otherwise create frontend/e2e/object-editor-media.visual.spec.ts
+
+**Step 1: Write failing primitive tests**
+
+Render a group with an input and action. Assert that it exposes a single
+`data-slot="input-group"` shell, keeps the child controls accessible, applies
+`aria-invalid` to the shell, and preserves the action's label.
+
+~~~tsx
+render(
+  <InputGroup aria-invalid>
+    <InputGroupInput aria-label="URL" />
+    <InputGroupButton aria-label="Remove"><Trash2 /></InputGroupButton>
+  </InputGroup>,
+);
+expect(screen.getByTestId("media-group")).toHaveAttribute("aria-invalid", "true");
+expect(screen.getByRole("textbox", { name: "URL" })).toBeVisible();
+expect(screen.getByRole("button", { name: "Remove" })).toBeVisible();
+~~~
+
+**Step 2: Run the focused primitive test**
+
+Run: cd frontend && bunx vitest run src/components/ui/input-group.test.tsx
+
+Expected: FAIL because the InputGroup primitive does not exist.
+
+**Step 3: Implement the minimal shared primitive**
+
+Create InputGroup, InputGroupInput, InputGroupAddon, and InputGroupButton with
+`data-slot` attributes. The shell owns border, radius, background,
+`focus-within` ring, invalid state, and disabled-within state. Children have no
+independent outer border or radius. InputGroupButton uses the existing Button
+variants and a stable 44px icon target.
+
+**Step 4: Write the failing MediaStep tests**
+
+Open the Media step with one item. Assert that select, URL, and remove are
+descendants of the same group; change each media kind; edit the URL; add a row;
+remove a row; and confirm keyboard focus order is type, URL, remove. Add a
+validation assertion for a non-HTTPS URL.
+
+**Step 5: Run the focused object editor test**
+
+Run: cd frontend && bunx vitest run src/features/admin-objects/object-editor.test.tsx
+
+Expected: FAIL because the row is still a three-column grid and has no grouped
+validation state.
+
+**Step 6: Migrate MediaStep**
+
+Wrap SelectTrigger, InputGroupInput, and InputGroupButton in one InputGroup.
+Give the selector a stable desktop basis, let the URL control fill remaining
+space, and render the destructive icon action at the end. Keep SelectContent
+outside visual clipping through its portal. Render a localised URL error below
+the group and preserve the separate secondary add-media button.
+
+**Step 7: Add responsive and visual coverage**
+
+Use one connected row on desktop. At the mobile breakpoint, use two connected
+rows with the type selector spanning the first row and URL plus remove action
+on the second. Capture desktop and mobile screenshots and assert no horizontal
+overflow and 44px action targets.
+
+**Step 8: Verify and commit**
+
+Run: cd frontend && bunx vitest run src/components/ui/input-group.test.tsx src/features/admin-objects/object-editor.test.tsx
+
+Run: cd frontend && E2E_API_READY=1 bunx playwright test e2e/object-editor-media.visual.spec.ts --project=desktop-chromium --project=mobile-chromium
+
+Expected: PASS.
+
+~~~bash
+git add frontend/src/components/ui/input-group.tsx frontend/src/components/ui/input-group.test.tsx frontend/src/features/admin-objects/object-editor.tsx frontend/src/features/admin-objects/object-editor.test.tsx frontend/src/app/globals.css frontend/e2e/object-editor-media.visual.spec.ts frontend/e2e/__screenshots__
+git commit -m "feat: group media link controls"
+~~~
+
+### Task 7: Run all quality gates and perform a human-path check
 
 **Files:**
 - No production changes expected.
