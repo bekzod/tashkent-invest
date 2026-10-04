@@ -58,19 +58,9 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-test('ignores an older dashboard response after the locale changes', async () => {
-  const requests = {
-    uz: {
-      stats: deferred<unknown>(), objects: deferred<unknown>(), applications: deferred<unknown>(), favorites: deferred<unknown>(),
-    },
-    ru: {
-      stats: deferred<unknown>(), objects: deferred<unknown>(), applications: deferred<unknown>(), favorites: deferred<unknown>(),
-    },
-  };
-  apiMock.mockImplementation((path, _options, locale) => {
-    const key = path === '/statistics' ? 'stats' : path.startsWith('/objects') ? 'objects' : path.includes('applications') ? 'applications' : 'favorites';
-    return requests[locale][key].promise as never;
-  });
+test('projects requests only its own data and ignores a stale locale response', async () => {
+  const requests = { uz: deferred<unknown>(), ru: deferred<unknown>() };
+  apiMock.mockImplementation((_path, _options, locale) => requests[locale].promise as never);
 
   render(
     <LanguageProvider>
@@ -78,27 +68,22 @@ test('ignores an older dashboard response after the locale changes', async () =>
       <DashboardView activeSection="projects" />
     </LanguageProvider>,
   );
-  await waitFor(() => expect(apiMock).toHaveBeenCalledTimes(4));
+  await waitFor(() => expect(apiMock).toHaveBeenCalledTimes(1));
+  expect(apiMock).toHaveBeenLastCalledWith('/objects?limit=12&page=1', expect.anything(), 'uz');
   fireEvent.click(screen.getByRole('button', { name: 'Russian' }));
-  await waitFor(() => expect(apiMock).toHaveBeenCalledTimes(8));
+  await waitFor(() => expect(apiMock).toHaveBeenCalledTimes(2));
 
-  requests.ru.stats.resolve({ objects: 1, auctions: 0, upcoming: 0, investmentAmountUsd: 1000 });
-  requests.ru.objects.resolve({ items: [object('Русский объект')], meta: { total: 1 } });
-  requests.ru.applications.resolve({ items: [] });
-  requests.ru.favorites.resolve({ items: [] });
-  expect(await screen.findByText('Русский объект')).toBeVisible();
+  requests.ru.resolve({ items: [object('Русский объект')], meta: { total: 1, totalPages: 1, limit: 12 } });
+  expect(await screen.findByRole('heading', { name: 'Русский объект' })).toBeVisible();
 
-  requests.uz.stats.resolve({ objects: 1, auctions: 0, upcoming: 0, investmentAmountUsd: 1000 });
-  requests.uz.objects.resolve({ items: [object('Eski o‘zbek obyekt')], meta: { total: 1 } });
-  requests.uz.applications.resolve({ items: [] });
-  requests.uz.favorites.resolve({ items: [] });
+  requests.uz.resolve({ items: [object('Eski o‘zbek obyekt')], meta: { total: 1, totalPages: 1, limit: 12 } });
   await Promise.resolve();
 
-  expect(screen.getByText('Русский объект')).toBeVisible();
-  expect(screen.queryByText('Eski o‘zbek obyekt')).not.toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Русский объект' })).toBeVisible();
+  expect(screen.queryByRole('heading', { name: 'Eski o‘zbek obyekt' })).not.toBeInTheDocument();
 });
 
-test('keeps successful dashboard data when one independent request fails', async () => {
+test('overview keeps successful data when one independent request fails', async () => {
   apiMock.mockImplementation((path) => {
     if (path === '/statistics') {
       return Promise.resolve({ objects: 1, auctions: 0, upcoming: 0, investmentAmountUsd: 1000 }) as never;
@@ -106,12 +91,20 @@ test('keeps successful dashboard data when one independent request fails', async
     if (path.startsWith('/objects')) {
       return Promise.resolve({ items: [object('Saqlangan loyiha')], meta: { total: 1 } }) as never;
     }
-    if (path.includes('applications')) return Promise.resolve({ items: [] }) as never;
-    return Promise.reject(new Error('favorites unavailable')) as never;
+    return Promise.reject(new Error('applications unavailable')) as never;
   });
 
-  render(<LanguageProvider><DashboardView activeSection="projects" /></LanguageProvider>);
+  render(<LanguageProvider><DashboardView activeSection="overview" /></LanguageProvider>);
 
-  expect(await screen.findByText('Saqlangan loyiha')).toBeVisible();
+  expect(await screen.findByRole('heading', { name: 'Saqlangan loyiha' })).toBeVisible();
+  expect(apiMock).toHaveBeenCalledTimes(3);
   expect(notifyWarningMock).toHaveBeenCalledWith('Ayrim ma’lumotlar yuklanmadi. Qayta urinib ko‘ring.');
+});
+
+test('settings renders without making dashboard data requests', async () => {
+  render(<LanguageProvider><DashboardView activeSection="settings" /></LanguageProvider>);
+
+  expect(await screen.findByRole('heading', { name: 'Sozlamalar' })).toBeVisible();
+  expect(apiMock).not.toHaveBeenCalled();
+  expect(screen.getByRole('combobox', { name: 'Til' })).toBeVisible();
 });
