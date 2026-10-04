@@ -59,6 +59,7 @@ test.describe("object editor media input group", () => {
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
+    await url.focus();
     await expect(group).toHaveScreenshot(
       "object-editor-media-group.png",
       { animations: "disabled" },
