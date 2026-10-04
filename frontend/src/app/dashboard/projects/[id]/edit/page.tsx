@@ -8,7 +8,7 @@ import type { AdminObject } from '@/features/admin-objects/types';
 import { useLanguage } from '@/shared/i18n/language-provider';
 import { ErrorState } from '@/shared/ui/error-state';
 import { PageLayout } from '@/shared/ui/page-layout';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DashboardPageSkeleton } from '@/shared/ui/dashboard-loading';
 
 export default function EditDashboardObjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { t } = useLanguage();
@@ -22,5 +22,5 @@ export default function EditDashboardObjectPage({ params }: { params: Promise<{ 
       .catch(() => { if (active) setFailed(true); });
     return () => { active = false; };
   }, [params]);
-  return <AdminDashboardGuard activeSection="projects">{object ? <ObjectEditor object={object} /> : <PageLayout>{failed ? <ErrorState title={t('dataLoadFailed')} /> : <Skeleton className="h-96 w-full" aria-label={t('objectLoading')} />}</PageLayout>}</AdminDashboardGuard>;
+  return <AdminDashboardGuard activeSection="projects">{object ? <ObjectEditor object={object} /> : failed ? <PageLayout><ErrorState title={t('dataLoadFailed')} /></PageLayout> : <DashboardPageSkeleton label={t('objectLoading')} preset="form" />}</AdminDashboardGuard>;
 }

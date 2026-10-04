@@ -5,12 +5,12 @@ import { ClipboardList, FileClock, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/shared/api/client";
 import { useLanguage } from "@/shared/i18n/language-provider";
 import { localizedPath } from "@/shared/i18n/routing";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
+import { DashboardListSkeleton } from "@/shared/ui/dashboard-loading";
 import { PageHeader } from "@/shared/ui/page-header";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { StatusBadge } from "@/shared/ui/status-badge";
@@ -53,9 +53,7 @@ export function InvestorApplications() {
       {error ? (
         <ErrorState title={t("dataLoadFailed")} action={<Button variant="outline" onClick={() => void load()}>{t("retry")}</Button>} />
       ) : loading ? (
-        <div className="grid gap-2" aria-label={t("dashboardLoading")}>
-          {Array.from({ length: 4 }, (_, index) => <Skeleton className="h-16 w-full" key={index} />)}
-        </div>
+        <DashboardListSkeleton label={t("dashboardLoading")} rows={4} />
       ) : items.length ? (
         <Card>
           <CardContent className="divide-y divide-border p-0">

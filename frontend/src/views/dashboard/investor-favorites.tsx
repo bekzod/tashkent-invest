@@ -45,7 +45,7 @@ export function InvestorFavorites() {
       {error ? (
         <ErrorState title={t("dataLoadFailed")} action={<Button variant="outline" onClick={() => void load()}>{t("retry")}</Button>} />
       ) : items.length || loading ? (
-        <DashboardObjectGrid items={items} loading={loading} />
+        <DashboardObjectGrid items={items} loading={loading} loadingLabel={t("dashboardLoading")} />
       ) : (
         <EmptyState icon={Bookmark} title={t("noFavorites")} action={<Button asChild variant="outline"><Link href="/dashboard/map">{t("chooseFromMap")}</Link></Button>} />
       )}

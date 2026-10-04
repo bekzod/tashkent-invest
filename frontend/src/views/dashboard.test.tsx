@@ -58,6 +58,13 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
+test('renders a route-aware shell while the dashboard session resolves', () => {
+  render(<LanguageProvider><DashboardView activeSection="applications" /></LanguageProvider>);
+
+  expect(screen.getByRole('status', { name: 'Kabinet yuklanmoqda…' })).toHaveAttribute('aria-busy', 'true');
+  expect(screen.getByTestId('dashboard-loading-page')).toHaveAttribute('data-loading-preset', 'table');
+});
+
 test('projects requests only its own data and ignores a stale locale response', async () => {
   const requests = { uz: deferred<unknown>(), ru: deferred<unknown>() };
   apiMock.mockImplementation((_path, _options, locale) => requests[locale].promise as never);

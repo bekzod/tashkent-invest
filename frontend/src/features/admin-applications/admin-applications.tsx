@@ -7,13 +7,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/shared/api/client";
 import { useLanguage } from "@/shared/i18n/language-provider";
 import { statusMessageKey } from "@/shared/lib/dashboard";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
+import { DashboardListSkeleton } from "@/shared/ui/dashboard-loading";
 import { notify } from "@/shared/ui/feedback";
 import { FilterToolbar } from "@/shared/ui/filter-toolbar";
 import { PageHeader } from "@/shared/ui/page-header";
@@ -135,9 +135,7 @@ export function AdminApplications() {
       {loadError ? (
         <ErrorState title={t("dataLoadFailed")} action={<Button variant="outline" onClick={() => void load()}>{t("retry")}</Button>} />
       ) : loading ? (
-        <div className="grid gap-2" aria-label={t("dashboardLoading")}>
-          {Array.from({ length: 5 }, (_, index) => <Skeleton className="h-16 w-full" key={index} />)}
-        </div>
+        <DashboardListSkeleton label={t("dashboardLoading")} rows={5} />
       ) : items.length ? (
         <Card>
           <CardContent className="divide-y divide-border p-0">

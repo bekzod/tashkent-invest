@@ -2,6 +2,10 @@
 
 import type { DashboardSection } from "@/shared/lib/dashboard";
 import { useLanguage } from "@/shared/i18n/language-provider";
+import {
+  DashboardLoadingShell,
+  dashboardLoadingPreset,
+} from "@/shared/ui/dashboard-loading";
 import { DashboardShell } from "@/widgets/dashboard-shell";
 import { AdminApplications } from "@/features/admin-applications/admin-applications";
 import { AdminObjectsList } from "@/features/admin-objects/admin-objects-list";
@@ -19,7 +23,9 @@ export function DashboardView({ activeSection = "overview" }: { activeSection?: 
   const { t } = useLanguage();
   const session = useDashboardSession();
 
-  if (!session) return <main className="dashboard-route-page">{t("dashboardLoading")}</main>;
+  if (!session) {
+    return <DashboardLoadingShell label={t("dashboardLoading")} preset={dashboardLoadingPreset(activeSection)} />;
+  }
 
   if (session.user.role === "admin") {
     return (
