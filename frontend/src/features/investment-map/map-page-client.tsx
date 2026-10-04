@@ -580,9 +580,9 @@ export function MapPageClient({
                   onSelect={() => selectObject(object)}
                 />
               ))
-            ) : (
+            ) : activeFilterCount > 0 ? (
               <p>{t("noResults")}</p>
-            )}
+            ) : null}
             {objects.length > MAP_RESULT_PAGE_SIZE && (
               <nav
                 className="map-results-pagination"

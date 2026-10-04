@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Search, PencilLine, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,6 +14,12 @@ import type { AdminObject, AdminObjectsMeta } from "./types";
 import { useLanguage } from "@/shared/i18n/language-provider";
 import { statusMessageKey } from "@/shared/lib/dashboard";
 import { notify } from "@/shared/ui/feedback";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { ErrorState } from "@/shared/ui/error-state";
+import { FilterToolbar } from "@/shared/ui/filter-toolbar";
+import { PageHeader } from "@/shared/ui/page-header";
+import { PageLayout } from "@/shared/ui/page-layout";
+import { StatusBadge, type StatusTone } from "@/shared/ui/status-badge";
 
 const statuses = ["draft", "available", "auction", "upcoming", "archived"];
 const initialMeta: AdminObjectsMeta = { page: 1, limit: 10, total: 0, totalPages: 1 };
@@ -22,20 +27,22 @@ const initialMeta: AdminObjectsMeta = { page: 1, limit: 10, total: 0, totalPages
 export function AdminObjectsList() {
   const { locale, t } = useLanguage();
   const [items, setItems] = useState<AdminObject[]>([]);
+  const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [meta, setMeta] = useState<AdminObjectsMeta>(initialMeta);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<string | null>(null);
-  const [topbarTarget, setTopbarTarget] = useState<HTMLElement | null>(null);
   const requestSeq = useRef(0);
 
   const loadObjects = useCallback(async () => {
     const requestId = requestSeq.current + 1;
     requestSeq.current = requestId;
     setLoading(true);
+    setLoadError(false);
     try {
       const response = await adminObjectsApi.list({ page, limit, q: query, status });
       if (requestSeq.current !== requestId) return;
@@ -45,6 +52,7 @@ export function AdminObjectsList() {
       if (requestSeq.current !== requestId) return;
       setItems([]);
       setMeta(initialMeta);
+      setLoadError(true);
       notify.error(t("requestFailed"));
     } finally {
       if (requestSeq.current === requestId) setLoading(false);
@@ -54,11 +62,6 @@ export function AdminObjectsList() {
   useEffect(() => {
     queueMicrotask(() => void loadObjects());
   }, [loadObjects]);
-
-  useEffect(() => {
-    queueMicrotask(() => setTopbarTarget(document.getElementById("dashboard-page-actions")));
-    return () => setTopbarTarget(null);
-  }, []);
 
   const archive = useCallback(async () => {
     if (!archiveTarget) return;
@@ -90,17 +93,21 @@ export function AdminObjectsList() {
       {
         id: "district",
         header: t("location"),
+        headerClassName: "hidden md:table-cell",
+        cellClassName: "hidden md:table-cell",
         cell: (item) => item.district || "—",
       },
       {
         id: "status",
         header: t("status"),
-        cell: (item) => <span className={`admin-status ${item.status}`}>{statusMessageKey(item.status) ? t(statusMessageKey(item.status)!) : item.status}</span>,
+        cell: (item) => <StatusBadge tone={statusTone(item.status)}>{statusMessageKey(item.status) ? t(statusMessageKey(item.status)!) : item.status}</StatusBadge>,
       },
       {
         id: "media",
         header: t("stepMedia"),
         align: "center",
+        headerClassName: "hidden lg:table-cell",
+        cellClassName: "hidden lg:table-cell",
         cell: (item) => item.media?.length || 0,
       },
       {
@@ -119,8 +126,9 @@ export function AdminObjectsList() {
     ],
     [locale, t],
   );
-  const updateQuery = (value: string) => {
-    setQuery(value);
+  const submitQuery = (event: FormEvent) => {
+    event.preventDefault();
+    setQuery(queryInput.trim());
     setPage(1);
   };
   const updateStatus = (value: string) => {
@@ -131,49 +139,48 @@ export function AdminObjectsList() {
     setLimit(value);
     setPage(1);
   };
-  const toolbar = (
-    <div className="admin-topbar-tools">
-      <div className="admin-topbar-search">
-        <Search size={16} />
-        <Input
-          value={query}
-          onChange={(event) => updateQuery(event.target.value)}
-          placeholder={t("adminSearch")}
-        />
-      </div>
-      <Select value={status || "all"} onValueChange={(value) => updateStatus(value === "all" ? "" : value)}>
-        <SelectTrigger className="admin-topbar-select" aria-label={t("status")}><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">{t("allStatuses")}</SelectItem>
-        {statuses.map((value) => (
-          <SelectItem key={value} value={value}>
-            {statusMessageKey(value) ? t(statusMessageKey(value)!) : value}
-          </SelectItem>
-        ))}
-        </SelectContent>
-      </Select>
-      <Button asChild className="admin-primary admin-topbar-create"><Link href="/dashboard/projects/new"><Plus size={17} /> {t("newObject")}</Link></Button>
-    </div>
-  );
+  const clearFilters = () => {
+    setQueryInput("");
+    setQuery("");
+    setStatus("");
+    setPage(1);
+  };
 
   return (
-    <section className="admin-page admin-page--table">
-      {topbarTarget ? createPortal(toolbar, topbarTarget) : <div className="admin-page-toolbar-fallback">{toolbar}</div>}
-      <ListTable
+    <PageLayout>
+      <PageHeader title={t("objectsBack")} actions={<Button asChild><Link href="/dashboard/projects/new"><Plus size={17} />{t("newObject")}</Link></Button>} />
+      <form onSubmit={submitQuery}>
+        <FilterToolbar aria-label={t("objectsBack")}>
+          <div className="relative min-w-56 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+            <Input className="pl-9" value={queryInput} onChange={(event) => setQueryInput(event.target.value)} placeholder={t("adminSearch")} />
+          </div>
+          <Select value={status || "all"} onValueChange={(value) => updateStatus(value === "all" ? "" : value)}>
+            <SelectTrigger className="w-full sm:w-48" aria-label={t("status")}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("allStatuses")}</SelectItem>
+              {statuses.map((value) => <SelectItem key={value} value={value}>{statusMessageKey(value) ? t(statusMessageKey(value)!) : value}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button type="submit">{t("showObjects")}</Button>
+          {query || status ? <Button type="button" variant="ghost" onClick={clearFilters}>{t("clear")}</Button> : null}
+        </FilterToolbar>
+      </form>
+      {loadError ? <ErrorState title={t("dataLoadFailed")} action={<Button variant="outline" onClick={() => void loadObjects()}>{t("retry")}</Button>} /> : <ListTable
         columns={columns}
         data={items}
         getRowId={(item) => item.id}
         loading={loading}
-        emptyState={<p>{t("noMatchingObjects")}</p>}
-      />
-      <ServerPagination
+        emptyState={<EmptyState className="min-h-44 border-0" title={t("noMatchingObjects")} />}
+      />}
+      {!loadError ? <ServerPagination
         currentPage={meta.page}
         totalPages={meta.totalPages}
         pageSize={meta.limit}
         totalItems={meta.total}
         onPageChange={setPage}
         onPageSizeChange={updatePageSize}
-      />
+      /> : null}
       <Dialog open={Boolean(archiveTarget)} onOpenChange={(open) => { if (!open) setArchiveTarget(null); }}>
         <DialogContent>
           <DialogHeader><DialogTitle>{t("archive")}</DialogTitle><DialogDescription>{t("archiveConfirm")}</DialogDescription></DialogHeader>
@@ -183,6 +190,13 @@ export function AdminObjectsList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </section>
+    </PageLayout>
   );
+}
+
+function statusTone(status: AdminObject["status"]): StatusTone {
+  if (status === "available") return "success";
+  if (status === "auction" || status === "upcoming") return "warning";
+  if (status === "archived") return "danger";
+  return "neutral";
 }

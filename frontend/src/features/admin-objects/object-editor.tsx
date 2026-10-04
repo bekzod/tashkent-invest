@@ -34,6 +34,8 @@ import {
   validateLocation,
 } from "./location-validation";
 import { notify } from "@/shared/ui/feedback";
+import { FormSection } from "@/shared/ui/form-section";
+import { PageHeader } from "@/shared/ui/page-header";
 
 const stepKeys: MessageKey[] = ["stepMain", "stepLocation", "stepTerms", "stepMedia", "stepReview"];
 const sectors = [
@@ -227,14 +229,16 @@ export function ObjectEditor({
     event.preventDefault();
     void submit(false);
   };
+  const editorTitle = object
+    ? translation(object, "uz").title || t("unnamedDraft")
+    : t("newObject");
   return (
     <form className="admin-editor" onSubmit={onSubmit}>
-      <header className="admin-page-header">
-        <Button asChild variant="ghost" className="admin-back"><Link href="/dashboard/projects"><ChevronLeft size={16} /> {t("objectsBack")}</Link></Button>
-        <Button variant="outline" className="admin-outline" type="submit" disabled={saving || boundaryEditing}>
-          <Save size={16} /> {t("saveDraft")}
-        </Button>
-      </header>
+      <PageHeader
+        title={editorTitle}
+        eyebrow={t("objectsBack")}
+        actions={<><Button asChild variant="ghost"><Link href="/dashboard/projects"><ChevronLeft size={16} />{t("objectsBack")}</Link></Button><Button variant="outline" type="submit" disabled={saving || boundaryEditing}><Save size={16} />{t("saveDraft")}</Button></>}
+      />
       <ol className="admin-steps">
         {steps.map((label, index) => (
           <li
@@ -248,7 +252,7 @@ export function ObjectEditor({
           </li>
         ))}
       </ol>
-      <section className="admin-form-card">
+      <FormSection title={steps[step]}>
         {step === 0 && (
           <div className="admin-form-grid">
             <Field label={t("objectType")}>
@@ -502,11 +506,10 @@ export function ObjectEditor({
             </p>
           </div>
         )}
-      </section>
+      </FormSection>
       <footer className="admin-editor-actions">
         <Button
           variant="outline"
-          className="admin-outline"
           disabled={!step}
           onClick={() => setStep((value) => value - 1)}
         >
@@ -514,14 +517,12 @@ export function ObjectEditor({
         </Button>
         {step < steps.length - 1 ? (
           <Button
-            className="admin-primary"
             onClick={() => setStep((value) => value + 1)}
           >
             {t("next")} <ChevronRight size={16} />
           </Button>
         ) : (
           <Button
-            className="admin-primary"
             disabled={saving || boundaryEditing || publishIssues.length > 0}
             onClick={() => void submit(true)}
           >
@@ -612,7 +613,7 @@ function MediaStep({
           </Button>
         </div>
       ))}
-      <Button variant="outline" className="admin-outline" onClick={add}>
+      <Button variant="outline" onClick={add}>
         + {t("addMedia")}
       </Button>
     </div>

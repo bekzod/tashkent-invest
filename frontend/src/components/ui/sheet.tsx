@@ -15,8 +15,8 @@ const SheetOverlay = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Ov
 );
 SheetOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
-const SheetContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { side?: "left" | "right" }>(
-  ({ className, children, side = "right", ...props }, ref) => (
+const SheetContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { side?: "left" | "right"; closeLabel?: string }>(
+  ({ className, children, side = "right", closeLabel = "Close", ...props }, ref) => (
     <SheetPortal>
       <SheetOverlay />
       <DialogPrimitive.Content
@@ -31,7 +31,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Co
         {children}
         <DialogPrimitive.Close className="absolute right-3 top-3 grid size-10 place-items-center rounded-md text-muted-foreground hover:bg-accent focus-visible:ring-3 focus-visible:ring-[var(--focus-ring-color)]">
           <X className="size-5" />
-          <span className="sr-only">Close</span>
+          <span className="sr-only">{closeLabel}</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </SheetPortal>

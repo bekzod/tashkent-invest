@@ -117,12 +117,12 @@ export function DashboardShell({ activeSection, children, role, session }: Props
         <header className="dashboard-topbar">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild><Button className="dashboard-mobile-menu" variant="ghost" size="icon" aria-label={`${t('expandMenu')} - ${t('dashboardNavigation')}`}><Menu size={20} /></Button></SheetTrigger>
-            <SheetContent side="left" className="dashboard-mobile-sheet">
+            <SheetContent side="left" className="dashboard-mobile-sheet" closeLabel={t('closeNotifications')}>
               <SheetHeader><SheetTitle>Invest Tuman</SheetTitle><SheetDescription>{t('portalName')}</SheetDescription></SheetHeader>
               <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{navigationContent(() => setMobileOpen(false))}<div className="dashboard-sidebar-bottom"><Button type="button" className="dashboard-help" variant="ghost"><CircleHelp size={18} /><span>{t('helpCenter')}</span></Button></div></div>
             </SheetContent>
           </Sheet>
-          <div><p className="dashboard-breadcrumb">{t('cabinet')} / <b>{breadcrumb}</b></p><strong className="dashboard-mobile-title">{breadcrumb}</strong></div>
+          <div className="dashboard-topbar-title"><p className="dashboard-breadcrumb">{t('cabinet')} / <b>{breadcrumb}</b></p><strong className="dashboard-mobile-title">{breadcrumb}</strong></div>
           <div className="dashboard-page-actions" id="dashboard-page-actions" />
           <div className="dashboard-top-actions">
             <Select value={locale} onValueChange={(value) => setLocale(value as 'uz' | 'ru')}>
@@ -135,7 +135,7 @@ export function DashboardShell({ activeSection, children, role, session }: Props
                 <SelectItem value="ru">RU</SelectItem>
               </SelectContent>
             </Select>
-            {role === 'admin' && activeSection === 'projects' ? null : <TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" aria-label={t('searchLabel')} onClick={focusSearch}><Search size={18} /></Button></TooltipTrigger><TooltipContent>{t('searchLabel')}</TooltipContent></Tooltip></TooltipProvider>}
+            {role === 'admin' && activeSection === 'projects' ? null : <TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" className="dashboard-global-search" variant="ghost" size="icon" aria-label={t('searchLabel')} onClick={focusSearch}><Search size={18} /></Button></TooltipTrigger><TooltipContent>{t('searchLabel')}</TooltipContent></Tooltip></TooltipProvider>}
             <Popover open={notificationsOpen} onOpenChange={(open) => { setNotificationsOpen(open); if (open) setNotificationsRead(true); }}>
               <PopoverTrigger asChild>
                 <Button type="button" className="dashboard-notification" variant="ghost" size="icon" aria-label={t('notifications')}><Bell size={18} /><i className={notificationsRead ? 'is-read' : undefined} /></Button>

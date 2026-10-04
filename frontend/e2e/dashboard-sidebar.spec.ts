@@ -15,9 +15,14 @@ test('admin sidebar collapses and reopens without losing its toggle', async ({ p
   const collapseButton = page.getByRole('button', { name: 'Menyuni yig‘ish' });
 
   if (testInfo.project.name.includes('mobile')) {
-    await expect(sidebar).toHaveCSS('width', '72px');
+    await expect(sidebar).toBeHidden();
     await expect(dashboard).toHaveJSProperty('scrollWidth', await dashboard.evaluate((node) => node.clientWidth));
     await expect(collapseButton).toHaveCount(0);
+    const mobileMenu = page.getByRole('button', { name: 'Menyuni ochish - Kabinet navigatsiyasi' });
+    await expect(mobileMenu).toBeVisible();
+    await mobileMenu.click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('dialog').getByRole('link', { name: /Obyektlar/i })).toBeVisible();
     return;
   }
 

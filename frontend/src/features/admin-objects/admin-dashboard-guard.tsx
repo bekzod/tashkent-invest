@@ -7,6 +7,8 @@ import type { DashboardSection } from '@/shared/lib/dashboard';
 import { DashboardShell } from '@/widgets/dashboard-shell';
 import { useLanguage } from '@/shared/i18n/language-provider';
 import { localizedPath } from '@/shared/i18n/routing';
+import { PageLayout } from '@/shared/ui/page-layout';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function AdminDashboardGuard({ activeSection, children }: { activeSection: DashboardSection; children: ReactNode }) {
   const router = useRouter();
@@ -26,6 +28,6 @@ export function AdminDashboardGuard({ activeSection, children }: { activeSection
     queueMicrotask(() => setSession(current));
   }, [locale, router]);
 
-  if (!session) return <main className="dashboard-route-page">{t('dashboardLoading')}</main>;
+  if (!session) return <PageLayout><Skeleton className="h-96 w-full" aria-label={t('dashboardLoading')} /></PageLayout>;
   return <DashboardShell activeSection={activeSection} role="admin" session={session}>{children}</DashboardShell>;
 }

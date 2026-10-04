@@ -1,63 +1,80 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
 import { Building2, ClipboardPenLine, Eye, Plus } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { adminObjectsApi } from "./api";
-import type { AdminObject } from "./types";
 import { useLanguage } from "@/shared/i18n/language-provider";
-import { notify } from "@/shared/ui/feedback";
+import { ErrorState } from "@/shared/ui/error-state";
+import { PageHeader } from "@/shared/ui/page-header";
+import { PageLayout } from "@/shared/ui/page-layout";
+import { StatCard } from "@/shared/ui/stat-card";
+import { adminObjectsApi } from "./api";
+
+type Metrics = { total: number; published: number; drafts: number };
 
 export function AdminOverview() {
   const { t } = useLanguage();
-  const [items, setItems] = useState<AdminObject[]>([]);
+  const [counts, setCounts] = useState<Metrics>({ total: 0, published: 0, drafts: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const [all, drafts, available, auctions, upcoming] = await Promise.all([
+        adminObjectsApi.list({ limit: 1 }),
+        adminObjectsApi.list({ limit: 1, status: "draft" }),
+        adminObjectsApi.list({ limit: 1, status: "available" }),
+        adminObjectsApi.list({ limit: 1, status: "auction" }),
+        adminObjectsApi.list({ limit: 1, status: "upcoming" }),
+      ]);
+      setCounts({
+        total: all.meta.total,
+        published: available.meta.total + auctions.meta.total + upcoming.meta.total,
+        drafts: drafts.meta.total,
+      });
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    void adminObjectsApi.list()
-      .then((value) => setItems(value.items))
-      .catch(() => notify.error(t("requestFailed")));
-  }, [t]);
-  const metrics = useMemo(
-    () => [
-      { label: t("totalObjects"), value: items.length, icon: Building2 },
-      {
-        label: t("published"),
-        value: items.filter((item) =>
-          ["available", "auction", "upcoming"].includes(item.status),
-        ).length,
-        icon: Eye,
-      },
-      {
-        label: t("drafts"),
-        value: items.filter((item) => item.status === "draft").length,
-        icon: ClipboardPenLine,
-      },
-    ],
-    [items, t],
-  );
+    queueMicrotask(() => void load());
+  }, [load]);
+
+  const metrics = [
+    { label: t("totalObjects"), value: counts.total, icon: Building2 },
+    { label: t("published"), value: counts.published, icon: Eye },
+    { label: t("drafts"), value: counts.drafts, icon: ClipboardPenLine },
+  ];
+
   return (
-    <section className="admin-page">
-      <header className="admin-page-header">
-        <Button asChild className="admin-primary"><Link href="/dashboard/projects/new"><Plus size={17} /> {t("addNewObject")}</Link></Button>
-      </header>
-      <div className="admin-metrics">
-        {metrics.map(({ label, value, icon: Icon }) => (
-          <Card key={label} className="admin-metric-card">
-            <CardContent>
-            <span>
-              <Icon size={20} />
-            </span>
-            <p>{label}</p>
-            <strong>{value}</strong>
+    <PageLayout>
+      <PageHeader
+        title={t("managementDashboard")}
+        description={t("adminStartText")}
+        actions={<Button asChild><Link href="/dashboard/projects/new"><Plus size={17} />{t("addNewObject")}</Link></Button>}
+      />
+      {error ? (
+        <ErrorState title={t("dataLoadFailed")} action={<Button variant="outline" onClick={() => void load()}>{t("retry")}</Button>} />
+      ) : (
+        <>
+          <section className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label={t("mainSection")}>
+            {metrics.map((metric) => <StatCard key={metric.label} {...metric} loading={loading} />)}
+          </section>
+          <Card>
+            <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+              <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{t("adminStartText")}</p>
+              <Button asChild variant="outline"><Link href="/dashboard/projects/new"><Plus size={17} />{t("addObject")}</Link></Button>
             </CardContent>
           </Card>
-        ))}
-      </div>
-      <section className="admin-start-card">
-        <p>{t("adminStartText")}</p>
-        <Button asChild className="admin-primary"><Link href="/dashboard/projects/new">{t("addObject")}</Link></Button>
-      </section>
-    </section>
+        </>
+      )}
+    </PageLayout>
   );
 }

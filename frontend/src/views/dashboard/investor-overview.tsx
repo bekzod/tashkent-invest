@@ -65,7 +65,7 @@ export function InvestorOverview() {
       <PageHeader title={t("dashboardHome")} description={t("findOpportunityText")} actions={<Button asChild><Link href="/dashboard/map"><Search size={17} />{t("searchProjects")}</Link></Button>} />
       {failed ? <ErrorState title={t("dataLoadFailed")} action={<Button variant="outline" onClick={() => void load()}>{t("retry")}</Button>} /> : (
         <>
-          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label={t("mainSection")}>
+          <section className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label={t("mainSection")}>
             {metrics.map((metric) => <StatCard key={metric.label} {...metric} loading={loading} />)}
           </section>
           <div className="grid gap-3 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
@@ -77,7 +77,7 @@ export function InvestorOverview() {
             </Card>
             <Card className="shadow-[var(--ds-shadow-card)]"><CardHeader className="p-4"><CardTitle>{t("startInvesting")}</CardTitle></CardHeader><CardContent className="p-4 pt-0"><ol className="grid gap-3 text-sm"><li>1. {t("guideChooseObject")}</li><li>2. {t("guideStudyTerms")}</li><li>3. {t("guideSubmitApplication")}</li></ol><Button asChild className="mt-4 w-full"><Link href="/dashboard/map">{t("startProcess")}</Link></Button></CardContent></Card>
           </div>
-          <Card className="shadow-[var(--ds-shadow-card)]"><CardHeader className="flex-row items-center justify-between p-4"><CardTitle>{t("recommendedObjects")}</CardTitle><Button asChild variant="link"><Link href="/dashboard/projects">{t("seeAll")}<ChevronRight size={15} /></Link></Button></CardHeader><CardContent className="p-4 pt-0">{projects.length || loading ? <DashboardObjectGrid items={projects} loading={loading} /> : <EmptyState title={t("projectsUnavailable")} action={<Button asChild variant="outline"><Link href="/dashboard/map">{t("openMap")}</Link></Button>} />}</CardContent></Card>
+          <Card className="shadow-[var(--ds-shadow-card)]"><CardHeader className="flex-row items-center justify-between p-4"><CardTitle>{t("recommendedObjects")}</CardTitle><Button asChild variant="link"><Link href="/dashboard/projects">{t("seeAll")}<ChevronRight size={15} /></Link></Button></CardHeader><CardContent className="p-4 pt-0">{projects.length || loading ? <DashboardObjectGrid items={projects} loading={loading} /> : <EmptyState title={t("noProjectsYet")} action={<Button asChild variant="outline"><Link href="/dashboard/map">{t("openMap")}</Link></Button>} />}</CardContent></Card>
         </>
       )}
     </PageLayout>

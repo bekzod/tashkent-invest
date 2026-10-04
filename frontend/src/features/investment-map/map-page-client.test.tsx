@@ -110,6 +110,25 @@ describe("MapPageClient mobile controls", () => {
     expect(await screen.findByText("Sizning shartlaringizga mos obyekt topilmadi.")).toBeVisible();
   });
 
+  test("hides the empty result message on the full map until a filter is active", async () => {
+    mapFeatures = [];
+    const { rerender } = render(
+      <LanguageProvider initialLocale="uz">
+        <MapPageClient />
+      </LanguageProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText("0 obyekt")).toBeVisible());
+    expect(screen.queryByText("Sizning shartlaringizga mos obyekt topilmadi.")).not.toBeInTheDocument();
+
+    rerender(
+      <LanguageProvider initialLocale="uz">
+        <MapPageClient controlledFilters={{ statuses: ["auction"] }} />
+      </LanguageProvider>,
+    );
+    expect(await screen.findByText("Sizning shartlaringizga mos obyekt topilmadi.")).toBeVisible();
+  });
+
   test("focuses the map search when the dashboard search action is triggered", async () => {
     render(
       <LanguageProvider initialLocale="uz">

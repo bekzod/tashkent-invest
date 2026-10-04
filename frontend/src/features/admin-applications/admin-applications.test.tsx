@@ -46,6 +46,7 @@ test("lets an admin open a request and make only the valid next transition", asy
   fireEvent.click(
     await screen.findByRole("button", { name: /Demo yer uchastkasi/i }),
   );
+  expect(apiMock).toHaveBeenCalledTimes(1);
   expect(
     screen.getByRole("button", { name: "Ko‘rib chiqishni boshlash" }),
   ).toBeVisible();
