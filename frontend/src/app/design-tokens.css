@@ -1,0 +1,32 @@
+:root {
+  --ds-page-gutter: clamp(1rem, 2.5vw, 2.25rem);
+  --ds-page-y: 1.5rem;
+  --ds-section-gap: 1rem;
+  --ds-control-height: 2.5rem;
+  --ds-control-height-mobile: 2.75rem;
+  --ds-surface: var(--surface);
+  --ds-surface-muted: #f7f9fc;
+  --ds-border: var(--line);
+  --ds-text: var(--ink);
+  --ds-text-muted: var(--muted);
+  --ds-primary: var(--blue);
+  --ds-primary-soft: #eaf3ff;
+  --ds-success: #15803d;
+  --ds-success-soft: #edf9f1;
+  --ds-warning: #a16207;
+  --ds-warning-soft: #fff8e6;
+  --ds-danger: #b4232a;
+  --ds-danger-soft: #fff0f1;
+  --ds-info: #1859a9;
+  --ds-info-soft: #edf5ff;
+  --ds-radius: 0.5rem;
+  --ds-shadow-card: 0 1px 2px rgb(15 23 42 / 0.05);
+}
+
+@media (max-width: 760px) {
+  :root {
+    --ds-page-gutter: 0.875rem;
+    --ds-page-y: 1rem;
+    --ds-section-gap: 0.875rem;
+  }
+}
