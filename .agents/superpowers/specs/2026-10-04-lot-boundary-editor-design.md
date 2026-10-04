@@ -71,6 +71,21 @@ missing shape.
 - Preserve a previously saved geometry while a new draft is being edited;
   cancelling must restore it exactly.
 
+## Media input group
+
+The media type selector, URL field, and remove action form one reusable
+shadcn-style input group instead of three visually independent controls. The
+group owns the outer border, radius, and focus ring; its children are divided
+only by internal separators. The URL input remains the flexible-width control,
+the type selector has a stable width, and the remove action is a 44px icon
+button with an accessible label and tooltip.
+
+On narrow screens the controls may wrap into two connected rows, but they must
+continue to read as one field group. URL validation is rendered immediately
+below the group. The separate **Media qo'shish** button remains a secondary
+action. Implement the shell as a shared UI primitive so future select-input-
+action combinations reuse the same layout, focus, disabled, and error states.
+
 ## Test plan
 
 - Unit tests cover empty coordinates, reactive map focus, draft stages,
@@ -84,6 +99,9 @@ missing shape.
 - Visual tests capture the idle editor, one/two/three-point drawing stages,
   completed polygon, and the mobile layout. Real tile availability is checked
   separately from deterministic visual-tile snapshots.
+- Media tests cover type selection, URL editing and validation, adding and
+  removing rows, keyboard focus order, and the connected desktop/mobile
+  layout.
 
 ## Acceptance criteria
 
@@ -93,4 +111,6 @@ missing shape.
 - Map drawing works with mouse and touch; each state has clear progress and an
   obvious next action.
 - A valid boundary can be saved, re-opened, and viewed on the public map.
+- Every media row presents its selector, URL, and remove action as one
+  accessible input group on desktop and mobile.
 - All relevant unit, end-to-end, mobile, and visual checks pass.
