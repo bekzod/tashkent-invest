@@ -28,5 +28,5 @@ export default async function RegisterPage({
   const candidate = Array.isArray(rawReturnTo) ? rawReturnTo[0] : rawReturnTo;
   const returnTo = safeReturnTo(candidate, "") || undefined;
 
-  return <RegisterView returnTo={returnTo} />;
+  return <RegisterView returnTo={returnTo}/>;
 }
