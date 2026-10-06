@@ -8,5 +8,6 @@ module.exports = async (app) => {
   await app.register(require('./auth'), { prefix: '/auth' });
   await app.register(require('./admin-objects'), { prefix: '/admin' });
   await app.register(require('./admin-applications'), { prefix: '/admin' });
+  await app.register(require('./admin-telegram'), { prefix: '/admin' });
   await app.register(require('./investor-actions'));
 };

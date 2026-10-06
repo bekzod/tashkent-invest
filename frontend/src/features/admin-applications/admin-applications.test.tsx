@@ -71,3 +71,33 @@ test("lets an admin open a request and make only the valid next transition", asy
     ),
   );
 });
+
+test("opens the application addressed by an admin notification link", async () => {
+  const linkedApplication = {
+    ...application,
+    id: "a4c522dc-164f-4caa-93ed-28be46132192",
+    name: "Telegram investor",
+  };
+  apiMock.mockImplementation((path) => {
+    if (path === `/admin/applications/${linkedApplication.id}`) {
+      return Promise.resolve(linkedApplication) as never;
+    }
+    return Promise.resolve({
+      items: [],
+      meta: { page: 1, total: 0, totalPages: 1 },
+    }) as never;
+  });
+
+  render(
+    <LanguageProvider>
+      <AdminApplications applicationId={linkedApplication.id} />
+    </LanguageProvider>,
+  );
+
+  expect(await screen.findByText("Telegram investor")).toBeVisible();
+  expect(apiMock).toHaveBeenCalledWith(
+    `/admin/applications/${linkedApplication.id}`,
+    expect.anything(),
+    "uz",
+  );
+});

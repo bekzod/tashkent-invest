@@ -31,6 +31,23 @@ module.exports = (sequelize, DataTypes) => {
         validate: { isIn: [['uz', 'ru']] },
       },
       emailVerifiedAt: { type: DataTypes.DATE, allowNull: true, field: 'email_verified_at' },
+      telegramChatId: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+        field: 'telegram_chat_id',
+      },
+      telegramLinkTokenHash: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        field: 'telegram_link_token_hash',
+      },
+      telegramLinkExpiresAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        field: 'telegram_link_expires_at',
+      },
+      telegramLinkedAt: { type: DataTypes.DATE, allowNull: true, field: 'telegram_linked_at' },
       isActive: {
         type: DataTypes.BOOLEAN,
         allowNull: false,

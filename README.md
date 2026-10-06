@@ -41,6 +41,28 @@ Backendni `Docker` runtime bilan deploy qiling: repository root `backend`, Docke
 - `DATABASE_SSL=true` — Render Postgres uchun TLS ulanishini yoqadi.
 - `JWT_SECRET` — uzun, tasodifiy maxfiy kalit.
 - `FRONT_HOST_NAME` — frontend manzili, masalan `https://tashkent-invest.vercel.app`.
+- `TELEGRAM_BOT_TOKEN` — admin arizalari uchun xabar yuboradigan Telegram bot tokeni.
+- `TELEGRAM_BOT_USERNAME` — admin botni ulash deep linki uchun `@` belgisiz public bot handle'i.
+- `TELEGRAM_WEBHOOK_SECRET` — Telegram webhook so‘rovlarini tekshiradigan uzun, tasodifiy sir.
+- `APP_PUBLIC_URL` — Telegram inline tugmasi ochadigan yagona canonical frontend URL,
+  masalan `https://toshkent-tuman-invest.uz`.
+
+Telegram sozlanmaganida (`TELEGRAM_BOT_TOKEN` bo‘sh yoki `APP_PUBLIC_URL` noto‘g‘ri bo‘lsa),
+investor ariza yuborishi odatdagidek davom etadi, ammo xabarnoma jo‘natilmaydi. Bog‘langan faol
+admin chatiga yuborilgan xabardagi `📂 Arizani kabinetda ochish` tugmasi aynan o‘sha arizani
+admin kabinetida ochadi.
+
+Botni ulashdan oldin Telegram webhookini backendning public URL'iga bir marta o‘rnating
+(`TELEGRAM_WEBHOOK_SECRET` qiymatini shell tarixiga saqlamaslik uchun xavfsiz secret
+managerdan oling):
+
+```bash
+curl --request POST "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
+  --data-urlencode "url=https://api.example.uz/telegram/webhook" \
+  --data-urlencode "secret_token=<TELEGRAM_WEBHOOK_SECRET>"
+```
+
+So‘ng admin kabinetidagi **Sozlamalar → Telegram xabarnomalari** orqali botni ulang.
 
 Docker image startup vaqtida faqat migratsiyalarni bajaradi; production bazaga mock obyekt yoki demo foydalanuvchi yozmaydi. OSM hamda ArcGIS dan geoma’lumotlarni yangilash deployga kirmaydi; zarur bo‘lsa alohida `npm run db:seed:geodata` buyrug‘i bilan ishga tushiring.
 

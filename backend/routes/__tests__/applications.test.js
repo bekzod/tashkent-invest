@@ -37,10 +37,11 @@ function database() {
   };
 }
 
-async function build() {
+async function build(telegramNotifier) {
   const app = Fastify({ logger: false });
   const db = database();
   app.decorate('db', db);
+  if (telegramNotifier) app.decorate('telegramNotifier', telegramNotifier);
   await app.register(investorRoutes, { prefix: '/api' });
   apps.push(app);
   return { app, db };
@@ -91,4 +92,38 @@ test('POST /api/applications is idempotent and rejects non-investor tokens', asy
     payload,
   });
   expect(forbidden.statusCode).toBe(403);
+});
+
+test('notifies once after a new application commits without changing investor success on failure', async () => {
+  const calls = [];
+  const { app } = await build({
+    notifyNewApplication: async (applicationId) => {
+      calls.push(applicationId);
+      throw new Error('Telegram is unavailable');
+    },
+  });
+  const payload = {
+    objectId,
+    name: 'Demo Investor',
+    phone: '+998901234567',
+    email: 'demo@example.uz',
+  };
+  const investorToken = jwt.sign({ id: investorId, role: 'investor' }, process.env.JWT_SECRET);
+  const first = await app.inject({
+    method: 'POST',
+    url: '/api/applications',
+    headers: { authorization: `Bearer ${investorToken}` },
+    payload,
+  });
+  expect(first.statusCode).toBe(201);
+  expect(calls).toEqual(['application-1']);
+
+  const duplicate = await app.inject({
+    method: 'POST',
+    url: '/api/applications',
+    headers: { authorization: `Bearer ${investorToken}` },
+    payload,
+  });
+  expect(duplicate.statusCode).toBe(200);
+  expect(calls).toEqual(['application-1']);
 });

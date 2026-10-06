@@ -5,6 +5,7 @@ require('dotenv').config();
 const Fastify = require('fastify');
 const cors = require('@fastify/cors');
 const db = require('./db/models');
+const { createTelegramNotifier } = require('./services/telegram-notifier');
 
 const defaultAllowedOrigins = [
   'http://localhost:3000',
@@ -42,6 +43,10 @@ module.exports = async function buildApp(options = {}) {
     done(null, payload);
   });
   app.decorate('db', db);
+  app.decorate(
+    'telegramNotifier',
+    options.telegramNotifier ?? createTelegramNotifier({ db, logger: app.log }),
+  );
   await app.register(require('./routes'));
   app.setErrorHandler((error, request, reply) => {
     request.log.error(error);

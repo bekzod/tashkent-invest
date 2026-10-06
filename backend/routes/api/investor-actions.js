@@ -39,6 +39,16 @@ module.exports = async (app) => {
           request.user.id,
           request.body || {},
         );
+        if (created && app.telegramNotifier?.notifyNewApplication) {
+          try {
+            await app.telegramNotifier.notifyNewApplication(application.id);
+          } catch {
+            request.log.error(
+              { event: 'telegram_application_notification_failed', applicationId: application.id },
+              'Telegram application notification failed',
+            );
+          }
+        }
         return reply.code(created ? 201 : 200).send({
           id: application.id,
           status: application.status,

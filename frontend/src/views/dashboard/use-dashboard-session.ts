@@ -2,8 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { readSession, type Session } from "@/shared/auth/session";
+import { withReturnTo } from "@/shared/auth/return-to";
 import { useLanguage } from "@/shared/i18n/language-provider";
 import { localizedPath } from "@/shared/i18n/routing";
+
+export function dashboardLoginHref(locale: "uz" | "ru", returnTo: string) {
+  return withReturnTo(localizedPath(locale, "/login"), returnTo);
+}
 
 export function useDashboardSession() {
   const { locale } = useLanguage();
@@ -12,7 +17,8 @@ export function useDashboardSession() {
   useEffect(() => {
     const current = readSession();
     if (!current) {
-      window.location.replace(localizedPath(locale, "/login"));
+      const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      window.location.replace(dashboardLoginHref(locale, returnTo));
       return;
     }
     queueMicrotask(() => setSession(current));

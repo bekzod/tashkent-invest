@@ -46,7 +46,7 @@ type Response = {
 
 const initialMeta = { page: 1, total: 0, totalPages: 1 };
 
-export function AdminApplications() {
+export function AdminApplications({ applicationId }: { applicationId?: string }) {
   const { locale, t } = useLanguage();
   const [items, setItems] = useState<AdminApplication[]>([]);
   const [selected, setSelected] = useState<AdminApplication | null>(null);
@@ -68,7 +68,7 @@ export function AdminApplications() {
       if (signal?.aborted) return;
       setItems(response.items);
       setMeta(response.meta);
-      setSelected((current) => current ? (response.items.find((item) => item.id === current.id) ?? null) : null);
+      setSelected((current) => current ? (response.items.find((item) => item.id === current.id) ?? current) : null);
     } catch {
       if (!signal?.aborted) {
         setLoadError(true);
@@ -84,6 +84,31 @@ export function AdminApplications() {
     queueMicrotask(() => void load(controller.signal));
     return () => controller.abort();
   }, [load]);
+
+  useEffect(() => {
+    if (!applicationId) return;
+
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const application = await api<AdminApplication>(
+          `/admin/applications/${applicationId}`,
+          { signal: controller.signal },
+          locale,
+        );
+        if (controller.signal.aborted) return;
+        setSelected(application);
+        setNote(application.reviewNote ?? "");
+        setItems((current) => current.map((item) => item.id === application.id ? application : item));
+      } catch {
+        if (!controller.signal.aborted) {
+          notify.error(t("dataLoadFailed"));
+        }
+      }
+    })();
+
+    return () => controller.abort();
+  }, [applicationId, locale, t]);
 
   async function transition(nextStatus: Exclude<Status, "received">) {
     if (!selected) return;

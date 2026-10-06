@@ -73,6 +73,16 @@ intentionally blocked unless `ALLOW_E2E_SEED=true` is explicit.
 
 ## Post-deploy-only checks
 
+- Configure `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`, and
+  `APP_PUBLIC_URL`; register `POST /telegram/webhook` with Telegram using the same secret.
+- As the single active admin, open **Sozlamalar → Telegram xabarnomalari**, open the bot,
+  press Start, then confirm the connected state in the dashboard.
+- Submit a new available-object application. Confirm one escaped, emoji-led Telegram message
+  appears with the `📂 Arizani kabinetda ochish` button; use it while logged out and confirm
+  login returns to the exact application sheet. Re-submit the same application and confirm no
+  second message is sent.
+- Temporarily make the Telegram API unavailable and confirm the investor still receives the
+  successful application response while the backend records a sanitised delivery failure.
 - Confirm DNS, TLS, and `/`, `/map`, and legacy object redirects on the canonical host.
 - Submit only `/sitemap.xml` to Google Search Console and Bing Webmaster Tools, then inspect
   representative UZ/RU home, map, and object URLs.

@@ -95,7 +95,8 @@ export function DashboardShell({ activeSection, children, role, session }: Props
       <nav className="dashboard-nav" aria-label={t('dashboardNavigation')}>
         <p>{t('mainSection')}</p>
         {navigation.map(({ icon: Icon, href, labelKey, section }) => <Link className={`dashboard-nav-link ${section === activeSection ? 'active' : ''}`} aria-current={section === activeSection ? 'page' : undefined} href={href} key={href} onClick={onNavigate}><Icon size={18} /><span>{t(labelKey)}</span></Link>)}
-        {role === 'investor' ? <><p>{t('settingsSection')}</p><Link className={`dashboard-nav-link ${activeSection === 'settings' ? 'active' : ''}`} aria-current={activeSection === 'settings' ? 'page' : undefined} href={dashboardSettingsEntry.href} onClick={onNavigate}><SettingsIcon size={18} /><span>{t(dashboardSettingsEntry.labelKey)}</span></Link></> : null}
+        <p>{t('settingsSection')}</p>
+        <Link className={`dashboard-nav-link ${activeSection === 'settings' ? 'active' : ''}`} aria-current={activeSection === 'settings' ? 'page' : undefined} href={dashboardSettingsEntry.href} onClick={onNavigate}><SettingsIcon size={18} /><span>{t(dashboardSettingsEntry.labelKey)}</span></Link>
       </nav>
     </>
   );
