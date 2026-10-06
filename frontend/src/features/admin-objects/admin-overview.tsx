@@ -10,6 +10,7 @@ import { ErrorState } from "@/shared/ui/error-state";
 import { PageHeader } from "@/shared/ui/page-header";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { StatCard } from "@/shared/ui/stat-card";
+import { AdminTelegramConnectAction } from "@/features/admin-telegram/admin-telegram-connect-action";
 import { adminObjectsApi } from "./api";
 
 type Metrics = { total: number; published: number; drafts: number };
@@ -58,7 +59,7 @@ export function AdminOverview() {
       <PageHeader
         title={t("managementDashboard")}
         description={t("adminStartText")}
-        actions={<Button asChild><Link href="/dashboard/projects/new"><Plus size={17} />{t("addNewObject")}</Link></Button>}
+        actions={<div className="flex flex-wrap items-start gap-2"><AdminTelegramConnectAction /><Button asChild><Link href="/dashboard/projects/new"><Plus size={17} />{t("addNewObject")}</Link></Button></div>}
       />
       {error ? (
         <ErrorState title={t("dataLoadFailed")} action={<Button variant="outline" onClick={() => void load()}>{t("retry")}</Button>} />
