@@ -50,7 +50,7 @@ test('shows four content placeholders while initial landing data is pending', ()
 
 test('keeps server-rendered object cards visible while a locale refresh is pending', () => {
   apiMock.mockImplementation(() => new Promise(() => undefined));
-  render(<LanguageProvider><HomePage initialLocale="uz" initialObjects={[object]} initialStats={{ objects: 1, auctions: 1, upcoming: 0, investmentAmountUsd: 0 }} /><LocaleSwitch /></LanguageProvider>);
+  render(<LanguageProvider><HomePage initialLocale="uz" initialObjects={[object]} initialStats={{ objects: 1, auctions: 1, upcoming: 0, investmentAmountUsd: 0, sectorCounts: {} }} /><LocaleSwitch /></LanguageProvider>);
 
   fireEvent.click(screen.getByRole('button', { name: 'Russian' }));
 
@@ -71,7 +71,7 @@ test('shows an error toast and retries the landing request', async () => {
 
   apiMock.mockReset();
   apiMock
-    .mockResolvedValueOnce({ objects: 20, auctions: 5, upcoming: 3, investmentAmountUsd: 0 })
+    .mockResolvedValueOnce({ objects: 20, auctions: 5, upcoming: 3, investmentAmountUsd: 0, sectorCounts: { manufacturing: 7 } })
     .mockResolvedValueOnce({ items: [object] })
     .mockResolvedValueOnce({ items: [object] })
     .mockResolvedValueOnce({ items: [object] })
@@ -82,6 +82,7 @@ test('shows an error toast and retries the landing request', async () => {
   options.action.onClick();
 
   await waitFor(() => expect(screen.getByText('Test object')).toBeVisible());
+  expect(screen.getByRole('link', { name: /Sanoat/ })).toHaveTextContent('7 obyekt');
   expect(screen.queryAllByTestId('content-placeholder')).toHaveLength(0);
 });
 
@@ -91,7 +92,7 @@ test('keeps landing searches, filters, and object cards in the active locale', (
       <HomePage
         initialLocale="ru"
         initialObjects={[object]}
-        initialStats={{ objects: 1, auctions: 1, upcoming: 0, investmentAmountUsd: 0 }}
+        initialStats={{ objects: 1, auctions: 1, upcoming: 0, investmentAmountUsd: 0, sectorCounts: {} }}
       />
     </LanguageProvider>,
   );
@@ -123,7 +124,7 @@ test('synchronizes every discovery filter with the embedded map and map link', (
       <HomePage
         initialLocale="uz"
         initialObjects={[object]}
-        initialStats={{ objects: 1, auctions: 1, upcoming: 0, investmentAmountUsd: 0 }}
+        initialStats={{ objects: 1, auctions: 1, upcoming: 0, investmentAmountUsd: 0, sectorCounts: {} }}
       />
     </LanguageProvider>,
   );
@@ -161,4 +162,25 @@ test('synchronizes every discovery filter with the embedded map and map link', (
     '/uz/map',
   );
   expect(screen.getByRole('textbox', { name: /Nomi, tuman/ })).toHaveValue('');
+});
+
+test('renders database sector counts, including zero, in category links', () => {
+  render(<LanguageProvider><HomePage initialStats={{
+    objects: 3, auctions: 0, upcoming: 0, investmentAmountUsd: 0,
+    sectorCounts: { manufacturing: 3, agriculture: 0, tourism: 1, logistics: 2, trade: 0, it: 1 },
+  }} /></LanguageProvider>);
+
+  for (const [label, count] of [
+    ['Sanoat', 3], ['Qishloq', 0], ['Turizm', 1], ['Logistika', 2], ['Savdo', 0], ['IT va', 1],
+  ] as const) {
+    expect(screen.getByRole('link', { name: new RegExp(label) })).toHaveTextContent(`${count} obyekt`);
+  }
+});
+
+test('shows unavailable category counts as unknown instead of fabricated or zero counts', () => {
+  apiMock.mockImplementation(() => new Promise(() => undefined));
+  renderHome();
+
+  expect(screen.getByRole('link', { name: /Sanoat/ })).toHaveTextContent('— obyekt');
+  expect(screen.getByRole('link', { name: /Sanoat/ })).not.toHaveTextContent('45');
 });

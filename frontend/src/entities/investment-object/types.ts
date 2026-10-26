@@ -1,5 +1,12 @@
 export type ObjectType = 'land' | 'building' | 'proposal';
 export type ObjectStatus = 'available' | 'auction' | 'upcoming';
+export type InvestmentStatistics = {
+  objects: number;
+  auctions: number;
+  upcoming: number;
+  investmentAmountUsd: number;
+  sectorCounts: Record<string, number>;
+};
 export type GeometrySource = 'surveyed' | 'cadastral' | 'admin_drawn' | 'estimated' | 'demo';
 export type InvestmentObject = {
   id: string; slug: string; title: string; shortDescription: string; description?: string; address: string; district: string;
