@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { ObjectCard } from '@/entities/investment-object/object-card';
-import type { InvestmentObject } from '@/entities/investment-object/types';
+import type { InvestmentObject, InvestmentStatistics } from '@/entities/investment-object/types';
 import { MapPageClient } from '@/features/investment-map/map-page-client';
 import { uniqueObjects } from '@/features/landing/unique-objects';
 import {
@@ -33,7 +33,6 @@ import { localizedPath } from '@/shared/i18n/routing';
 import { pluralMessageKey } from '@/shared/lib/dashboard';
 import { notify } from '@/shared/ui/feedback';
 
-type Statistics = { objects: number; auctions: number; upcoming: number; investmentAmountUsd: number };
 type ObjectResponse = { items: InvestmentObject[] };
 
 function ProcessStep({ number, title, children }: { number: number; title: string; children: string }) {
@@ -56,11 +55,11 @@ export default function HomePage({
 }: {
   initialLocale?: 'uz' | 'ru';
   initialObjects?: InvestmentObject[];
-  initialStats?: Statistics | null;
+  initialStats?: InvestmentStatistics | null;
 }) {
   const { locale, t } = useLanguage();
   const router = useRouter();
-  const [stats, setStats] = useState<Statistics | null>(initialStats);
+  const [stats, setStats] = useState<InvestmentStatistics | null>(initialStats);
   const [objects, setObjects] = useState<InvestmentObject[]>(initialObjects);
   const hasInitialData = initialObjects.length > 0 || initialStats !== null;
   const [loadedLocale, setLoadedLocale] = useState(hasInitialData ? initialLocale : '');
@@ -80,7 +79,7 @@ export default function HomePage({
       if (cancelled) return;
       setIsLoading(true);
       Promise.all([
-        api<Statistics>('/statistics', {}, locale),
+        api<InvestmentStatistics>('/statistics', {}, locale),
         api<ObjectResponse>('/objects?limit=1&types=land&statuses=auction', {}, locale),
         api<ObjectResponse>('/objects?limit=1&types=proposal&statuses=upcoming', {}, locale),
         api<ObjectResponse>('/objects?limit=1&types=building&statuses=available', {}, locale),
@@ -114,12 +113,12 @@ export default function HomePage({
     { key: 'investors', value: '320+', icon: Users },
   ] as const;
   const categories = [
-    { icon: Factory, label: t('industry'), count: 45, sector: 'manufacturing' },
-    { icon: Tractor, label: t('agriculture'), count: 23, sector: 'agriculture' },
-    { icon: Map, label: t('tourism'), count: 15, sector: 'tourism' },
-    { icon: Truck, label: t('logistics'), count: 18, sector: 'logistics' },
-    { icon: Store, label: t('trade'), count: 12, sector: 'trade' },
-    { icon: Building2, label: t('itTechnology'), count: 9, sector: 'it' },
+    { icon: Factory, label: t('industry'), sector: 'manufacturing' },
+    { icon: Tractor, label: t('agriculture'), sector: 'agriculture' },
+    { icon: Map, label: t('tourism'), sector: 'tourism' },
+    { icon: Truck, label: t('logistics'), sector: 'logistics' },
+    { icon: Store, label: t('trade'), sector: 'trade' },
+    { icon: Building2, label: t('itTechnology'), sector: 'it' },
   ];
   const typeOptions = [
     { value: 'land', label: t('land') },
@@ -229,7 +228,10 @@ export default function HomePage({
           {objects.map((object) => <ObjectCard object={object} key={object.id} />)}
           {isLoading && objects.length === 0 && Array.from({ length: 4 }, (_, index) => <ContentPlaceholder key={index} />)}
         </div>
-        <section className="reference-categories"><h2>{t('categories')}</h2><div>{categories.map(({ icon: Icon, label, count, sector }) => <Link href={localizedPath(locale, `/map?sectors=${sector}`)} className="category-card" key={label}><Icon size={21} /><span><strong>{label}</strong><small>{count} {t(pluralMessageKey(count, locale, 'object'))}</small></span></Link>)}</div></section>
+        <section className="reference-categories"><h2>{t('categories')}</h2><div>{categories.map(({ icon: Icon, label, sector }) => {
+          const count = stats?.sectorCounts?.[sector];
+          return <Link href={localizedPath(locale, `/map?sectors=${sector}`)} className="category-card" key={label}><Icon size={21} /><span><strong>{label}</strong><small>{count ?? '—'} {t(pluralMessageKey(count ?? 0, locale, 'object'))}</small></span></Link>;
+        })}</div></section>
       </div>
       <aside className="reference-process" id="about">
         <h2>{t('howItWorks')}</h2>

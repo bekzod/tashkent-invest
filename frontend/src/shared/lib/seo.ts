@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { InvestmentObject } from "@/entities/investment-object/types";
+import type { InvestmentObject, InvestmentStatistics } from "@/entities/investment-object/types";
 import { apiBaseUrl } from "@/shared/api/base-url";
 import { localizedPath, type Locale } from "@/shared/i18n/routing";
 
@@ -327,10 +327,5 @@ export async function fetchPublicStatistics(locale = "uz") {
     next: { revalidate: 300 },
   });
   if (!response.ok) return null;
-  return response.json() as Promise<{
-    auctions: number;
-    investmentAmountUsd: number;
-    objects: number;
-    upcoming: number;
-  }>;
+  return response.json() as Promise<InvestmentStatistics>;
 }
