@@ -25,6 +25,7 @@ import {
   FreehandPolygonDraft,
   mapLibreControlLocale,
 } from "./map-mobile";
+import { addDistrictBackground, districtFeature } from "./district-background";
 import { notify } from "@/shared/ui/feedback";
 
 const TASHKENT_DISTRICT: [number, number] = [69.220651, 41.391335];
@@ -289,10 +290,8 @@ export function InvestmentMap({
           clusterMaxZoom: 14,
           clusterRadius: 45,
         });
-        map.addSource("district-boundary", {
-          type: "geojson",
-          data: emptyGeoJson,
-        });
+        // Add the administrative context before every interactive overlay.
+        addDistrictBackground(map, filtersRef.current.districtPolygon);
         map.addSource("object-boundaries", {
           type: "geojson",
           data: emptyGeoJson,
@@ -393,18 +392,6 @@ export function InvestmentMap({
           },
         });
         map.addLayer({
-          id: "district-fill",
-          type: "fill",
-          source: "district-boundary",
-          paint: { "fill-color": "#e53935", "fill-opacity": 0.14 },
-        });
-        map.addLayer({
-          id: "district-line",
-          type: "line",
-          source: "district-boundary",
-          paint: { "line-color": "#e53935", "line-width": 3.5 },
-        });
-        map.addLayer({
           id: "selection-fill",
           type: "fill",
           source: "selection",
@@ -451,14 +438,6 @@ export function InvestmentMap({
             "circle-stroke-width": 5,
           },
         });
-        if (filtersRef.current.districtPolygon)
-          (
-            map.getSource("district-boundary") as unknown as GeoJsonSource
-          ).setData({
-            type: "Feature",
-            geometry: filtersRef.current.districtPolygon,
-            properties: {},
-          });
         if (
           filtersRef.current.polygon &&
           filtersRef.current.areaKind !== "district"
@@ -576,16 +555,7 @@ export function InvestmentMap({
   useEffect(() => {
     const source = mapRef.current?.getSource("district-boundary") as unknown as
       GeoJsonSource | undefined;
-    if (source)
-      source.setData(
-        filters.districtPolygon
-          ? {
-              type: "Feature",
-              geometry: filters.districtPolygon,
-              properties: {},
-            }
-          : emptyGeoJson,
-      );
+    if (source) source.setData(districtFeature(filters.districtPolygon));
   }, [filters.districtPolygon]);
   useEffect(() => {
     const map = mapRef.current;
