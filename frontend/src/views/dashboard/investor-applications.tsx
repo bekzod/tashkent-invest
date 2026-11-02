@@ -10,7 +10,7 @@ import { useLanguage } from "@/shared/i18n/language-provider";
 import { localizedPath } from "@/shared/i18n/routing";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
-import { DashboardListSkeleton } from "@/shared/ui/dashboard-loading";
+import { DashboardListLoading } from "@/shared/ui/dashboard-loading";
 import { PageHeader } from "@/shared/ui/page-header";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { StatusBadge } from "@/shared/ui/status-badge";
@@ -53,7 +53,7 @@ export function InvestorApplications() {
       {error ? (
         <ErrorState title={t("dataLoadFailed")} action={<Button variant="outline" onClick={() => void load()}>{t("retry")}</Button>} />
       ) : loading ? (
-        <DashboardListSkeleton label={t("dashboardLoading")} rows={4} />
+        <DashboardListLoading label={t("dashboardLoading")} rows={4} />
       ) : items.length ? (
         <Card>
           <CardContent className="divide-y divide-border p-0">
@@ -83,3 +83,4 @@ export function InvestorApplications() {
     </PageLayout>
   );
 }
+
