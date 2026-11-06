@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Crosshair, LocateFixed, MapPinOff } from "lucide-react";
 import maplibregl, {
-  type GeoJSONSource,
   type Map as MapLibreMap,
   type MapMouseEvent,
   type Marker,
@@ -16,6 +15,7 @@ import {
   getTashkentDistrict,
   type GeographicArea,
 } from "@/features/investment-map/geographic-areas";
+import { addDistrictBackground, updateDistrictBackground } from "@/features/investment-map/district-background";
 import {
   TASHKENT_DISTRICT_CENTER,
   type LocationValidationCode,
@@ -113,6 +113,7 @@ export function LocationPicker({
     let loaded = false;
     instance.on("load", () => {
       loaded = true;
+      addDistrictBackground(instance);
       setMapReady(true);
       setMapStatus("ready");
     });
@@ -134,35 +135,7 @@ export function LocationPicker({
   }, [container]);
 
   useEffect(() => {
-    if (!mapInstance || !mapReady || !district) return;
-    const feature: GeoJSON.Feature<GeoJSON.Polygon> = {
-      type: "Feature",
-      properties: {},
-      geometry: district,
-    };
-    const source = mapInstance.getSource("admin-district-boundary") as
-      | GeoJSONSource
-      | undefined;
-    if (source) {
-      source.setData(feature);
-      return;
-    }
-    mapInstance.addSource("admin-district-boundary", {
-      type: "geojson",
-      data: feature,
-    });
-    mapInstance.addLayer({
-      id: "admin-district-fill",
-      type: "fill",
-      source: "admin-district-boundary",
-      paint: { "fill-color": "#623bff", "fill-opacity": 0.08 },
-    });
-    mapInstance.addLayer({
-      id: "admin-district-line",
-      type: "line",
-      source: "admin-district-boundary",
-      paint: { "line-color": "#623bff", "line-width": 2 },
-    });
+    if (mapReady && mapInstance) updateDistrictBackground(mapInstance, district);
   }, [district, mapInstance, mapReady]);
 
   const validation = useMemo(

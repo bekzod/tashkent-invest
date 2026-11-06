@@ -1,10 +1,12 @@
 # Toshkent tumani map background
 
-The map highlights **Toshkent tumani in Toshkent viloyati**, not Tashkent city.
-The existing `/areas` district geometry remains preferred; a bundled snapshot keeps
-context visible before that API resolves and when it is unavailable. This does
-not add a spatial filter or change map navigation. District fill/outline are added
-after the raster basemap and before object, cluster, selection and drawing layers.
+Public, dashboard, and admin maps highlight **Toshkent tumani in Toshkent viloyati**,
+not Tashkent city. The existing `/areas` district geometry remains preferred;
+a bundled snapshot keeps context visible before that API resolves and when it is
+unavailable. This does not add a spatial filter or change map navigation. District
+fill/outline are added after the raster basemap and before object, cluster,
+selection and drawing layers. Admin location and lot validation still use the
+`/areas` geometry independently of the visual fallback.
 
 ## Snapshot source and validation
 
