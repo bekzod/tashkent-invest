@@ -8,6 +8,10 @@ Toshkent tumanidagi tasdiqlangan investitsiya obyektlarini topish uchun Next.js 
 - `backend/`: Bun, Fastify, Sequelize, PostgreSQL.
 - `docker-compose.yml`: PostGIS, API va frontendning lokal stacki.
 
+## Bun version
+
+Use Bun 1.4.4 (`.bun-version`) for development and CI. The frontend's `packageManager` and Docker image match the existing CI version. The backend production image intentionally remains Node 22 with `npm ci`; Bun is its test runner, not its production runtime. Engine ranges describe minimum compatibility, not the selected development version.
+
 ## Lokal ishga tushirish
 
 1. `frontend/.env.example` va `backend/.env.example` fayllaridan `.env` yarating.
