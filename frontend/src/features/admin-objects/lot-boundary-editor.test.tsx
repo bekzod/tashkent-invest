@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { LanguageProvider } from "@/shared/i18n/language-provider";
 import { TASHKENT_DISTRICT_CENTER } from "./location-validation";
 import { LotBoundaryEditor } from "./lot-boundary-editor";
+import { districtFeature } from "@/features/investment-map/district-background";
+import { api } from "@/shared/api/client";
 
 const mocks = vi.hoisted(() => ({
   maps: [] as Array<{
@@ -11,6 +13,8 @@ const mocks = vi.hoisted(() => ({
     easeTo: ReturnType<typeof vi.fn>;
     jumpTo: ReturnType<typeof vi.fn>;
     sources: Map<string, { setData: ReturnType<typeof vi.fn> }>;
+    addSource: ReturnType<typeof vi.fn>;
+    addLayer: ReturnType<typeof vi.fn>;
     dragPan: { disable: ReturnType<typeof vi.fn>; enable: ReturnType<typeof vi.fn> };
   }>,
 }));
@@ -32,9 +36,9 @@ vi.mock("maplibre-gl", () => {
       this.options = options;
       mocks.maps.push(this);
     }
-    addSource(name: string) {
+    addSource = vi.fn((name: string) => {
       this.sources.set(name, { setData: vi.fn() });
-    }
+    });
     getSource(name: string) {
       return this.sources.get(name);
     }
@@ -121,6 +125,30 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("LotBoundaryEditor", () => {
+  test("shows the district without areas below the drawing layers", async () => {
+    vi.mocked(api).mockRejectedValueOnce(new Error("offline"));
+    renderEditor();
+    await waitFor(() => expect(mocks.maps).toHaveLength(1));
+    const map = mocks.maps[0];
+    act(() => map.handlers.load());
+
+    expect(map.addSource).toHaveBeenCalledWith("district-boundary", expect.objectContaining({ data: districtFeature() }));
+    expect(map.addLayer.mock.calls.map(([layer]) => layer.id).slice(0, 2)).toEqual(["district-fill", "district-line"]);
+  });
+
+  test("updates the visible district when areas load", async () => {
+    renderEditor();
+    await waitFor(() => expect(mocks.maps).toHaveLength(1));
+    const map = mocks.maps[0];
+    act(() => map.handlers.load());
+    await waitFor(() => expect(map.sources.get("district-boundary")?.setData).toHaveBeenCalledWith(
+      districtFeature({
+        type: "Polygon",
+        coordinates: [[[69.1, 41.3], [69.3, 41.3], [69.3, 41.5], [69.1, 41.5], [69.1, 41.3]]],
+      }),
+    ));
+  });
+
   test("keeps an incomplete location at the district centre and reacts to a later point", async () => {
     const view = render(editorTree("", ""));
     await waitFor(() => expect(mocks.maps).toHaveLength(1));
