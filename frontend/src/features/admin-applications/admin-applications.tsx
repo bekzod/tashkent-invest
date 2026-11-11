@@ -13,7 +13,7 @@ import { useLanguage } from "@/shared/i18n/language-provider";
 import { statusMessageKey } from "@/shared/lib/dashboard";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
-import { DashboardListSkeleton } from "@/shared/ui/dashboard-loading";
+import { DashboardListLoading } from "@/shared/ui/dashboard-loading";
 import { notify } from "@/shared/ui/feedback";
 import { FilterToolbar } from "@/shared/ui/filter-toolbar";
 import { PageHeader } from "@/shared/ui/page-header";
@@ -160,7 +160,7 @@ export function AdminApplications({ applicationId }: { applicationId?: string })
       {loadError ? (
         <ErrorState title={t("dataLoadFailed")} action={<Button variant="outline" onClick={() => void load()}>{t("retry")}</Button>} />
       ) : loading ? (
-        <DashboardListSkeleton label={t("dashboardLoading")} rows={5} />
+        <DashboardListLoading label={t("dashboardLoading")} rows={5} />
       ) : items.length ? (
         <Card>
           <CardContent className="divide-y divide-border p-0">
@@ -243,3 +243,4 @@ function statusTone(status: Status): StatusTone {
   if (status === "in_review") return "warning";
   return "info";
 }
+

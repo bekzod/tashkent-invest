@@ -1,9 +1,9 @@
 import type { InvestmentObject } from "@/entities/investment-object/types";
 import { ObjectCard } from "@/entities/investment-object/object-card";
-import { DashboardGridSkeleton } from "@/shared/ui/dashboard-loading";
+import { DashboardGridLoading } from "@/shared/ui/dashboard-loading";
 
 export function DashboardObjectGrid({ items, loading = false, loadingLabel }: { items: InvestmentObject[]; loading?: boolean; loadingLabel?: string }) {
-  if (loading) return <DashboardGridSkeleton label={loadingLabel} />;
+  if (loading) return <DashboardGridLoading label={loadingLabel} />;
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -11,3 +11,4 @@ export function DashboardObjectGrid({ items, loading = false, loadingLabel }: { 
     </div>
   );
 }
+
