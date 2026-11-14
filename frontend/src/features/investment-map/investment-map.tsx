@@ -25,7 +25,7 @@ import {
   FreehandPolygonDraft,
   mapLibreControlLocale,
 } from "./map-mobile";
-import { addDistrictBackground, districtFeature } from "./district-background";
+import { addDistrictBackground, updateDistrictBackground } from "./district-background";
 import { notify } from "@/shared/ui/feedback";
 
 const TASHKENT_DISTRICT: [number, number] = [69.220651, 41.391335];
@@ -553,9 +553,7 @@ export function InvestmentMap({
     return () => clearTimeout(refresh);
   }, [filters, locale, load]);
   useEffect(() => {
-    const source = mapRef.current?.getSource("district-boundary") as unknown as
-      GeoJsonSource | undefined;
-    if (source) source.setData(districtFeature(filters.districtPolygon));
+    if (mapRef.current) updateDistrictBackground(mapRef.current, filters.districtPolygon);
   }, [filters.districtPolygon]);
   useEffect(() => {
     const map = mapRef.current;

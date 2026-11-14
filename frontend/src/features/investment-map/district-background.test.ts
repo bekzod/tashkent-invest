@@ -37,14 +37,16 @@ describe("Toshkent tumani background", () => {
     expect(districtFeature(polygon).geometry).toEqual(polygon);
   });
 
-  it("adds a light, attributed background without interaction handlers", () => {
+  it("adds a visible, attributed background without interaction handlers", () => {
     const map = { addSource: vi.fn(), addLayer: vi.fn(), on: vi.fn() };
     addDistrictBackground(map as unknown as MapLibreMap);
     expect(map.addSource).toHaveBeenCalledWith("district-boundary", expect.objectContaining({
       type: "geojson", data: districtFeature(), attribution: expect.stringContaining("https://www.openstreetmap.org/copyright"),
     }));
     expect(map.addLayer.mock.calls.map(([layer]) => layer.id)).toEqual(["district-fill", "district-line"]);
-    expect(map.addLayer.mock.calls[0][0].paint["fill-opacity"]).toBeLessThanOrEqual(0.1);
+    expect(map.addLayer.mock.calls[0][0].paint["fill-opacity"]).toBeGreaterThanOrEqual(0.15);
+    expect(map.addLayer.mock.calls[1][0].paint["line-opacity"]).toBeGreaterThanOrEqual(0.9);
+    expect(map.addLayer.mock.calls[1][0].paint["line-width"]).toBeGreaterThanOrEqual(3);
     expect(map.on).not.toHaveBeenCalled();
   });
 });

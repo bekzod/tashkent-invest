@@ -38,6 +38,7 @@ import {
   getTashkentDistrict,
   type GeographicArea,
 } from "@/features/investment-map/geographic-areas";
+import { addDistrictBackground, updateDistrictBackground } from "@/features/investment-map/district-background";
 import {
   appendVertex,
   buildBoundaryDraft,
@@ -95,16 +96,6 @@ function pointFeature(point?: Vertex): GeoJSON.FeatureCollection {
           properties: {},
           geometry: { type: "Point", coordinates: point },
         }
-      : undefined,
-  );
-}
-
-function districtFeature(
-  district?: GeoJSON.Polygon,
-): GeoJSON.FeatureCollection {
-  return featureCollection(
-    district
-      ? { type: "Feature", properties: {}, geometry: district }
       : undefined,
   );
 }
@@ -225,22 +216,7 @@ export function LotBoundaryEditor({
     instance.on("load", () => {
       if (!active) return;
       loaded = true;
-      instance.addSource("lot-boundary-district", {
-        type: "geojson",
-        data: districtFeature(districtRef.current),
-      });
-      instance.addLayer({
-        id: "lot-boundary-district-fill",
-        type: "fill",
-        source: "lot-boundary-district",
-        paint: { "fill-color": "#0b5ec8", "fill-opacity": 0.07 },
-      });
-      instance.addLayer({
-        id: "lot-boundary-district-line",
-        type: "line",
-        source: "lot-boundary-district",
-        paint: { "line-color": "#0b5ec8", "line-width": 2 },
-      });
+      addDistrictBackground(instance, districtRef.current);
       instance.addSource("lot-boundary-object-location", {
         type: "geojson",
         data: pointFeature(locationRef.current),
@@ -380,11 +356,7 @@ export function LotBoundaryEditor({
   }, [mapReady, vertices]);
 
   useEffect(() => {
-    if (!mapReady) return;
-    const source = mapRef.current?.getSource("lot-boundary-district") as
-      | GeoJSONSource
-      | undefined;
-    source?.setData(districtFeature(district));
+    if (mapReady && mapRef.current) updateDistrictBackground(mapRef.current, district);
   }, [district, mapReady]);
 
   useEffect(() => {

@@ -1,13 +1,17 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { LanguageProvider } from "@/shared/i18n/language-provider";
 import { LocationPicker } from "./location-picker";
+import { districtFeature } from "@/features/investment-map/district-background";
 
 const mocks = vi.hoisted(() => {
   const maps: Array<{
     handlers: Record<string, (event?: unknown) => void>;
     remove: ReturnType<typeof vi.fn>;
     jumpTo: ReturnType<typeof vi.fn>;
+    addSource: ReturnType<typeof vi.fn>;
+    addLayer: ReturnType<typeof vi.fn>;
+    sources: Map<string, { setData: ReturnType<typeof vi.fn> }>;
   }> = [];
   const markers: Array<{
     addTo: ReturnType<typeof vi.fn>;
@@ -26,9 +30,10 @@ vi.mock("maplibre-gl", () => {
     jumpTo = vi.fn();
     getZoom = vi.fn(() => 11);
     addControl = vi.fn();
-    addSource = vi.fn();
+    sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>();
+    addSource = vi.fn((id: string) => { this.sources.set(id, { setData: vi.fn() }); });
     addLayer = vi.fn();
-    getSource = vi.fn();
+    getSource = vi.fn((id: string) => this.sources.get(id));
     constructor() {
       mocks.maps.push(this);
     }
@@ -106,6 +111,21 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("LocationPicker", () => {
+  test("shows the district before and after areas load", async () => {
+    renderPicker();
+    const map = mocks.maps[0];
+    act(() => map.handlers.load());
+
+    expect(map.addSource).toHaveBeenCalledWith("district-boundary", expect.objectContaining({ data: districtFeature() }));
+    expect(map.addLayer.mock.calls.map(([layer]) => layer.id)).toEqual(["district-fill", "district-line"]);
+    await waitFor(() => expect(map.sources.get("district-boundary")?.setData).toHaveBeenCalledWith(
+      districtFeature({
+        type: "Polygon",
+        coordinates: [[[69.1, 41.3], [69.3, 41.3], [69.3, 41.5], [69.1, 41.5], [69.1, 41.3]]],
+      }),
+    ));
+  });
+
   test("does not create a marker for blank coordinates", () => {
     renderPicker();
     expect(mocks.maps).toHaveLength(1);
